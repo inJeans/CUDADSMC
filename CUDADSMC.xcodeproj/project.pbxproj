@@ -7,8 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1D94869E198B099300324396 /* libcublas.5.5.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D94869D198B099300324396 /* libcublas.5.5.dylib */; };
+		1D9486A0198B09AB00324396 /* libcurand.5.5.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D94869F198B09AB00324396 /* libcurand.5.5.dylib */; };
+		1D9486A2198B0A7100324396 /* libcudart.5.5.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D9486A1198B0A7100324396 /* libcudart.5.5.dylib */; };
+		1DD39FB2198B4C38007645E2 /* setUp.cu in Sources */ = {isa = PBXBuildFile; fileRef = 1D94869C198B069400324396 /* setUp.cu */; };
+		1DD39FB3198B4C3C007645E2 /* cudaHelpers.cu in Sources */ = {isa = PBXBuildFile; fileRef = 1D9486A3198B0CAB00324396 /* cudaHelpers.cu */; };
 		443C463D198A00C50079A2C8 /* CUDADSMC.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 443C463C198A00C50079A2C8 /* CUDADSMC.1 */; };
-		443C4646198B04E60079A2C8 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 443C4645198B04E60079A2C8 /* main.c */; };
+		443C4646198B04E60079A2C8 /* main.cu in Sources */ = {isa = PBXBuildFile; fileRef = 443C4645198B04E60079A2C8 /* main.cu */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -25,10 +30,19 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1D94869C198B069400324396 /* setUp.cu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = setUp.cu; path = src/setUp.cu; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		1D94869D198B099300324396 /* libcublas.5.5.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libcublas.5.5.dylib; path = "../../../../../Developer/NVIDIA/CUDA-5.5/lib/libcublas.5.5.dylib"; sourceTree = "<group>"; };
+		1D94869F198B09AB00324396 /* libcurand.5.5.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libcurand.5.5.dylib; path = "../../../../../Developer/NVIDIA/CUDA-5.5/lib/libcurand.5.5.dylib"; sourceTree = "<group>"; };
+		1D9486A1198B0A7100324396 /* libcudart.5.5.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libcudart.5.5.dylib; path = "../../../../../Developer/NVIDIA/CUDA-5.5/lib/libcudart.5.5.dylib"; sourceTree = "<group>"; };
+		1D9486A3198B0CAB00324396 /* cudaHelpers.cu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = cudaHelpers.cu; path = src/cudaHelpers.cu; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		1D9486A4198B0F8A00324396 /* cudaHelpers.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = cudaHelpers.cuh; path = include/cudaHelpers.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		1D9486A6198B10A800324396 /* Makefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.sh; };
+		1DD39FB1198B4BD5007645E2 /* setUp.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = setUp.cuh; path = include/setUp.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		1DD39FB4198B5041007645E2 /* initialSystemParameters.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = initialSystemParameters.cuh; path = include/initialSystemParameters.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		443C4637198A00C50079A2C8 /* CUDADSMC */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = CUDADSMC; sourceTree = BUILT_PRODUCTS_DIR; };
 		443C463C198A00C50079A2C8 /* CUDADSMC.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = CUDADSMC.1; sourceTree = "<group>"; };
 		443C4643198A01170079A2C8 /* moveAtoms.cu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = moveAtoms.cu; path = src/moveAtoms.cu; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
-		443C4645198B04E60079A2C8 /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = main.c; path = src/main.c; sourceTree = "<group>"; };
+		443C4645198B04E60079A2C8 /* main.cu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = main.cu; path = src/main.cu; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -36,15 +50,31 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1D9486A2198B0A7100324396 /* libcudart.5.5.dylib in Frameworks */,
+				1D9486A0198B09AB00324396 /* libcurand.5.5.dylib in Frameworks */,
+				1D94869E198B099300324396 /* libcublas.5.5.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		1D9486A5198B0F9B00324396 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				1DD39FB4198B5041007645E2 /* initialSystemParameters.cuh */,
+				1D9486A4198B0F8A00324396 /* cudaHelpers.cuh */,
+				1DD39FB1198B4BD5007645E2 /* setUp.cuh */,
+			);
+			name = include;
+			sourceTree = "<group>";
+		};
 		443C462E198A00C50079A2C8 = {
 			isa = PBXGroup;
 			children = (
+				1D9486A1198B0A7100324396 /* libcudart.5.5.dylib */,
+				1D94869F198B09AB00324396 /* libcurand.5.5.dylib */,
+				1D94869D198B099300324396 /* libcublas.5.5.dylib */,
 				443C4639198A00C50079A2C8 /* CUDADSMC */,
 				443C4638198A00C50079A2C8 /* Products */,
 			);
@@ -61,7 +91,9 @@
 		443C4639198A00C50079A2C8 /* CUDADSMC */ = {
 			isa = PBXGroup;
 			children = (
+				1D9486A6198B10A800324396 /* Makefile */,
 				443C4644198A01280079A2C8 /* src */,
+				1D9486A5198B0F9B00324396 /* include */,
 				443C463C198A00C50079A2C8 /* CUDADSMC.1 */,
 			);
 			path = CUDADSMC;
@@ -70,7 +102,9 @@
 		443C4644198A01280079A2C8 /* src */ = {
 			isa = PBXGroup;
 			children = (
-				443C4645198B04E60079A2C8 /* main.c */,
+				443C4645198B04E60079A2C8 /* main.cu */,
+				1D9486A3198B0CAB00324396 /* cudaHelpers.cu */,
+				1D94869C198B069400324396 /* setUp.cu */,
 				443C4643198A01170079A2C8 /* moveAtoms.cu */,
 			);
 			name = src;
@@ -127,7 +161,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				443C4646198B04E60079A2C8 /* main.c in Sources */,
+				1DD39FB3198B4C3C007645E2 /* cudaHelpers.cu in Sources */,
+				1DD39FB2198B4C38007645E2 /* setUp.cu in Sources */,
+				443C4646198B04E60079A2C8 /* main.cu in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -207,14 +243,41 @@
 		443C4641198A00C50079A2C8 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"/Developer/NVIDIA/CUDA-5.5/include",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"/Developer/NVIDIA/CUDA-5.5/lib",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				"USER_HEADER_SEARCH_PATHS[arch=*]" = "$(SRCROOT)/CUDADSMC/include";
 			};
 			name = Debug;
 		};
 		443C4642198A00C50079A2C8 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"/Developer/NVIDIA/CUDA-5.5/include",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+				);
+				"HEADER_SEARCH_PATHS[arch=*]" = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"/Developer/NVIDIA/CUDA-5.5/include",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"/Developer/NVIDIA/CUDA-5.5/lib",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				"USER_HEADER_SEARCH_PATHS[arch=*]" = "$(SRCROOT)/CUDADSMC/include ";
 			};
 			name = Release;
 		};
@@ -237,6 +300,7 @@
 				443C4642198A00C50079A2C8 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

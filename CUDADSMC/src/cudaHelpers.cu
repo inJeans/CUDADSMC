@@ -1,0 +1,59 @@
+//
+//  cudaHelpers.cu
+//  CUDADSMC
+//
+//  Created by Christopher Watkins on 1/08/2014.
+//  Copyright (c) 2014 WIJ. All rights reserved.
+//
+
+#include "cudaHelpers.cuh"
+
+#pragma mark - Set Maximum CUDA Device
+int setMaxCUDADevice( void )
+{
+	int maxDevice = getMaxCUDADevice( );
+	
+	cudaSetDevice( maxDevice );
+	
+	cudaDeviceProp deviceProp;
+	cudaGetDeviceProperties( &deviceProp, maxDevice );
+	
+	printf("\n----------------------------------------\n");
+	printf("\n Running on \"%s\"\n", deviceProp.name );
+	printf("\n----------------------------------------\n"); 
+	
+	return maxDevice;
+}
+
+int getMaxCUDADevice( void )
+{
+	int numberOfCUDADevices, maxDevice;
+	
+	cudaGetDeviceCount( &numberOfCUDADevices );
+	
+	if ( numberOfCUDADevices > 1) {
+		maxDevice = findMaxCUDADevice( numberOfCUDADevices );
+	}
+	else {
+		maxDevice = 0;
+	}
+	
+	return maxDevice;
+}
+
+int findMaxCUDADevice( int numberOfCUDADevices )
+{
+	int maxNumberOfMP = 0, maxDevice = 0;
+	
+	for (int device = 0; device < numberOfCUDADevices; device++) {
+		cudaDeviceProp currentDeviceProp;
+		cudaGetDeviceProperties( &currentDeviceProp, device );
+		
+		if ( maxNumberOfMP < currentDeviceProp.multiProcessorCount ) {
+			maxNumberOfMP = currentDeviceProp.multiProcessorCount;
+			maxDevice = device;
+		}
+	}
+	
+	return maxDevice;
+}

@@ -8,9 +8,7 @@
 
 #include <stdio.h>
 
-__global__ void moveAtoms( double4 *pos, double4 *vel, int numberOfAtoms ) {
-    
-    
-    
+__global__ void moveAtoms( double4 *pos, double4 *vel, int numberOfAtoms )
+{
     return;
 }
