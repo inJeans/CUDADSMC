@@ -20,7 +20,7 @@ int setMaxCUDADevice( void )
 	
 	printf("\n----------------------------------------\n");
 	printf("\n Running on \"%s\"\n", deviceProp.name );
-	printf("\n----------------------------------------\n"); 
+	printf("\n----------------------------------------\n\n"); 
 	
 	return maxDevice;
 }

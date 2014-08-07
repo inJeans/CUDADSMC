@@ -44,7 +44,6 @@ __global__ void initRNG( curandStatePhilox4_32_10_t *rngState, int numberOfAtoms
 // Kernel to generate the initial distribution
 __global__ void generateInitialDist(double4 *pos,
                                     double4 *vel,
-									double4 *accel,
                                     int      numberOfAtoms,
 									double   Temp,
 									double   dBdz,
@@ -55,35 +54,12 @@ __global__ void generateInitialDist(double4 *pos,
 		 atom += blockDim.x * gridDim.x)
 	{
 		
-		double r1, r2, r3, U, Pr;        // Variables required to generate a position
-		bool  noAtomSelected = true;    // Flag to indicate wether we have generated
-		// a good position
-		
-		double meanr = 6*d_kB*Temp/(dBdz*d_gs*d_muB);
-		
 		/* Copy state to local memory for efficiency */
 		curandStatePhilox4_32_10_t localrngState = rngState[atom];
 		
-		while (noAtomSelected) {
-			
-			r1 = curand_uniform_double (&localrngState) * 10*meanr - 0.5*10*meanr;
-			r2 = curand_uniform_double (&localrngState) * 10*meanr - 0.5*10*meanr;
-			r3 = curand_uniform_double (&localrngState) * 10*meanr - 0.5*10*meanr;
-			U  = -0.5*d_gs*d_muB*dBdz*sqrt(r1*r1+r2*r2+4.0*r3*r3);
-			Pr = exp(U / d_kB / Temp );
-			
-			if (curand_uniform_double (&localrngState) < Pr) {
-				
-				pos[atom].x = r1;
-				pos[atom].y = r2;
-				pos[atom].z = r3;
-				pos[atom].w = 1.0;
-				
-				noAtomSelected = false;
-			}
-		}
+        pos[atom] = selectAtomInDistribution( dBdz, Temp, &localrngState );
 		
-		vel[atom] = getRandomVelocity( Temp, localrngState );
+		vel[atom] = getRandomVelocity( Temp, &localrngState );
 		
 		// Copy state back to global memory
 		rngState[atom] = localrngState;
@@ -96,23 +72,23 @@ __device__ double4 operator* ( double a, double4 b )
 	return make_double4( a*b.x, a*b.y, a*b.z, a*b.w );
 }
 
-__device__ double4 getRandomVelocity( double Temp, curandStatePhilox4_32_10_t rngState )
+__device__ double4 getRandomVelocity( double Temp, curandStatePhilox4_32_10_t *rngState )
 {
 	double4 vel = make_double4( 0., 0., 0., 0. );
 	
 	double V = sqrt(2.0/3.0*d_kB*Temp/d_mRb);
 	
-	vel = V * getRandomNumberOnUnitSphere( &rngState );
+	vel = V * getRandomPointOnUnitSphere( &rngState[0] );
 	
 	return vel;
 }
 
-__device__ double4 getRandomNumberOnUnitSphere( curandStatePhilox4_32_10_t *rngState )
+__device__ double4 getRandomPointOnUnitSphere( curandStatePhilox4_32_10_t *rngState )
 {
 	double4 pointOnSphere;
 	
-	double2 r1 = curand_uniform2_double (&rngState[0]);
-	double2 r2 = curand_uniform2_double (&rngState[0]);
+	double2 r1 = curand_uniform2_double ( &rngState[0] );
+	double2 r2 = curand_uniform2_double ( &rngState[0] );
 	
 	pointOnSphere.x = (double) sqrt(-2.0*log(r1.x)) * sin(2*d_pi*r1.y);
 	pointOnSphere.y = (double) sqrt(-2.0*log(r2.x)) * cos(2*d_pi*r2.y);
@@ -120,4 +96,63 @@ __device__ double4 getRandomNumberOnUnitSphere( curandStatePhilox4_32_10_t *rngS
 	pointOnSphere.w = (double) 0.0;
 	
 	return pointOnSphere;
+}
+
+__device__ double4 selectAtomInDistribution( double dBdz, double Temp, curandStatePhilox4_32_10_t *rngState )
+{
+    double4 pos = make_double4( 0., 0., 0., 0. );
+    double4 r   = make_double4( 0., 0., 0., 0. );
+
+    double meanx = 0.0;
+    double stdx  = sqrt( log( 4. ) )*d_kB*Temp / ( d_gs*d_muB*dBdz );
+    
+    bool noAtomSelected = true;
+    
+    while (noAtomSelected) {
+        
+        r = getGaussianPoint( meanx, stdx, &rngState[0] );
+        
+        if ( pointIsInDistribution( r, dBdz, Temp, &rngState[0] ) ) {
+            
+            pos = r;
+            
+            noAtomSelected = false;
+        }
+    }
+    
+    return pos;
+}
+
+__device__ double2 operator* ( double2 a, double b )
+{
+	return make_double2( a.x*b, a.y*b );
+}
+
+__device__ double2 operator+ ( double2 a, double b )
+{
+	return make_double2( a.x+b, a.y+b );
+}
+
+__device__ double4 getGaussianPoint( double mean, double std, curandStatePhilox4_32_10_t *rngState )
+{
+    double2 r1 = curand_normal2_double ( &rngState[0] ) * std + mean;
+	double2 r2 = curand_normal2_double ( &rngState[0] ) * std + mean;
+ 
+    double4 point = make_double4( r1.x, r1.y, r2.x, r2.y );
+    
+    return point;
+}
+
+__device__ bool pointIsInDistribution( double4 point, double dBdz, double Temp, curandStatePhilox4_32_10_t *rngState )
+{
+    bool pointIsIn = false;
+    
+    double potential   = 0.5*d_gs*d_muB*dBdz*sqrt( point.x*point.x + point.y*point.y + 4.*point.z*point.z );
+    double probability = exp( -potential / d_kB / Temp );
+    
+    if ( curand_uniform_double ( &rngState[0] ) < probability ) {
+        pointIsIn = true;
+    }
+    
+    return pointIsIn;
 }

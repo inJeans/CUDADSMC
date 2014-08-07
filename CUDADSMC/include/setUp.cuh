@@ -13,8 +13,32 @@
 #include <cuda.h>
 #include <curand_kernel.h>
 
-__global__ void initRNG( curandStatePhilox4_32_10_t *rngState, int numberOfAtoms );
-__device__ double4 getRandomVelocity( double Temp, curandStatePhilox4_32_10_t rngState );
-__device__ double4 getRandomNumberOnUnitSphere( curandStatePhilox4_32_10_t *rngState );
+__global__ void initRNG( curandStatePhilox4_32_10_t *rngState,
+                         int numberOfAtoms );
+
+__global__ void generateInitialDist(double4 *pos,
+                                    double4 *vel,
+                                    int      numberOfAtoms,
+									double   Temp,
+									double   dBdz,
+									curandStatePhilox4_32_10_t *rngState);
+
+__device__ double4 getRandomVelocity( double Temp,
+                                      curandStatePhilox4_32_10_t *rngState );
+
+__device__ double4 getRandomPointOnUnitSphere( curandStatePhilox4_32_10_t *rngState );
+
+__device__ double4 selectAtomInDistribution( double dBdz,
+                                             double Temp,
+                                             curandStatePhilox4_32_10_t *rngState );
+
+__device__ double4 getGaussianPoint( double mean,
+                                     double std,
+                                     curandStatePhilox4_32_10_t *rngState );
+
+__device__ bool pointIsInDistribution( double4 point,
+                                       double dBdz,
+                                       double Temp,
+                                       curandStatePhilox4_32_10_t *rngState );
 
 #endif

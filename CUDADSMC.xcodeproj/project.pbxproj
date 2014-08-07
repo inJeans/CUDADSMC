@@ -43,6 +43,7 @@
 		443C463C198A00C50079A2C8 /* CUDADSMC.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = CUDADSMC.1; sourceTree = "<group>"; };
 		443C4643198A01170079A2C8 /* moveAtoms.cu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = moveAtoms.cu; path = src/moveAtoms.cu; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		443C4645198B04E60079A2C8 /* main.cu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = main.cu; path = src/main.cu; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		443C464719930AC60079A2C8 /* initTest.cu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = initTest.cu; path = src/initTest.cu; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -103,9 +104,10 @@
 			isa = PBXGroup;
 			children = (
 				443C4645198B04E60079A2C8 /* main.cu */,
-				1D9486A3198B0CAB00324396 /* cudaHelpers.cu */,
-				1D94869C198B069400324396 /* setUp.cu */,
 				443C4643198A01170079A2C8 /* moveAtoms.cu */,
+				1D94869C198B069400324396 /* setUp.cu */,
+				1D9486A3198B0CAB00324396 /* cudaHelpers.cu */,
+				443C464719930AC60079A2C8 /* initTest.cu */,
 			);
 			name = src;
 			sourceTree = "<group>";

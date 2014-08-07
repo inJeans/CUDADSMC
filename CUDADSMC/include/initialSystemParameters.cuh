@@ -19,6 +19,6 @@ int    numberOfAtoms = 1e5;
 double Tinit   = 20.0e-6;
 
 #pragma mark Trap Parameters
-double dBz = 2.5;
+double dBdz = 2.5;
 
 #endif

@@ -37,13 +37,40 @@ int main(int argc, const char * argv[])
 	
 	int gridSize;
 	
-	cudaOccupancyMaxPotentialBlockSize( &minGridSize, &blockSize, initRNG, 0, numberOfAtoms );
+	cudaOccupancyMaxPotentialBlockSize( &minGridSize,
+                                        &blockSize,
+                                        initRNG,
+                                        0,
+                                        numberOfAtoms );
 	
 	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
 	
 	initRNG<<<gridSize,blockSize>>>( rngStates, numberOfAtoms );
 	
 	printf("gridSize = %i,  lockSize = %i\n", gridSize, blockSize);
+    
+    double4 *d_pos;
+    double4 *d_vel;
+    
+	cudaMalloc( (void **)&d_pos, numberOfAtoms*sizeof(double4) );
+    cudaMalloc( (void **)&d_vel, numberOfAtoms*sizeof(double4) );
+    
+    cudaOccupancyMaxPotentialBlockSize( &minGridSize,
+                                        &blockSize,
+                                        generateInitialDist,
+                                        0,
+                                        numberOfAtoms );
+	
+	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
+    
+    generateInitialDist<<<gridSize,blockSize>>>( d_pos,
+                                                 d_vel,
+                                                 numberOfAtoms,
+                                                 Tinit,
+                                                 dBdz,
+                                                 rngStates );
+    
+    printf("gridSize = %i,  lockSize = %i\n", gridSize, blockSize);
 	
     // insert code here...
     printf("Hello, World!\n");
