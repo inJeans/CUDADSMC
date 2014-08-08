@@ -47,7 +47,7 @@ int main(int argc, const char * argv[])
 	
 	initRNG<<<gridSize,blockSize>>>( rngStates, numberOfAtoms );
 	
-	printf("gridSize = %i,  lockSize = %i\n", gridSize, blockSize);
+	printf("gridSize = %i, blockSize = %i\n", gridSize, blockSize);
     
     double4 *d_pos;
     double4 *d_vel;
@@ -70,7 +70,7 @@ int main(int argc, const char * argv[])
                                                  dBdz,
                                                  rngStates );
     
-    printf("gridSize = %i,  lockSize = %i\n", gridSize, blockSize);
+    printf("gridSize = %i, blockSize = %i\n", gridSize, blockSize);
 	
     // insert code here...
     printf("Hello, World!\n");
