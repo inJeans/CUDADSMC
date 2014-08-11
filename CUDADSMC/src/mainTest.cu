@@ -14,6 +14,7 @@
 #include "initialSystemParameters.cuh"
 #include "cudaHelpers.cuh"
 #include "setUp.cuh"
+#include "statTests.cuh"
 
 int main(int argc, const char * argv[])
 {
@@ -38,10 +39,10 @@ int main(int argc, const char * argv[])
 	int gridSize;
 	
 	cudaOccupancyMaxPotentialBlockSize( &minGridSize,
-									   &blockSize,
-									   initRNG,
-									   0,
-									   numberOfAtoms );
+									    &blockSize,
+									    initRNG,
+									    0,
+									    numberOfAtoms );
 	
 	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
 	
@@ -54,10 +55,10 @@ int main(int argc, const char * argv[])
     cudaMalloc( (void **)&d_vel, numberOfAtoms*sizeof(double4) );
     
     cudaOccupancyMaxPotentialBlockSize( &minGridSize,
-									   &blockSize,
-									   generateInitialDist,
-									   0,
-									   numberOfAtoms );
+									    &blockSize,
+									    generateInitialDist,
+									    0,
+									    numberOfAtoms );
 	
 	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
     
@@ -70,14 +71,16 @@ int main(int argc, const char * argv[])
     
     printf("gridSize = %i, blockSize = %i\n", gridSize, blockSize);
 	
-	double4 *h_pos = (*double4) calloc( numberOfAtoms, sizeof(double4) );
-	double4 *h_vel = (*double4) calloc( numberOfAtoms, sizeof(double4) );
+	double4 *h_pos = (double4 *) calloc( numberOfAtoms, sizeof(double4) );
+	double4 *h_vel = (double4 *) calloc( numberOfAtoms, sizeof(double4) );
 	
 	cudaMemcpy( h_pos, d_pos, numberOfAtoms*sizeof(double4), cudaMemcpyDeviceToHost );
 	cudaMemcpy( h_vel, d_vel, numberOfAtoms*sizeof(double4), cudaMemcpyDeviceToHost );
 	
 	
-    // insert code here...
-    printf("Hello, World!\n");
-    return 0;
+    double h_data[6] = {1., 3., 6., 8., 2.51, -1.2};
+	
+	shapiroWilk( h_data, 6 );
+	
+	return 0;
 }

@@ -39,11 +39,13 @@
 		1D9486A6198B10A800324396 /* Makefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.sh; };
 		1DD39FB1198B4BD5007645E2 /* setUp.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = setUp.cuh; path = include/setUp.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		1DD39FB4198B5041007645E2 /* initialSystemParameters.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = initialSystemParameters.cuh; path = include/initialSystemParameters.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		1DF72A081995B3D500E6659A /* statTests.cu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = statTests.cu; path = src/statTests.cu; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		1DF72A091995B6FE00E6659A /* statTests.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = statTests.cuh; path = include/statTests.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		443C4637198A00C50079A2C8 /* CUDADSMC */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = CUDADSMC; sourceTree = BUILT_PRODUCTS_DIR; };
 		443C463C198A00C50079A2C8 /* CUDADSMC.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = CUDADSMC.1; sourceTree = "<group>"; };
 		443C4643198A01170079A2C8 /* moveAtoms.cu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = moveAtoms.cu; path = src/moveAtoms.cu; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		443C4645198B04E60079A2C8 /* main.cu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = main.cu; path = src/main.cu; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
-		443C464719930AC60079A2C8 /* initTest.cu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = initTest.cu; path = src/initTest.cu; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		443C464719930AC60079A2C8 /* mainTest.cu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = mainTest.cu; path = src/mainTest.cu; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -66,6 +68,7 @@
 				1DD39FB4198B5041007645E2 /* initialSystemParameters.cuh */,
 				1D9486A4198B0F8A00324396 /* cudaHelpers.cuh */,
 				1DD39FB1198B4BD5007645E2 /* setUp.cuh */,
+				1DF72A091995B6FE00E6659A /* statTests.cuh */,
 			);
 			name = include;
 			sourceTree = "<group>";
@@ -107,7 +110,8 @@
 				443C4643198A01170079A2C8 /* moveAtoms.cu */,
 				1D94869C198B069400324396 /* setUp.cu */,
 				1D9486A3198B0CAB00324396 /* cudaHelpers.cu */,
-				443C464719930AC60079A2C8 /* initTest.cu */,
+				443C464719930AC60079A2C8 /* mainTest.cu */,
+				1DF72A081995B3D500E6659A /* statTests.cu */,
 			);
 			name = src;
 			sourceTree = "<group>";
