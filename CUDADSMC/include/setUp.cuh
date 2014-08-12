@@ -18,6 +18,7 @@ __global__ void initRNG( curandStatePhilox4_32_10_t *rngState,
 
 __global__ void generateInitialDist(double4 *pos,
                                     double4 *vel,
+                                    double4 *acc,
                                     int      numberOfAtoms,
 									double   Temp,
 									double   dBdz,
@@ -40,5 +41,7 @@ __device__ bool pointIsInDistribution( double4 point,
                                        double dBdz,
                                        double Temp,
                                        curandStatePhilox4_32_10_t *rngState );
+
+__device__ double4 updateAccel( double4 pos );
 
 #endif

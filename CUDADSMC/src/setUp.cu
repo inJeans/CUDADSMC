@@ -7,6 +7,7 @@
 //
 
 #include "setUp.cuh"
+#include "vectorMath.cuh"
 #include "math.h"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -22,7 +23,9 @@ __constant__ double d_a    = 5.3e-9;			// Constant cross-section formula
 __constant__ double d_kB   = 1.3806503e-23;		// Boltzmann's Constant
 __constant__ double d_hbar = 1.05457148e-34;	// hbar
 
-////////////////////////////////////////////////////////////////////////////////
+__constant__ double d_dBdz = 2.5;	    // field gradient
+
+/////////////////////////////////////////////////////////////////////////////////
 
 #pragma mark - Random Number Generator
 __global__ void initRNG( curandStatePhilox4_32_10_t *rngState, int numberOfAtoms )
@@ -44,6 +47,7 @@ __global__ void initRNG( curandStatePhilox4_32_10_t *rngState, int numberOfAtoms
 // Kernel to generate the initial distribution
 __global__ void generateInitialDist(double4 *pos,
                                     double4 *vel,
+                                    double4 *acc,
                                     int      numberOfAtoms,
 									double   Temp,
 									double   dBdz,
@@ -60,16 +64,13 @@ __global__ void generateInitialDist(double4 *pos,
         pos[atom] = selectAtomInDistribution( dBdz, Temp, &localrngState );
 		
 		vel[atom] = getRandomVelocity( Temp, &localrngState );
+        
+        acc[atom] = updateAccel( pos[atom] );
 		
 		// Copy state back to global memory
 		rngState[atom] = localrngState;
     }
     return;
-}
-
-__device__ double4 operator* ( double a, double4 b )
-{
-	return make_double4( a*b.x, a*b.y, a*b.z, a*b.w );
 }
 
 __device__ double4 getRandomVelocity( double Temp, curandStatePhilox4_32_10_t *rngState )
@@ -123,16 +124,6 @@ __device__ double4 selectAtomInDistribution( double dBdz, double Temp, curandSta
     return pos;
 }
 
-__device__ double2 operator* ( double2 a, double b )
-{
-	return make_double2( a.x*b, a.y*b );
-}
-
-__device__ double2 operator+ ( double2 a, double b )
-{
-	return make_double2( a.x+b, a.y+b );
-}
-
 __device__ double4 getGaussianPoint( double mean, double std, curandStatePhilox4_32_10_t *rngState )
 {
     double2 r1 = curand_normal2_double ( &rngState[0] ) * std + mean;
@@ -155,4 +146,18 @@ __device__ bool pointIsInDistribution( double4 point, double dBdz, double Temp, 
     }
     
     return pointIsIn;
+}
+
+__device__ double4 updateAccel( double4 pos )
+{
+    double4 accel = make_double4( 0., 0., 0., 0. );
+    
+    // The rsqrt function returns the reciprocal square root of its argument
+	double potential = -0.5*d_gs*d_muB*d_dBdz*rsqrt(pos.x*pos.x + pos.y*pos.y + 4.0*pos.z*pos.z)/d_mRb;
+	
+	accel.x =       potential * pos.x;
+	accel.y =       potential * pos.y;
+	accel.z = 4.0 * potential * pos.z;
+    
+    return accel;
 }

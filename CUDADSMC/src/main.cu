@@ -14,6 +14,7 @@
 #include "initialSystemParameters.cuh"
 #include "cudaHelpers.cuh"
 #include "setUp.cuh"
+#include "moveAtoms.cuh"
 
 int main(int argc, const char * argv[])
 {
@@ -51,9 +52,15 @@ int main(int argc, const char * argv[])
     
     double4 *d_pos;
     double4 *d_vel;
+    double4 *d_acc;
     
 	cudaMalloc( (void **)&d_pos, numberOfAtoms*sizeof(double4) );
     cudaMalloc( (void **)&d_vel, numberOfAtoms*sizeof(double4) );
+    cudaMalloc( (void **)&d_acc, numberOfAtoms*sizeof(double4) );
+    
+    cudaMemset( d_pos, 0., numberOfAtoms*sizeof(double4) );
+    cudaMemset( d_vel, 0., numberOfAtoms*sizeof(double4) );
+    cudaMemset( d_acc, 0., numberOfAtoms*sizeof(double4) );
     
     cudaOccupancyMaxPotentialBlockSize( &minGridSize,
                                         &blockSize,
@@ -65,6 +72,7 @@ int main(int argc, const char * argv[])
     
     generateInitialDist<<<gridSize,blockSize>>>( d_pos,
                                                  d_vel,
+                                                 d_acc,
                                                  numberOfAtoms,
                                                  Tinit,
                                                  dBdz,
@@ -72,8 +80,28 @@ int main(int argc, const char * argv[])
     
     printf("gridSize = %i, blockSize = %i\n", gridSize, blockSize);
 	
+    cudaOccupancyMaxPotentialBlockSize( &minGridSize,
+                                       &blockSize,
+                                       generateInitialDist,
+                                       0,
+                                       numberOfAtoms );
+	
+	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
+    
+    moveAtoms<<<gridSize,blockSize>>>( d_pos, d_vel, d_acc, numberOfAtoms );
+    
+    printf("gridSize = %i, blockSize = %i\n", gridSize, blockSize);
+    
     // insert code here...
-    printf("Hello, World!\n");
+    printf("\n");
+    
+    cudaFree( d_pos );
+    cudaFree( d_vel );
+    cudaFree( d_acc );
+    cudaFree( rngStates );
+    
+    cudaDeviceReset();
+    
     return 0;
 }
 

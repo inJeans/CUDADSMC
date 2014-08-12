@@ -58,13 +58,6 @@ __global__ void calcm( double *m, int N )
 	{
 		double p = ( (n+1.) - 3./8. ) / ( N + 0.25 );
 		
-		m[n] = norminv( p, 0., 1. );
+		m[n] = normcdfinv( p );
 	}
-	return;
-}
-
-__device__ double norminv( double p, double mean, double stddev )
-{
-		double F = mean + stddev * sqrt( 2. ) * erfinv( 2 * p - 1. );
-    return F;
 }

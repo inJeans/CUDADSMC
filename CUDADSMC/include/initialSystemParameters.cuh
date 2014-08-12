@@ -14,6 +14,7 @@
 #pragma mark -
 
 int    numberOfAtoms = 1e5;
+double dt = 1.0e-6;
 
 #pragma mark Environmental Parameters
 double Tinit   = 20.0e-6;
