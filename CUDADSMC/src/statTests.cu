@@ -43,7 +43,7 @@ void shapiroWilk( double *data, int N )
 	
 	gridSize = ( N + blockSize - 1 ) / blockSize;
 	
-	calcm<<<gridSize,blockSize>>>( d_m, N );
+	calcm<<<gridSize,blockSize>>>( d_m, N ); 
 	
 	cublasStatus_t cublasDdot (cublasHandle_t handle, int n, d_m, 1, d_m, 1, double *result);
 	

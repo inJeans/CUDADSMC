@@ -21,7 +21,7 @@
 
 #define RANK 2
 
-hsize_t dims[RANK]= {numberOfAtoms, 4};
+hsize_t dims[RANK]= {numberOfAtoms, 3};
 
 int main(int argc, const char * argv[])
 {
@@ -57,19 +57,19 @@ int main(int argc, const char * argv[])
 	
 	printf("gridSize = %i, blockSize = %i\n", gridSize, blockSize);
     
-    double4 *d_pos;
-    double4 *d_vel;
-    double4 *d_acc;
+    double3 *d_pos;
+    double3 *d_vel;
+    double3 *d_acc;
     
-	cudaMalloc( (void **)&d_pos, numberOfAtoms*sizeof(double4) );
-    cudaMalloc( (void **)&d_vel, numberOfAtoms*sizeof(double4) );
-    cudaMalloc( (void **)&d_acc, numberOfAtoms*sizeof(double4) );
+	cudaMalloc( (void **)&d_pos, numberOfAtoms*sizeof(double3) );
+    cudaMalloc( (void **)&d_vel, numberOfAtoms*sizeof(double3) );
+    cudaMalloc( (void **)&d_acc, numberOfAtoms*sizeof(double3) );
     
-    cudaMemset( d_pos, 0., numberOfAtoms*sizeof(double4) );
-    cudaMemset( d_vel, 0., numberOfAtoms*sizeof(double4) );
-    cudaMemset( d_acc, 0., numberOfAtoms*sizeof(double4) );
+    cudaMemset( d_pos, 0., numberOfAtoms*sizeof(double3) );
+    cudaMemset( d_vel, 0., numberOfAtoms*sizeof(double3) );
+    cudaMemset( d_acc, 0., numberOfAtoms*sizeof(double3) );
     
-    double4 *h_pos = (double4*) calloc( numberOfAtoms, sizeof(double4) );
+    double3 *h_pos = (double3*) calloc( numberOfAtoms, sizeof(double3) );
     
     cudaOccupancyMaxPotentialBlockSize( &minGridSize,
                                         &blockSize,
@@ -89,7 +89,7 @@ int main(int argc, const char * argv[])
     
     printf("gridSize = %i, blockSize = %i\n", gridSize, blockSize);
 	
-    cudaMemcpy( h_pos, d_pos, numberOfAtoms*sizeof(double4), cudaMemcpyDeviceToHost );
+    cudaMemcpy( h_pos, d_pos, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
     
     /* create a HDF5 file */
     hid_t file_id = H5Fcreate ( "beforeMove.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
@@ -117,7 +117,7 @@ int main(int argc, const char * argv[])
     
     printf("gridSize = %i, blockSize = %i\n", gridSize, blockSize);
     
-    cudaMemcpy( h_pos, d_pos, numberOfAtoms*sizeof(double4), cudaMemcpyDeviceToHost );
+    cudaMemcpy( h_pos, d_pos, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
     
     /* create a HDF5 file */
     hid_t file_id2 = H5Fcreate ( "afterMove.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );

@@ -16,32 +16,32 @@
 __global__ void initRNG( curandStatePhilox4_32_10_t *rngState,
                          int numberOfAtoms );
 
-__global__ void generateInitialDist(double4 *pos,
-                                    double4 *vel,
-                                    double4 *acc,
+__global__ void generateInitialDist(double3 *pos,
+                                    double3 *vel,
+                                    double3 *acc,
                                     int      numberOfAtoms,
 									double   Temp,
 									double   dBdz,
 									curandStatePhilox4_32_10_t *rngState);
 
-__device__ double4 getRandomVelocity( double Temp,
+__device__ double3 getRandomVelocity( double Temp,
                                       curandStatePhilox4_32_10_t *rngState );
 
-__device__ double4 getRandomPointOnUnitSphere( curandStatePhilox4_32_10_t *rngState );
+__device__ double3 getRandomPointOnUnitSphere( curandStatePhilox4_32_10_t *rngState );
 
-__device__ double4 selectAtomInDistribution( double dBdz,
+__device__ double3 selectAtomInDistribution( double dBdz,
                                              double Temp,
                                              curandStatePhilox4_32_10_t *rngState );
 
-__device__ double4 getGaussianPoint( double mean,
+__device__ double3 getGaussianPoint( double mean,
                                      double std,
                                      curandStatePhilox4_32_10_t *rngState );
 
-__device__ bool pointIsInDistribution( double4 point,
+__device__ bool pointIsInDistribution( double3 point,
                                        double dBdz,
                                        double Temp,
                                        curandStatePhilox4_32_10_t *rngState );
 
-__device__ double4 updateAccel( double4 pos );
+__device__ double3 updateAccel( double3 pos );
 
 #endif

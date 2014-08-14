@@ -32,15 +32,15 @@ __device__   int    loopsPerCollision = 1000;	// loops per collision
 
 /////////////////////////////////////////////////////////////////////////////////
 
-__global__ void moveAtoms( double4 *pos, double4 *vel, double4 *acc, int numberOfAtoms )
+__global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, int numberOfAtoms )
 {
     for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
 		 atom < numberOfAtoms;
 		 atom += blockDim.x * gridDim.x)
 	{
-		double4 l_pos = pos[atom];
-        double4 l_vel = vel[atom];
-        double4 l_acc = acc[atom];
+		double3 l_pos = pos[atom];
+        double3 l_vel = vel[atom];
+        double3 l_acc = acc[atom];
         
         for (int i=0; i<loopsPerCollision; i++) {
             l_vel = updateVelHalfStep( l_vel, l_acc );
@@ -58,19 +58,19 @@ __global__ void moveAtoms( double4 *pos, double4 *vel, double4 *acc, int numberO
     return;
 }
 
-__device__ double4 updateVelHalfStep( double4 vel, double4 acc )
+__device__ double3 updateVelHalfStep( double3 vel, double3 acc )
 {
     return vel + 0.5 * acc * d_dt;
 }
 
-__device__ double4 updatePos( double4 pos, double4 vel )
+__device__ double3 updatePos( double3 pos, double3 vel )
 {
     return pos + pos * d_dt;
 }
 
-__device__ double4 updateAcc( double4 pos )
+__device__ double3 updateAcc( double3 pos )
 {
-    double4 accel = make_double4( 0., 0., 0., 0. );
+    double3 accel = make_double3( 0., 0., 0. );
     
     // The rsqrt function returns the reciprocal square root of its argument
 	double potential = -0.5*d_gs*d_muB*d_dBdz*rsqrt(pos.x*pos.x + pos.y*pos.y + 4.0*pos.z*pos.z)/d_mRb;

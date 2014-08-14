@@ -24,6 +24,21 @@ static __inline__ __device__ double4 operator+ ( double4 a, double4 b )
 	return make_double4( a.x+b.x, a.y+b.y, a.z+b.z, a.w+b.w );
 }
 
+static __inline__ __device__ double3 operator* ( double a, double3 b )
+{
+	return make_double3( a*b.x, a*b.y, a*b.z );
+}
+
+static __inline__ __device__ double3 operator* ( double3 a, double b )
+{
+	return make_double3( a.x*b, a.y*b, a.z*b );
+}
+
+static __inline__ __device__ double3 operator+ ( double3 a, double3 b )
+{
+	return make_double3( a.x+b.x, a.y+b.y, a.z+b.z );
+}
+
 static __inline__ __device__ double2 operator* ( double2 a, double b )
 {
 	return make_double2( a.x*b, a.y*b );

@@ -45,9 +45,9 @@ __global__ void initRNG( curandStatePhilox4_32_10_t *rngState, int numberOfAtoms
 #pragma mark - Initial Distribution
 
 // Kernel to generate the initial distribution
-__global__ void generateInitialDist(double4 *pos,
-                                    double4 *vel,
-                                    double4 *acc,
+__global__ void generateInitialDist(double3 *pos,
+                                    double3 *vel,
+                                    double3 *acc,
                                     int      numberOfAtoms,
 									double   Temp,
 									double   dBdz,
@@ -73,9 +73,9 @@ __global__ void generateInitialDist(double4 *pos,
     return;
 }
 
-__device__ double4 getRandomVelocity( double Temp, curandStatePhilox4_32_10_t *rngState )
+__device__ double3 getRandomVelocity( double Temp, curandStatePhilox4_32_10_t *rngState )
 {
-	double4 vel = make_double4( 0., 0., 0., 0. );
+	double3 vel = make_double3( 0., 0., 0. );
 	
 	double V = sqrt(2.0/3.0*d_kB*Temp/d_mRb);
 	
@@ -84,9 +84,9 @@ __device__ double4 getRandomVelocity( double Temp, curandStatePhilox4_32_10_t *r
 	return vel;
 }
 
-__device__ double4 getRandomPointOnUnitSphere( curandStatePhilox4_32_10_t *rngState )
+__device__ double3 getRandomPointOnUnitSphere( curandStatePhilox4_32_10_t *rngState )
 {
-	double4 pointOnSphere;
+	double3 pointOnSphere = make_double3( 0., 0., 0. );
 	
 	double2 r1 = curand_uniform2_double ( &rngState[0] );
 	double2 r2 = curand_uniform2_double ( &rngState[0] );
@@ -94,15 +94,14 @@ __device__ double4 getRandomPointOnUnitSphere( curandStatePhilox4_32_10_t *rngSt
 	pointOnSphere.x = (double) sqrt(-2.0*log(r1.x)) * sin(2*d_pi*r1.y);
 	pointOnSphere.y = (double) sqrt(-2.0*log(r2.x)) * cos(2*d_pi*r2.y);
 	pointOnSphere.z = (double) sqrt(-2.0*log(r2.x)) * sin(2*d_pi*r2.y);
-	pointOnSphere.w = (double) 0.0;
 	
 	return pointOnSphere;
 }
 
-__device__ double4 selectAtomInDistribution( double dBdz, double Temp, curandStatePhilox4_32_10_t *rngState )
+__device__ double3 selectAtomInDistribution( double dBdz, double Temp, curandStatePhilox4_32_10_t *rngState )
 {
-    double4 pos = make_double4( 0., 0., 0., 0. );
-    double4 r   = make_double4( 0., 0., 0., 0. );
+    double3 pos = make_double3( 0., 0., 0. );
+    double3 r   = make_double3( 0., 0., 0. );
 
     double meanx = 0.0;
     double stdx  = sqrt( log( 4. ) )*d_kB*Temp / ( d_gs*d_muB*dBdz );
@@ -124,17 +123,17 @@ __device__ double4 selectAtomInDistribution( double dBdz, double Temp, curandSta
     return pos;
 }
 
-__device__ double4 getGaussianPoint( double mean, double std, curandStatePhilox4_32_10_t *rngState )
+__device__ double3 getGaussianPoint( double mean, double std, curandStatePhilox4_32_10_t *rngState )
 {
     double2 r1 = curand_normal2_double ( &rngState[0] ) * std + mean;
-	double2 r2 = curand_normal2_double ( &rngState[0] ) * std + mean;
+	double r2  = curand_normal_double  ( &rngState[0] ) * std + mean;
  
-    double4 point = make_double4( r1.x, r1.y, r2.x, r2.y );
+    double3 point = make_double3( r1.x, r1.y, r2 );
     
     return point;
 }
 
-__device__ bool pointIsInDistribution( double4 point, double dBdz, double Temp, curandStatePhilox4_32_10_t *rngState )
+__device__ bool pointIsInDistribution( double3 point, double dBdz, double Temp, curandStatePhilox4_32_10_t *rngState )
 {
     bool pointIsIn = false;
     
@@ -148,9 +147,9 @@ __device__ bool pointIsInDistribution( double4 point, double dBdz, double Temp, 
     return pointIsIn;
 }
 
-__device__ double4 updateAccel( double4 pos )
+__device__ double3 updateAccel( double3 pos )
 {
-    double4 accel = make_double4( 0., 0., 0., 0. );
+    double3 accel = make_double3( 0., 0., 0. );
     
     // The rsqrt function returns the reciprocal square root of its argument
 	double potential = -0.5*d_gs*d_muB*d_dBdz*rsqrt(pos.x*pos.x + pos.y*pos.y + 4.0*pos.z*pos.z)/d_mRb;
