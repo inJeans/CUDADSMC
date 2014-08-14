@@ -28,7 +28,7 @@ __constant__ double d_hbar = 1.05457148e-34;	// hbar
 
 __constant__ double d_dBdz = 2.5;	    // field gradient
 __constant__ double d_dt   = 1.0e-6;	// time step
-__device__   int    loopsPerCollision = 100;	// loops per collision
+__device__   int    loopsPerCollision = 1000;	// loops per collision
 
 /////////////////////////////////////////////////////////////////////////////////
 
@@ -42,13 +42,13 @@ __global__ void moveAtoms( double4 *pos, double4 *vel, double4 *acc, int numberO
         double4 l_vel = vel[atom];
         double4 l_acc = acc[atom];
         
-        for (int i=0; i<loopsPerCollision; loopsPerCollision++) {
+        for (int i=0; i<loopsPerCollision; i++) {
             l_vel = updateVelHalfStep( l_vel, l_acc );
             l_pos = updatePos( l_pos, l_vel );
             l_acc = updateAcc( l_pos );
             l_vel = updateVelHalfStep( l_vel, l_acc );
         }
-        
+    
         pos[atom] = l_pos;
         vel[atom] = l_vel;
         acc[atom] = l_acc;

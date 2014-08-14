@@ -13,7 +13,7 @@
 
 #pragma mark -
 
-int    numberOfAtoms = 1e5;
+int    numberOfAtoms = 1e4;
 double dt = 1.0e-6;
 
 #pragma mark Environmental Parameters

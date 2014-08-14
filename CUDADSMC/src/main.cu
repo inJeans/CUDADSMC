@@ -11,10 +11,17 @@
 #include <cuda.h>
 #include <curand_kernel.h>
 
+#include "hdf5.h"
+#include "hdf5_hl.h"
+
 #include "initialSystemParameters.cuh"
 #include "cudaHelpers.cuh"
 #include "setUp.cuh"
 #include "moveAtoms.cuh"
+
+#define RANK 2
+
+hsize_t dims[RANK]= {numberOfAtoms, 4};
 
 int main(int argc, const char * argv[])
 {
@@ -62,6 +69,8 @@ int main(int argc, const char * argv[])
     cudaMemset( d_vel, 0., numberOfAtoms*sizeof(double4) );
     cudaMemset( d_acc, 0., numberOfAtoms*sizeof(double4) );
     
+    double4 *h_pos = (double4*) calloc( numberOfAtoms, sizeof(double4) );
+    
     cudaOccupancyMaxPotentialBlockSize( &minGridSize,
                                         &blockSize,
                                         generateInitialDist,
@@ -80,6 +89,17 @@ int main(int argc, const char * argv[])
     
     printf("gridSize = %i, blockSize = %i\n", gridSize, blockSize);
 	
+    cudaMemcpy( h_pos, d_pos, numberOfAtoms*sizeof(double4), cudaMemcpyDeviceToHost );
+    
+    /* create a HDF5 file */
+    hid_t file_id = H5Fcreate ( "beforeMove.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+    /* create and write an integer type dataset named "dset" */
+    H5LTmake_dataset( file_id, "/dset", RANK, dims, H5T_NATIVE_DOUBLE, h_pos );
+    /* close file */
+    H5Fclose ( file_id );
+
+#pragma mark - Moving atoms
+    
     cudaOccupancyMaxPotentialBlockSize( &minGridSize,
                                        &blockSize,
                                        generateInitialDist,
@@ -87,13 +107,29 @@ int main(int argc, const char * argv[])
                                        numberOfAtoms );
 	
 	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
+
     
-    moveAtoms<<<gridSize,blockSize>>>( d_pos, d_vel, d_acc, numberOfAtoms );
+    moveAtoms<<<gridSize,blockSize>>>( d_pos,
+                                       d_vel,
+                                       d_acc,
+                                       numberOfAtoms );
+    
     
     printf("gridSize = %i, blockSize = %i\n", gridSize, blockSize);
     
+    cudaMemcpy( h_pos, d_pos, numberOfAtoms*sizeof(double4), cudaMemcpyDeviceToHost );
+    
+    /* create a HDF5 file */
+    hid_t file_id2 = H5Fcreate ( "afterMove.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+    /* create and write an integer type dataset named "dset" */
+    H5LTmake_dataset( file_id2, "/dset", RANK, dims, H5T_NATIVE_DOUBLE, h_pos );
+    /* close file */
+    H5Fclose ( file_id2 );
+    
     // insert code here...
     printf("\n");
+    
+    free( h_pos );
     
     cudaFree( d_pos );
     cudaFree( d_vel );
