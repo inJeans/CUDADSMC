@@ -37,6 +37,8 @@
 		1D9486A3198B0CAB00324396 /* cudaHelpers.cu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = cudaHelpers.cu; path = src/cudaHelpers.cu; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		1D9486A4198B0F8A00324396 /* cudaHelpers.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = cudaHelpers.cuh; path = include/cudaHelpers.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		1D9486A6198B10A800324396 /* Makefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.sh; };
+		1DC74A21199D7DAB00C41388 /* hdf5Helpers.cu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = hdf5Helpers.cu; path = src/hdf5Helpers.cu; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		1DC74A22199D7DD200C41388 /* hdf5Helpers.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = hdf5Helpers.cuh; path = include/hdf5Helpers.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		1DD39FB1198B4BD5007645E2 /* setUp.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = setUp.cuh; path = include/setUp.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		1DD39FB4198B5041007645E2 /* initialSystemParameters.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = initialSystemParameters.cuh; path = include/initialSystemParameters.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		1DF72A081995B3D500E6659A /* statTests.cu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = statTests.cu; path = src/statTests.cu; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
@@ -72,6 +74,7 @@
 				4498B4611999C2D400305A43 /* moveAtoms.cuh */,
 				4498B4631999C57000305A43 /* vectorMath.cuh */,
 				1D9486A4198B0F8A00324396 /* cudaHelpers.cuh */,
+				1DC74A22199D7DD200C41388 /* hdf5Helpers.cuh */,
 				1DF72A091995B6FE00E6659A /* statTests.cuh */,
 			);
 			name = include;
@@ -114,6 +117,7 @@
 				1D94869C198B069400324396 /* setUp.cu */,
 				443C4643198A01170079A2C8 /* moveAtoms.cu */,
 				1D9486A3198B0CAB00324396 /* cudaHelpers.cu */,
+				1DC74A21199D7DAB00C41388 /* hdf5Helpers.cu */,
 				443C464719930AC60079A2C8 /* mainTest.cu */,
 				1DF72A081995B3D500E6659A /* statTests.cu */,
 			);
