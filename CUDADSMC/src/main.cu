@@ -11,17 +11,13 @@
 #include <cuda.h>
 #include <curand_kernel.h>
 
-#include "hdf5.h"
-#include "hdf5_hl.h"
-
 #include "initialSystemParameters.cuh"
 #include "cudaHelpers.cuh"
+#include "hdf5Helpers.cuh"
 #include "setUp.cuh"
 #include "moveAtoms.cuh"
 
-#define RANK 2
-
-hsize_t dims[RANK]= {numberOfAtoms, 3};
+hsize_t dims[2]= {numberOfAtoms, 3};
 
 int main(int argc, const char * argv[])
 {
@@ -91,12 +87,9 @@ int main(int argc, const char * argv[])
 	
     cudaMemcpy( h_pos, d_pos, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
     
-    /* create a HDF5 file */
-    hid_t file_id = H5Fcreate ( "beforeMove.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
-    /* create and write an integer type dataset named "dset" */
-    H5LTmake_dataset( file_id, "/dset", RANK, dims, H5T_NATIVE_DOUBLE, h_pos );
-    /* close file */
-    H5Fclose ( file_id );
+	hdf5FileHandle hdf5handle = createHDF5Handle( numberOfAtoms );
+	intialiseHDF5File( hdf5handle, "beforeMove.h5", "/positions" );
+	writeHDF5File( hdf5handle, "beforeMove.h5", "/positions", h_pos );
 
 #pragma mark - Moving atoms
     
@@ -122,7 +115,7 @@ int main(int argc, const char * argv[])
     /* create a HDF5 file */
     hid_t file_id2 = H5Fcreate ( "afterMove.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
     /* create and write an integer type dataset named "dset" */
-    H5LTmake_dataset( file_id2, "/dset", RANK, dims, H5T_NATIVE_DOUBLE, h_pos );
+    H5LTmake_dataset( file_id2, "/dset", 2, dims, H5T_NATIVE_DOUBLE, h_pos );
     /* close file */
     H5Fclose ( file_id2 );
     
