@@ -41,15 +41,20 @@ hdf5FileHandle createHDF5Handle( int numberOfAtoms, char *datasetname )
 	return hdf5handle;
 }
 
-void createHDF5File( char *filename )
+void createHDF5File( char *filename, char *groupname )
 {
+    herr_t status;
+    
     /* Create a new file. If file exists its contents will be overwritten */
     hid_t file = H5Fcreate (filename,
                             H5F_ACC_TRUNC,
                             H5P_DEFAULT,
                             H5P_DEFAULT);
+    
+    hid_t group = H5Gcreate2(file, groupname, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 
-    herr_t status = H5Fclose (file);
+    status = H5Gclose (group);
+    status = H5Fclose (file);
     if (status < 0) { printf("\nFailure closing hdf5 resources in hdf5 initialisation.\n\n"); exit(EXIT_SUCCESS);}
     
     return;

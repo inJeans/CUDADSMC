@@ -18,6 +18,7 @@
 #include "moveAtoms.cuh"
 
 char filename[] = "outputData.h5";
+char groupname[] = "/atomData";
 
 int main(int argc, const char * argv[])
 {
@@ -51,7 +52,7 @@ int main(int argc, const char * argv[])
 	
 	initRNG<<<gridSize,blockSize>>>( rngStates, numberOfAtoms );
 	
-	printf("gridSize = %i, blockSize = %i\n", gridSize, blockSize);
+	printf("initRNG:             gridSize = %i, blockSize = %i\n", gridSize, blockSize);
     
     double3 *d_pos;
     double3 *d_vel;
@@ -84,17 +85,17 @@ int main(int argc, const char * argv[])
                                                  dBdz,
                                                  rngStates );
     
-    printf("gridSize = %i, blockSize = %i\n", gridSize, blockSize);
+    printf("generateInitialDist: gridSize = %i, blockSize = %i\n", gridSize, blockSize);
 	
-    createHDF5File( filename );
+    createHDF5File( filename, groupname );
     
     cudaMemcpy( h_pos, d_pos, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
-	hdf5FileHandle hdf5handlePos = createHDF5Handle( numberOfAtoms, "/positions" );
+	hdf5FileHandle hdf5handlePos = createHDF5Handle( numberOfAtoms, strcat( strcat( groupname, "/"), "positions") );
 	intialiseHDF5File( hdf5handlePos, filename );
 	writeHDF5File( hdf5handlePos, filename, h_pos );
     
     cudaMemcpy( h_vel, d_vel, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
-    hdf5FileHandle hdf5handleVel = createHDF5Handle( numberOfAtoms, "/velocities" );
+    hdf5FileHandle hdf5handleVel = createHDF5Handle( numberOfAtoms, strcat( strcat( groupname, "/"), "velocities") );
 	intialiseHDF5File( hdf5handleVel, filename );
 	writeHDF5File( hdf5handleVel, filename, h_vel );
 
@@ -102,12 +103,12 @@ int main(int argc, const char * argv[])
     
     cudaOccupancyMaxPotentialBlockSize( &minGridSize,
                                        &blockSize,
-                                       generateInitialDist,
+                                       moveAtoms,
                                        0,
                                        numberOfAtoms );
 	
 	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
-    printf("gridSize = %i, blockSize = %i\n", gridSize, blockSize);
+    printf("moveAtoms:           gridSize = %i, blockSize = %i\n", gridSize, blockSize);
     
     for (int i=0; i<5; i++)
     {
