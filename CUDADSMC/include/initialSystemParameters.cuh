@@ -14,6 +14,7 @@
 #pragma mark -
 
 int    numberOfAtoms = 1e4;
+int    numberOfCells = 10*10*10;
 double dt = 1.0e-6;
 
 #pragma mark Environmental Parameters

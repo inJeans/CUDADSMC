@@ -39,7 +39,7 @@ all: build
 
 build: CUDADSMC
 
-CUDADSMC: main.o setUp.o moveAtoms.o cudaHelpers.o hdf5Helpers.o
+CUDADSMC: main.o setUp.o moveAtoms.o  cudaHelpers.o hdf5Helpers.o
 	$(NVCC) -m 64 -pg -arch=compute_30 -code=sm_30,compute_30 -o $(addprefix $(BUILDDIR), $@ ) $(INCLUDE) $(addprefix $(OBJDIR), $^ ) $(LIB) $(CUDA_LIB) -lcurand -lcublas -lhdf5 -lhdf5_hl
 
 main.o: $(addprefix $(SRCDIR), main.cu )
@@ -50,6 +50,9 @@ setUp.o: $(addprefix $(SRCDIR), setUp.cu )
 
 moveAtoms.o: $(addprefix $(SRCDIR), moveAtoms.cu )
 	$(NVCC) -m 64 -pg -arch=compute_30 -code=sm_30,compute_30 $(INCLUDE) -o $(addprefix $(OBJDIR), $@ ) -c $?
+
+#collisions.o: $(addprefix $(SRCDIR), collisions.cu )
+#	$(NVCC) -m 64 -pg -arch=compute_30 -code=sm_30,compute_30 $(INCLUDE) -o $(addprefix $(OBJDIR), $@ ) -c $?
 
 cudaHelpers.o: $(addprefix $(SRCDIR), cudaHelpers.cu )
 	$(NVCC) -m 64 -pg -arch=compute_30 -code=sm_30,compute_30 $(INCLUDE) -o $(addprefix $(OBJDIR), $@ ) -c $?

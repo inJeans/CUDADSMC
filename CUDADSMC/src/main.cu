@@ -58,13 +58,13 @@ int main(int argc, const char * argv[])
     double3 *d_vel;
     double3 *d_acc;
     
-	cudaMalloc( (void **)&d_pos, numberOfAtoms*sizeof(double3) );
-    cudaMalloc( (void **)&d_vel, numberOfAtoms*sizeof(double3) );
-    cudaMalloc( (void **)&d_acc, numberOfAtoms*sizeof(double3) );
+    int *d_cellID;
+
+    cudaCalloc( (void **)&d_pos, numberOfAtoms, sizeof(double3) );
+    cudaCalloc( (void **)&d_vel, numberOfAtoms, sizeof(double3) );
+    cudaCalloc( (void **)&d_acc, numberOfAtoms, sizeof(double3) );
     
-    cudaMemset( d_pos, 0., numberOfAtoms*sizeof(double3) );
-    cudaMemset( d_vel, 0., numberOfAtoms*sizeof(double3) );
-    cudaMemset( d_acc, 0., numberOfAtoms*sizeof(double3) );
+    cudaCalloc( (void **)&d_cellID, numberOfCells, sizeof(int) );
     
     double3 *h_pos = (double3*) calloc( numberOfAtoms, sizeof(double3) );
     double3 *h_vel = (double3*) calloc( numberOfAtoms, sizeof(double3) );
@@ -86,20 +86,22 @@ int main(int argc, const char * argv[])
                                                  rngStates );
     
     printf("generateInitialDist: gridSize = %i, blockSize = %i\n", gridSize, blockSize);
+    
+//    indexAtoms( d_pos, d_cellID );
 	
     createHDF5File( filename, groupname );
     
     cudaMemcpy( h_pos, d_pos, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
-	hdf5FileHandle hdf5handlePos = createHDF5Handle( numberOfAtoms, strcat( strcat( groupname, "/"), "positions") );
+	hdf5FileHandle hdf5handlePos = createHDF5Handle( numberOfAtoms, "/atomData/positions" );
 	intialiseHDF5File( hdf5handlePos, filename );
 	writeHDF5File( hdf5handlePos, filename, h_pos );
     
     cudaMemcpy( h_vel, d_vel, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
-    hdf5FileHandle hdf5handleVel = createHDF5Handle( numberOfAtoms, strcat( strcat( groupname, "/"), "velocities") );
+    hdf5FileHandle hdf5handleVel = createHDF5Handle( numberOfAtoms, "/atomData/velocities" );
 	intialiseHDF5File( hdf5handleVel, filename );
 	writeHDF5File( hdf5handleVel, filename, h_vel );
 
-#pragma mark - Moving atoms
+#pragma mark - Main Loop
     
     cudaOccupancyMaxPotentialBlockSize( &minGridSize,
                                        &blockSize,
@@ -133,6 +135,7 @@ int main(int argc, const char * argv[])
     cudaFree( d_pos );
     cudaFree( d_vel );
     cudaFree( d_acc );
+    cudaFree( d_cellID );
     cudaFree( rngStates );
     
     cudaDeviceReset();
