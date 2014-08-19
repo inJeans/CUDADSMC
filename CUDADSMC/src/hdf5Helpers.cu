@@ -10,9 +10,11 @@
 
 #include "hdf5Helpers.cuh"
 
-hdf5FileHandle createHDF5Handle( int numberOfAtoms )
+hdf5FileHandle createHDF5Handle( int numberOfAtoms, char *datasetname )
 {
 	hdf5FileHandle hdf5handle;
+    
+    hdf5handle.datasetname = datasetname;
 	
 	hdf5handle.rank = RANK;
 	
@@ -24,7 +26,7 @@ hdf5FileHandle createHDF5Handle( int numberOfAtoms )
 	hdf5handle.maxdims[1]   = 3;
 	hdf5handle.maxdims[2]   = H5S_UNLIMITED;
 	
-	hdf5handle.chunkdims[0] = 1;
+	hdf5handle.chunkdims[0] = numberOfAtoms;
 	hdf5handle.chunkdims[1] = 3;
 	hdf5handle.chunkdims[2] = 1;
 	
@@ -39,21 +41,38 @@ hdf5FileHandle createHDF5Handle( int numberOfAtoms )
 	return hdf5handle;
 }
 
-void intialiseHDF5File( hdf5FileHandle &hdf5handle, char *filename, char *datasetname )
+void createHDF5File( char *filename )
+{
+    /* Create a new file. If file exists its contents will be overwritten */
+    hid_t file = H5Fcreate (filename,
+                            H5F_ACC_TRUNC,
+                            H5P_DEFAULT,
+                            H5P_DEFAULT);
+
+    herr_t status = H5Fclose (file);
+    if (status < 0) { printf("\nFailure closing hdf5 resources in hdf5 initialisation.\n\n"); exit(EXIT_SUCCESS);}
+    
+    return;
+}
+void intialiseHDF5File( hdf5FileHandle &hdf5handle, char *filename )
 {
 	herr_t status;
 	
-	/* Create a new file. If file exists its contents will be overwritten */
-	hid_t file = H5Fcreate (filename,
-							H5F_ACC_TRUNC,
-							H5P_DEFAULT,
-							H5P_DEFAULT);
+//	/* Create a new file. If file exists its contents will be overwritten */
+//	hid_t file = H5Fcreate (filename,
+//							H5F_ACC_TRUNC,
+//							H5P_DEFAULT,
+//							H5P_DEFAULT);
+    
+    hid_t file = H5Fopen (filename,
+						  H5F_ACC_RDWR,
+						  H5P_DEFAULT);
 	
 	/* Create the data space with unlimited dimensions. */
     hdf5handle.dataspace = H5Screate_simple (hdf5handle.rank,
 											 hdf5handle.dims,
 											 hdf5handle.maxdims);
-	printf("chunkdims = { %llu, %llu, %llu }\n\n", hdf5handle.chunkdims[0], hdf5handle.chunkdims[1], hdf5handle.chunkdims[2]);
+    
     /* Modify dataset creation properties, i.e. enable chunking  */
     hdf5handle.prop = H5Pcreate (H5P_DATASET_CREATE);
     status = H5Pset_chunk (hdf5handle.prop,
@@ -64,7 +83,7 @@ void intialiseHDF5File( hdf5FileHandle &hdf5handle, char *filename, char *datase
     /* Create a new dataset within the file using chunk
 	 creation properties.  */
     hdf5handle.dataset = H5Dcreate2 (file,
-									 datasetname,
+									 hdf5handle.datasetname,
 									 H5T_NATIVE_DOUBLE,
 									 hdf5handle.dataspace,
 									 H5P_DEFAULT,
@@ -92,34 +111,34 @@ void intialiseHDF5File( hdf5FileHandle &hdf5handle, char *filename, char *datase
 }
 
 
-void writeHDF5File( hdf5FileHandle &hdf5handle, char *filename, char *datasetname, double3 *data )
+void writeHDF5File( hdf5FileHandle &hdf5handle, char *filename, double3 *data )
 {
 	herr_t status;
-	
-	/* Open HDF5 file */
+
 	hid_t file = H5Fopen (filename,
 						  H5F_ACC_RDWR,
 						  H5P_DEFAULT);
 	
-	/* Open the dataset */
 	hdf5handle.dataset = H5Dopen2 (file,
-								   datasetname,
+								   hdf5handle.datasetname,
 								   H5P_DEFAULT);
+    status = H5Dset_extent (hdf5handle.dataset,
+							hdf5handle.dims);
+    if (status < 0) { printf("\nFailure in extending the dataset for hdf5 write.\n\n"); exit(EXIT_SUCCESS);}
 	
 	hdf5handle.filespace = H5Dget_space (hdf5handle.dataset);
 	status = H5Sselect_hyperslab (hdf5handle.filespace,
 								  H5S_SELECT_SET,
 								  hdf5handle.offset,
 								  NULL,
-								  hdf5handle.dims,
+								  hdf5handle.chunkdims,
 								  NULL);
 	if (status < 0) { printf("\nFailure selecting hyperslab for hdf5 write.\n\n"); exit(EXIT_SUCCESS);}
 	
 	hdf5handle.memspace = H5Screate_simple (hdf5handle.rank,
-											hdf5handle.dims,
+											hdf5handle.chunkdims,
 											NULL);
 	
-	/* Write data to dataset */
     status = H5Dwrite (hdf5handle.dataset,
 					   H5T_NATIVE_DOUBLE,
 					   hdf5handle.memspace,
@@ -130,10 +149,7 @@ void writeHDF5File( hdf5FileHandle &hdf5handle, char *filename, char *datasetnam
 	
 	/* Extend the dataset */
 	hdf5handle.dims[2] = hdf5handle.dims[2] + hdf5handle.extdims[2];
-	status = H5Dset_extent (hdf5handle.dataset,
-							hdf5handle.dims);
 	hdf5handle.offset[2]++;
-	if (status < 0) { printf("\nFailure in extending the dataset after hdf5 write.\n\n"); exit(EXIT_SUCCESS);}
 	
 	/* Close HDF5 resources */
 	status = H5Dclose (hdf5handle.dataset);

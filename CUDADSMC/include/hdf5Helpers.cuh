@@ -16,6 +16,8 @@
 
 typedef struct hdf5FileHandle {
 	int rank;
+    
+    char* datasetname;
 	
 	hid_t dataspace, dataset;
 	hid_t memspace, filespace;
@@ -28,8 +30,9 @@ typedef struct hdf5FileHandle {
 	hsize_t offset[RANK];
 } hdf5FileHandle;
 
-hdf5FileHandle createHDF5Handle( int numberOfAtoms );
-void intialiseHDF5File( hdf5FileHandle &hdf5handle, char *filename, char *datasetname );
-void writeHDF5File( hdf5FileHandle &hdf5handle, char *filename, char *datasetname, double3 *data );
+void createHDF5File( char *filename );
+hdf5FileHandle createHDF5Handle( int numberOfAtoms, char *datasetname );
+void intialiseHDF5File( hdf5FileHandle &hdf5handle, char *filename );
+void writeHDF5File( hdf5FileHandle &hdf5handle, char *filename, double3 *data );
 
 #endif

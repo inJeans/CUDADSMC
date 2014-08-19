@@ -17,7 +17,7 @@
 #include "setUp.cuh"
 #include "moveAtoms.cuh"
 
-hsize_t dims[2]= {numberOfAtoms, 3};
+char filename[] = "outputData.h5";
 
 int main(int argc, const char * argv[])
 {
@@ -66,6 +66,7 @@ int main(int argc, const char * argv[])
     cudaMemset( d_acc, 0., numberOfAtoms*sizeof(double3) );
     
     double3 *h_pos = (double3*) calloc( numberOfAtoms, sizeof(double3) );
+    double3 *h_vel = (double3*) calloc( numberOfAtoms, sizeof(double3) );
     
     cudaOccupancyMaxPotentialBlockSize( &minGridSize,
                                         &blockSize,
@@ -85,11 +86,17 @@ int main(int argc, const char * argv[])
     
     printf("gridSize = %i, blockSize = %i\n", gridSize, blockSize);
 	
-    cudaMemcpy( h_pos, d_pos, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
+    createHDF5File( filename );
     
-	hdf5FileHandle hdf5handle = createHDF5Handle( numberOfAtoms );
-	intialiseHDF5File( hdf5handle, "beforeMove.h5", "/positions" );
-	writeHDF5File( hdf5handle, "beforeMove.h5", "/positions", h_pos );
+    cudaMemcpy( h_pos, d_pos, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
+	hdf5FileHandle hdf5handlePos = createHDF5Handle( numberOfAtoms, "/positions" );
+	intialiseHDF5File( hdf5handlePos, filename );
+	writeHDF5File( hdf5handlePos, filename, h_pos );
+    
+    cudaMemcpy( h_vel, d_vel, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
+    hdf5FileHandle hdf5handleVel = createHDF5Handle( numberOfAtoms, "/velocities" );
+	intialiseHDF5File( hdf5handleVel, filename );
+	writeHDF5File( hdf5handleVel, filename, h_vel );
 
 #pragma mark - Moving atoms
     
@@ -100,25 +107,23 @@ int main(int argc, const char * argv[])
                                        numberOfAtoms );
 	
 	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
-
-    
-    moveAtoms<<<gridSize,blockSize>>>( d_pos,
-                                       d_vel,
-                                       d_acc,
-                                       numberOfAtoms );
-    
-    
     printf("gridSize = %i, blockSize = %i\n", gridSize, blockSize);
     
-    cudaMemcpy( h_pos, d_pos, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
+    for (int i=0; i<5; i++)
+    {
+        moveAtoms<<<gridSize,blockSize>>>(d_pos,
+                                          d_vel,
+                                          d_acc,
+                                          numberOfAtoms );
     
-    /* create a HDF5 file */
-    hid_t file_id2 = H5Fcreate ( "afterMove.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
-    /* create and write an integer type dataset named "dset" */
-    H5LTmake_dataset( file_id2, "/dset", 2, dims, H5T_NATIVE_DOUBLE, h_pos );
-    /* close file */
-    H5Fclose ( file_id2 );
+        cudaMemcpy( h_pos, d_pos, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
+        cudaMemcpy( h_vel, d_vel, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
     
+        writeHDF5File( hdf5handlePos, filename, h_pos );
+        writeHDF5File( hdf5handleVel, filename, h_vel );
+        
+        printf("i = %i\n", i);
+    }
     // insert code here...
     printf("\n");
     
