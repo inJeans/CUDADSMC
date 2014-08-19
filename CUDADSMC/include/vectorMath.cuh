@@ -9,6 +9,8 @@
 #ifndef CUDADSMC_vectorMath_cuh
 #define CUDADSMC_vectorMath_cuh
 
+#pragma mark - Basic Vector Algebra
+
 static __inline__ __device__ double4 operator* ( double a, double4 b )
 {
 	return make_double4( a*b.x, a*b.y, a*b.z, a*b.w );
@@ -47,6 +49,18 @@ static __inline__ __device__ double2 operator* ( double2 a, double b )
 static __inline__ __device__ double2 operator+ ( double2 a, double b )
 {
 	return make_double2( a.x+b, a.y+b );
+}
+
+#pragma mark - Vector Functions
+
+static __device__ double dot( double3 a, double3 b )
+{
+    return a.x*b.x + a.y*b.y + a.z*b.z ;
+}
+
+static __device__ float lengthf( double3 v )
+{
+    return sqrtf( (float) dot(v,v) );
 }
 
 #endif

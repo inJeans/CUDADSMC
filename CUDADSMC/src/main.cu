@@ -11,11 +11,13 @@
 #include <cuda.h>
 #include <curand_kernel.h>
 
+#include "declareInitialSystemParameters.cuh"
 #include "initialSystemParameters.cuh"
 #include "cudaHelpers.cuh"
 #include "hdf5Helpers.cuh"
 #include "setUp.cuh"
 #include "moveAtoms.cuh"
+#include "collisions.cuh"
 
 char filename[] = "outputData.h5";
 char groupname[] = "/atomData";
@@ -47,12 +49,9 @@ int main(int argc, const char * argv[])
                                         initRNG,
                                         0,
                                         numberOfAtoms );
-	
 	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
-	
-	initRNG<<<gridSize,blockSize>>>( rngStates, numberOfAtoms );
-	
 	printf("initRNG:             gridSize = %i, blockSize = %i\n", gridSize, blockSize);
+	initRNG<<<gridSize,blockSize>>>( rngStates, numberOfAtoms );
     
     double3 *d_pos;
     double3 *d_vel;
@@ -74,9 +73,8 @@ int main(int argc, const char * argv[])
                                         generateInitialDist,
                                         0,
                                         numberOfAtoms );
-	
 	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
-    
+    printf("generateInitialDist: gridSize = %i, blockSize = %i\n", gridSize, blockSize);
     generateInitialDist<<<gridSize,blockSize>>>( d_pos,
                                                  d_vel,
                                                  d_acc,
@@ -85,9 +83,7 @@ int main(int argc, const char * argv[])
                                                  dBdz,
                                                  rngStates );
     
-    printf("generateInitialDist: gridSize = %i, blockSize = %i\n", gridSize, blockSize);
-    
-//    indexAtoms( d_pos, d_cellID );
+    indexAtoms( d_pos, d_cellID );
 	
     createHDF5File( filename, groupname );
     
@@ -114,6 +110,8 @@ int main(int argc, const char * argv[])
     
     for (int i=0; i<5; i++)
     {
+        indexAtoms( d_pos, d_cellID );
+        
         moveAtoms<<<gridSize,blockSize>>>(d_pos,
                                           d_vel,
                                           d_acc,
