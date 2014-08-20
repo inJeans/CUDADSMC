@@ -79,6 +79,7 @@ int main(int argc, const char * argv[])
     double3 *h_vel = (double3*) calloc( numberOfAtoms, sizeof(double3) );
     
     int *h_numberOfAtomsInCell = (int*) calloc( numberOfCells+1, sizeof(int) );
+	int *h_cellID = (int*) calloc( numberOfAtoms, sizeof(int) );
     
     cudaOccupancyMaxPotentialBlockSize( &minGridSize,
                                         &blockSize,
@@ -131,18 +132,32 @@ int main(int argc, const char * argv[])
 	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
     printf("moveAtoms:           gridSize = %i, blockSize = %i\n", gridSize, blockSize);
     
-    for (int i=0; i<5; i++)
+    for (int i=0; i<1; i++)
     {
         indexAtoms( d_pos,
                     d_cellID );
+		cudaMemcpy( h_cellID, d_cellID, numberOfAtoms*sizeof(int), cudaMemcpyDeviceToHost );
+		
+		for (int j=0; j<numberOfAtoms; j++) {
+			printf("cellID #%i = %i\n", j, h_cellID[i]);
+		}
         sortArrays( d_pos,
                     d_vel,
                     d_acc,
                     d_cellID );
+		
+		
         
-        findNumberOfAtomsInCell<<<gridSize,blockSize>>>( d_cellStartEnd,
+		cellStartandEndKernel<<<gridSize,blockSize>>>( d_cellID, d_cellStartEnd, numberOfAtoms );
+        findNumberOfAtomsInCell<<<numberOfCells+1,1>>>( d_cellStartEnd,
                                                          d_numberOfAtomsInCell,
                                                          numberOfCells );
+		
+		cudaMemcpy( h_numberOfAtomsInCell, d_numberOfAtomsInCell, (numberOfCells+1)*sizeof(int), cudaMemcpyDeviceToHost );
+		
+		for (int j=0; j<numberOfCells; j++) {
+			printf("cell #%i = %i\n", j, h_numberOfAtomsInCell[i]);
+		}
         
         collide<<<numberOfCells,64,6144>>>( d_pos,
                                             d_vel,
@@ -173,6 +188,7 @@ int main(int argc, const char * argv[])
     free( h_pos );
     free( h_vel );
     free( h_numberOfAtomsInCell );
+	free( h_cellID );
     
     cudaFree( d_pos );
     cudaFree( d_vel );

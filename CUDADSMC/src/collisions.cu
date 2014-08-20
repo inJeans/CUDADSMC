@@ -113,7 +113,7 @@ __global__ void findAtomIndex( double3 *pos, int *cellID, float medianR, int num
     
         int3 indices = getCellIndices( l_pos,
                                        medianR );
-        
+		
         cellID[atom] = getCellID( indices );
     }
     
@@ -130,7 +130,7 @@ __device__ int3 getCellIndices( double3 pos, float medianR )
     index.x = __float2int_rd ( (pos.x - gridMin.x) / cellLength.x );
     index.y = __float2int_rd ( (pos.y - gridMin.y) / cellLength.y );
     index.z = __float2int_rd ( (pos.z - gridMin.z) / cellLength.z );
-    
+	
     return index;
 }
 
@@ -180,7 +180,6 @@ __global__ void findNumberOfAtomsInCell( int2 *cellStartEnd, int *numberOfAtomsI
 		 cell < numberOfCells+1;
 		 cell += blockDim.x * gridDim.x)
 	{
-        printf("cell = %i\n", cell);
         numberOfAtomsInCell[cell] = cellStartEnd[cell].y - cellStartEnd[cell].x + 1;
     }
     

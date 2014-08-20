@@ -24,7 +24,7 @@ extern double dBdz;
 
 #pragma mark - Device globals
 
-extern __device__ int3 d_cellsPerDimension = { 10, 10, 10 };
-extern __device__ int  d_numberOfCells = 10*10*10;
+extern __device__ int3 d_cellsPerDimension = { 2, 2, 2 };
+extern __device__ int  d_numberOfCells = 2*2*2;
 
 #endif

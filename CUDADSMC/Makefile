@@ -40,25 +40,25 @@ all: build
 build: CUDADSMC
 
 CUDADSMC: main.o setUp.o moveAtoms.o collisions.o cudaHelpers.o hdf5Helpers.o
-	$(NVCC) -m 64 -pg -arch=compute_30 -code=sm_30,compute_30 -o $(addprefix $(BUILDDIR), $@ ) $(INCLUDE) $(addprefix $(OBJDIR), $^ ) $(LIB) $(CUDA_LIB) -lcurand -lcublas -lhdf5 -lhdf5_hl
+	$(NVCC) -m 64 -pg -g -G -arch=compute_30 -code=sm_30,compute_30 -o $(addprefix $(BUILDDIR), $@ ) $(INCLUDE) $(addprefix $(OBJDIR), $^ ) $(LIB) $(CUDA_LIB) -lcurand -lcublas -lhdf5 -lhdf5_hl
 
 main.o: $(addprefix $(SRCDIR), main.cu )
-	$(NVCC) -m 64 -pg -arch=compute_30 -code=sm_30,compute_30 $(INCLUDE) -o $(addprefix $(OBJDIR), $@ ) -c $?
+	$(NVCC) -m 64 -pg -g -G -arch=compute_30 -code=sm_30,compute_30 $(INCLUDE) -o $(addprefix $(OBJDIR), $@ ) -c $?
 
 setUp.o: $(addprefix $(SRCDIR), setUp.cu )
-	$(NVCC) -m 64 -pg -arch=compute_30 -code=sm_30,compute_30 $(INCLUDE) -o $(addprefix $(OBJDIR), $@ ) -c $?
+	$(NVCC) -m 64 -pg -g -G -arch=compute_30 -code=sm_30,compute_30 $(INCLUDE) -o $(addprefix $(OBJDIR), $@ ) -c $?
 
 moveAtoms.o: $(addprefix $(SRCDIR), moveAtoms.cu )
-	$(NVCC) -m 64 -pg -arch=compute_30 -code=sm_30,compute_30 $(INCLUDE) -o $(addprefix $(OBJDIR), $@ ) -c $?
+	$(NVCC) -m 64 -pg -g -G -arch=compute_30 -code=sm_30,compute_30 $(INCLUDE) -o $(addprefix $(OBJDIR), $@ ) -c $?
 
 collisions.o: $(addprefix $(SRCDIR), collisions.cu )
-	$(NVCC) -m 64 -pg -arch=compute_30 -code=sm_30,compute_30 $(INCLUDE) -o $(addprefix $(OBJDIR), $@ ) -c $?
+	$(NVCC) -m 64 -pg -g -G -arch=compute_30 -code=sm_30,compute_30 $(INCLUDE) -o $(addprefix $(OBJDIR), $@ ) -c $?
 
 cudaHelpers.o: $(addprefix $(SRCDIR), cudaHelpers.cu )
-	$(NVCC) -m 64 -pg -arch=compute_30 -code=sm_30,compute_30 $(INCLUDE) -o $(addprefix $(OBJDIR), $@ ) -c $?
+	$(NVCC) -m 64 -pg -g -G -arch=compute_30 -code=sm_30,compute_30 $(INCLUDE) -o $(addprefix $(OBJDIR), $@ ) -c $?
 
 hdf5Helpers.o: $(addprefix $(SRCDIR), hdf5Helpers.cu )
-	$(NVCC) -m 64 -pg -arch=compute_30 -code=sm_30,compute_30 $(INCLUDE) -o $(addprefix $(OBJDIR), $@ ) -c $?
+	$(NVCC) -m 64 -pg -g -G -arch=compute_30 -code=sm_30,compute_30 $(INCLUDE) -o $(addprefix $(OBJDIR), $@ ) -c $?
 
 buildTest: test
 
