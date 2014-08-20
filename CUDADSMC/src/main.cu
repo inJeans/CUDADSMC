@@ -61,16 +61,24 @@ int main(int argc, const char * argv[])
     double3 *d_vel;
     double3 *d_acc;
     
+    int2 *d_cellStartEnd;
+    
     int *d_cellID;
+    int *d_numberOfAtomsInCell;
 
     cudaCalloc( (void **)&d_pos, numberOfAtoms, sizeof(double3) );
     cudaCalloc( (void **)&d_vel, numberOfAtoms, sizeof(double3) );
     cudaCalloc( (void **)&d_acc, numberOfAtoms, sizeof(double3) );
     
+    cudaCalloc( (void **)&d_cellStartEnd, numberOfCells+1, sizeof(int2) );
+    
     cudaCalloc( (void **)&d_cellID, numberOfAtoms, sizeof(int) );
+    cudaCalloc( (void **)&d_numberOfAtomsInCell, numberOfCells+1, sizeof(int) );
     
     double3 *h_pos = (double3*) calloc( numberOfAtoms, sizeof(double3) );
     double3 *h_vel = (double3*) calloc( numberOfAtoms, sizeof(double3) );
+    
+    int *h_numberOfAtomsInCell = (int*) calloc( numberOfCells+1, sizeof(int) );
     
     cudaOccupancyMaxPotentialBlockSize( &minGridSize,
                                         &blockSize,
@@ -132,6 +140,16 @@ int main(int argc, const char * argv[])
                     d_acc,
                     d_cellID );
         
+        findNumberOfAtomsInCell<<<gridSize,blockSize>>>( d_cellStartEnd,
+                                                         d_numberOfAtomsInCell,
+                                                         numberOfCells );
+        
+        collide<<<numberOfCells,64,6144>>>( d_pos,
+                                            d_vel,
+                                            d_cellID,
+                                            d_numberOfAtomsInCell,
+                                            numberOfCells );
+        
         moveAtoms<<<gridSize,blockSize>>>( d_pos,
                                            d_vel,
                                            d_acc,
@@ -153,11 +171,15 @@ int main(int argc, const char * argv[])
     printf("\n");
     
     free( h_pos );
+    free( h_vel );
+    free( h_numberOfAtomsInCell );
     
     cudaFree( d_pos );
     cudaFree( d_vel );
     cudaFree( d_acc );
+    cudaFree( d_cellStartEnd );
     cudaFree( d_cellID );
+    cudaFree( d_numberOfAtomsInCell );
     cudaFree( rngStates );
     
     cudaDeviceReset();

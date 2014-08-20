@@ -148,6 +148,45 @@ __device__ int getCellID( int3 index )
     return cellID;
 }
 
+__global__ void cellStartandEndKernel( int *cellID, int2 *cellStartEnd, int numberOfAtoms )
+{
+	for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
+		 atom < numberOfAtoms;
+		 atom += blockDim.x * gridDim.x)
+	{
+        // Find the beginning of the cell
+        if (atom == 0) {
+            cellStartEnd[cellID[atom]].x = 0;
+        }
+        else if (cellID[atom] != cellID[atom-1]) {
+            cellStartEnd[cellID[atom]].x = atom;
+        }
+        
+        // Find the end of the cell
+        if (atom == numberOfAtoms - 1) {
+            cellStartEnd[cellID[atom]].y = numberOfAtoms-1;
+        }
+        else if (cellID[atom] != cellID[atom+1]) {
+            cellStartEnd[cellID[atom]].y = atom;
+        }
+    }
+    
+    return;
+}
+
+__global__ void findNumberOfAtomsInCell( int2 *cellStartEnd, int *numberOfAtomsInCell, int numberOfCells )
+{
+    for (int cell = blockIdx.x * blockDim.x + threadIdx.x;
+		 cell < numberOfCells+1;
+		 cell += blockDim.x * gridDim.x)
+	{
+        printf("cell = %i\n", cell);
+        numberOfAtomsInCell[cell] = cellStartEnd[cell].y - cellStartEnd[cell].x + 1;
+    }
+    
+    return;
+}
+
 #pragma mark - Sorting
 
 void sortArrays( double3 *d_pos, double3 *d_vel, double3 *d_acc, int *d_cellID )
@@ -189,6 +228,23 @@ void sortArrays( double3 *d_pos, double3 *d_vel, double3 *d_acc, int *d_cellID )
     th_acc = th_sorted;
     
     cudaFree( d_sorted );
+    
+    return;
+}
+
+#pragma mark - Collisions
+
+__global__ void collide( double3 *pos, double3 *vel, int *cellID, int *numberOfAtomsInCell, int numberOfCells )
+{
+    int cell   = blockIdx.x;
+    int l_atom = threadIdx.x;
+    int g_atom = blockIdx.x * blockDim.x + threadIdx.x;
+    
+    extern __shared__ double3 sh_pos[];
+    if (l_atom < numberOfAtomsInCell[cell]) {
+        sh_pos[l_atom] = pos[g_atom];
+    }
+    __syncthreads();
     
     return;
 }
