@@ -15,6 +15,8 @@
 #include "vectorMath.cuh"
 #include "cudaHelpers.cuh"
 
+#pragma mark - Indexing
+
 void  indexAtoms( double3 *d_pos, int *d_cellID )
 {
     float *d_radius;
@@ -37,9 +39,19 @@ void  indexAtoms( double3 *d_pos, int *d_cellID )
                                              numberOfAtoms );
     
     float medianR = findMedian( d_radius,
-                               numberOfAtoms );
+                                numberOfAtoms );
     
     printf("The median radius is %f\n", medianR );
+    
+    cudaOccupancyMaxPotentialBlockSize( &minGridSize,
+                                        &blockSize,
+                                        findAtomIndex,
+                                        0,
+                                        numberOfAtoms );
+	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
+	printf("findAtomIndex:       gridSize = %i, blockSize = %i\n", gridSize, blockSize);
+    
+    findAtomIndex<<<gridSize,blockSize>>>( d_pos, d_cellID, medianR, numberOfAtoms );
     
     cudaFree( d_radius );
     
@@ -87,6 +99,96 @@ __global__ void getMedian( float *v, float *median, int N)
     else {
         median[0] = v[(N-1)/2];
     }
+    
+    return;
+}
+
+__global__ void findAtomIndex( double3 *pos, int *cellID, float medianR, int numberOfAtoms )
+{
+    for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
+		 atom < numberOfAtoms;
+		 atom += blockDim.x * gridDim.x)
+	{
+        double3 l_pos = pos[atom];
+    
+        int3 indices = getCellIndices( l_pos,
+                                       medianR );
+        
+        cellID[atom] = getCellID( indices );
+    }
+    
+    return;
+}
+
+__device__ int3 getCellIndices( double3 pos, float medianR )
+{
+    int3 index = { 0, 0, 0 };
+    
+    float3 gridMin    = -1.5 * medianR * make_float3( 1., 1., 1. );
+    float3 cellLength =  (float) 3.0 * medianR / d_cellsPerDimension;
+    
+    index.x = __float2int_rd ( (pos.x - gridMin.x) / cellLength.x );
+    index.y = __float2int_rd ( (pos.y - gridMin.y) / cellLength.y );
+    index.z = __float2int_rd ( (pos.z - gridMin.z) / cellLength.z );
+    
+    return index;
+}
+
+__device__ int getCellID( int3 index )
+{
+    int cellID = 0;
+    
+    if (index.x > -1 && index.x < d_cellsPerDimension.x && index.y > -1 && index.y < d_cellsPerDimension.y && index.z > -1 && index.z < d_cellsPerDimension.z) {
+        cellID = index.z*d_cellsPerDimension.x*d_cellsPerDimension.y + index.y*d_cellsPerDimension.x + index.x;
+    }
+    else {
+        cellID = d_cellsPerDimension.x * d_cellsPerDimension.y * d_cellsPerDimension.z;
+    }
+    
+    return cellID;
+}
+
+#pragma mark - Sorting
+
+void sortArrays( double3 *d_pos, double3 *d_vel, double3 *d_acc, int *d_cellID )
+{
+    thrust::device_ptr<double3> th_pos = thrust::device_pointer_cast( d_pos );
+    thrust::device_ptr<double3> th_vel = thrust::device_pointer_cast( d_vel );
+    thrust::device_ptr<double3> th_acc = thrust::device_pointer_cast( d_acc );
+    
+    thrust::device_ptr<int> th_cellID = thrust::device_pointer_cast( d_cellID );
+    
+    thrust::device_vector<int>  th_indices( numberOfAtoms );
+    thrust::sequence( th_indices.begin(),
+                      th_indices.end() );
+    
+    thrust::sort_by_key( th_cellID,
+                         th_cellID + numberOfAtoms,
+                         th_indices.begin() );
+    
+    double3 *d_sorted;
+    cudaCalloc( (void **)&d_sorted, numberOfAtoms, sizeof(double3) );
+    thrust::device_ptr<double3> th_sorted = thrust::device_pointer_cast( d_sorted );
+    
+    thrust::gather( th_indices.begin(),
+                    th_indices.end(),
+                    th_pos,
+                    th_sorted );
+    th_pos = th_sorted;
+
+    thrust::gather( th_indices.begin(),
+                    th_indices.end(),
+                    th_vel,
+                    th_sorted);
+    th_vel = th_sorted;
+    
+    thrust::gather( th_indices.begin(),
+                    th_indices.end(),
+                    th_acc,
+                    th_sorted);
+    th_acc = th_sorted;
+    
+    cudaFree( d_sorted );
     
     return;
 }

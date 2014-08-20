@@ -13,6 +13,7 @@
 
 extern int    numberOfAtoms;
 extern int    numberOfCells;
+extern int3   cellsPerDimension;
 extern double dt;
 
 #pragma mark Environmental Parameters
@@ -20,5 +21,10 @@ extern double Tinit;
 
 #pragma mark Trap Parameters
 extern double dBdz;
+
+#pragma mark - Device globals
+
+extern __device__ int3 d_cellsPerDimension = { 10, 10, 10 };
+extern __device__ int  d_numberOfCells = 10*10*10;
 
 #endif

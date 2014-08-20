@@ -10,6 +10,8 @@
 #include <stdlib.h>
 #include <cuda.h>
 #include <curand_kernel.h>
+#include <thrust/device_vector.h>
+#include <thrust/sort.h>
 
 #include "declareInitialSystemParameters.cuh"
 #include "initialSystemParameters.cuh"
@@ -53,6 +55,8 @@ int main(int argc, const char * argv[])
 	printf("initRNG:             gridSize = %i, blockSize = %i\n", gridSize, blockSize);
 	initRNG<<<gridSize,blockSize>>>( rngStates, numberOfAtoms );
     
+#pragma mark - Memory Allocation
+    
     double3 *d_pos;
     double3 *d_vel;
     double3 *d_acc;
@@ -63,7 +67,7 @@ int main(int argc, const char * argv[])
     cudaCalloc( (void **)&d_vel, numberOfAtoms, sizeof(double3) );
     cudaCalloc( (void **)&d_acc, numberOfAtoms, sizeof(double3) );
     
-    cudaCalloc( (void **)&d_cellID, numberOfCells, sizeof(int) );
+    cudaCalloc( (void **)&d_cellID, numberOfAtoms, sizeof(int) );
     
     double3 *h_pos = (double3*) calloc( numberOfAtoms, sizeof(double3) );
     double3 *h_vel = (double3*) calloc( numberOfAtoms, sizeof(double3) );
@@ -83,19 +87,30 @@ int main(int argc, const char * argv[])
                                                  dBdz,
                                                  rngStates );
     
-    indexAtoms( d_pos, d_cellID );
-	
+    indexAtoms( d_pos,
+                d_cellID );
+	sortArrays( d_pos,
+                d_vel,
+                d_acc,
+                d_cellID );
+    
     createHDF5File( filename, groupname );
     
     cudaMemcpy( h_pos, d_pos, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
 	hdf5FileHandle hdf5handlePos = createHDF5Handle( numberOfAtoms, "/atomData/positions" );
-	intialiseHDF5File( hdf5handlePos, filename );
-	writeHDF5File( hdf5handlePos, filename, h_pos );
+	intialiseHDF5File( hdf5handlePos,
+                       filename );
+	writeHDF5File( hdf5handlePos,
+                   filename,
+                   h_pos );
     
     cudaMemcpy( h_vel, d_vel, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
     hdf5FileHandle hdf5handleVel = createHDF5Handle( numberOfAtoms, "/atomData/velocities" );
-	intialiseHDF5File( hdf5handleVel, filename );
-	writeHDF5File( hdf5handleVel, filename, h_vel );
+	intialiseHDF5File( hdf5handleVel,
+                       filename );
+	writeHDF5File( hdf5handleVel,
+                   filename,
+                   h_vel );
 
 #pragma mark - Main Loop
     
@@ -110,18 +125,27 @@ int main(int argc, const char * argv[])
     
     for (int i=0; i<5; i++)
     {
-        indexAtoms( d_pos, d_cellID );
+        indexAtoms( d_pos,
+                    d_cellID );
+        sortArrays( d_pos,
+                    d_vel,
+                    d_acc,
+                    d_cellID );
         
-        moveAtoms<<<gridSize,blockSize>>>(d_pos,
-                                          d_vel,
-                                          d_acc,
-                                          numberOfAtoms );
+        moveAtoms<<<gridSize,blockSize>>>( d_pos,
+                                           d_vel,
+                                           d_acc,
+                                           numberOfAtoms );
     
         cudaMemcpy( h_pos, d_pos, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
         cudaMemcpy( h_vel, d_vel, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
     
-        writeHDF5File( hdf5handlePos, filename, h_pos );
-        writeHDF5File( hdf5handleVel, filename, h_vel );
+        writeHDF5File( hdf5handlePos,
+                       filename,
+                       h_pos );
+        writeHDF5File( hdf5handleVel,
+                       filename,
+                       h_vel );
         
         printf("i = %i\n", i);
     }
