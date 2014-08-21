@@ -1,0 +1,48 @@
+\hypertarget{main_8cu}{\section{C\+U\+D\+A\+D\+S\+M\+C/src/main.cu File Reference}
+\label{main_8cu}\index{C\+U\+D\+A\+D\+S\+M\+C/src/main.\+cu@{C\+U\+D\+A\+D\+S\+M\+C/src/main.\+cu}}
+}
+{\ttfamily \#include $<$stdio.\+h$>$}\\*
+{\ttfamily \#include $<$stdlib.\+h$>$}\\*
+{\ttfamily \#include $<$cuda.\+h$>$}\\*
+{\ttfamily \#include $<$curand\+\_\+kernel.\+h$>$}\\*
+{\ttfamily \#include $<$thrust/device\+\_\+vector.\+h$>$}\\*
+{\ttfamily \#include $<$thrust/sort.\+h$>$}\\*
+{\ttfamily \#include \char`\"{}declare\+Initial\+System\+Parameters.\+cuh\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}initial\+System\+Parameters.\+cuh\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}cuda\+Helpers.\+cuh\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}hdf5\+Helpers.\+cuh\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}set\+Up.\+cuh\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}move\+Atoms.\+cuh\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}collisions.\+cuh\char`\"{}}\\*
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+int \hyperlink{main_8cu_ac0f2228420376f4db7e1274f2b41667c}{main} (int argc, const char $\ast$argv\mbox{[}$\,$\mbox{]})
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+char \hyperlink{main_8cu_a6c2affe0788e6ba12dce7a51e1bd35c3}{filename} \mbox{[}$\,$\mbox{]} = \char`\"{}output\+Data.\+h5\char`\"{}
+\item 
+char \hyperlink{main_8cu_a8fed0c6a45def4b6cfc33b6c2d6b529a}{groupname} \mbox{[}$\,$\mbox{]} = \char`\"{}/atom\+Data\char`\"{}
+\end{DoxyCompactItemize}
+
+
+\subsection{Function Documentation}
+\hypertarget{main_8cu_ac0f2228420376f4db7e1274f2b41667c}{\index{main.\+cu@{main.\+cu}!main@{main}}
+\index{main@{main}!main.\+cu@{main.\+cu}}
+\subsubsection[{main}]{\setlength{\rightskip}{0pt plus 5cm}int main (
+\begin{DoxyParamCaption}
+\item[{int}]{argc, }
+\item[{const char $\ast$}]{argv\mbox{[}$\,$\mbox{]}}
+\end{DoxyParamCaption}
+)}}\label{main_8cu_ac0f2228420376f4db7e1274f2b41667c}
+
+
+\subsection{Variable Documentation}
+\hypertarget{main_8cu_a6c2affe0788e6ba12dce7a51e1bd35c3}{\index{main.\+cu@{main.\+cu}!filename@{filename}}
+\index{filename@{filename}!main.\+cu@{main.\+cu}}
+\subsubsection[{filename}]{\setlength{\rightskip}{0pt plus 5cm}char filename\mbox{[}$\,$\mbox{]} = \char`\"{}output\+Data.\+h5\char`\"{}}}\label{main_8cu_a6c2affe0788e6ba12dce7a51e1bd35c3}
+\hypertarget{main_8cu_a8fed0c6a45def4b6cfc33b6c2d6b529a}{\index{main.\+cu@{main.\+cu}!groupname@{groupname}}
+\index{groupname@{groupname}!main.\+cu@{main.\+cu}}
+\subsubsection[{groupname}]{\setlength{\rightskip}{0pt plus 5cm}char groupname\mbox{[}$\,$\mbox{]} = \char`\"{}/atom\+Data\char`\"{}}}\label{main_8cu_a8fed0c6a45def4b6cfc33b6c2d6b529a}

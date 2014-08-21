@@ -1,0 +1,61 @@
+\hypertarget{move_atoms_8cuh}{\section{C\+U\+D\+A\+D\+S\+M\+C/include/move\+Atoms.cuh File Reference}
+\label{move_atoms_8cuh}\index{C\+U\+D\+A\+D\+S\+M\+C/include/move\+Atoms.\+cuh@{C\+U\+D\+A\+D\+S\+M\+C/include/move\+Atoms.\+cuh}}
+}
+\subsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \hyperlink{move_atoms_8cuh_acf80001aea534ff15d0291d702ac0676}{C\+U\+D\+A\+D\+S\+M\+C\+\_\+move\+Atoms\+\_\+cuh}
+\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\+\_\+\+\_\+global\+\_\+\+\_\+ void \hyperlink{move_atoms_8cuh_ad773cb3a8b3c26ec2feadda563a7d272}{move\+Atoms} (double3 $\ast$pos, double3 $\ast$vel, double3 $\ast$acc, int \hyperlink{initial_system_parameters_8cuh_a5ce690e43012981ef3034cbf0c746489}{number\+Of\+Atoms})
+\item 
+\+\_\+\+\_\+device\+\_\+\+\_\+ double3 \hyperlink{move_atoms_8cuh_aebf2f5bae0865bdce93e42043725a589}{update\+Vel\+Half\+Step} (double3 vel, double3 acc)
+\item 
+\+\_\+\+\_\+device\+\_\+\+\_\+ double3 \hyperlink{move_atoms_8cuh_a6fc01de03412c50d8220d2c617847179}{update\+Pos} (double3 pos, double3 vel)
+\item 
+\+\_\+\+\_\+device\+\_\+\+\_\+ double3 \hyperlink{move_atoms_8cuh_aab55560bb96302129a94cfa7584b2256}{update\+Acc} (double3 pos)
+\end{DoxyCompactItemize}
+
+
+\subsection{Macro Definition Documentation}
+\hypertarget{move_atoms_8cuh_acf80001aea534ff15d0291d702ac0676}{\index{move\+Atoms.\+cuh@{move\+Atoms.\+cuh}!C\+U\+D\+A\+D\+S\+M\+C\+\_\+move\+Atoms\+\_\+cuh@{C\+U\+D\+A\+D\+S\+M\+C\+\_\+move\+Atoms\+\_\+cuh}}
+\index{C\+U\+D\+A\+D\+S\+M\+C\+\_\+move\+Atoms\+\_\+cuh@{C\+U\+D\+A\+D\+S\+M\+C\+\_\+move\+Atoms\+\_\+cuh}!move\+Atoms.\+cuh@{move\+Atoms.\+cuh}}
+\subsubsection[{C\+U\+D\+A\+D\+S\+M\+C\+\_\+move\+Atoms\+\_\+cuh}]{\setlength{\rightskip}{0pt plus 5cm}\#define C\+U\+D\+A\+D\+S\+M\+C\+\_\+move\+Atoms\+\_\+cuh}}\label{move_atoms_8cuh_acf80001aea534ff15d0291d702ac0676}
+
+
+\subsection{Function Documentation}
+\hypertarget{move_atoms_8cuh_ad773cb3a8b3c26ec2feadda563a7d272}{\index{move\+Atoms.\+cuh@{move\+Atoms.\+cuh}!move\+Atoms@{move\+Atoms}}
+\index{move\+Atoms@{move\+Atoms}!move\+Atoms.\+cuh@{move\+Atoms.\+cuh}}
+\subsubsection[{move\+Atoms}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+global\+\_\+\+\_\+ void move\+Atoms (
+\begin{DoxyParamCaption}
+\item[{double3 $\ast$}]{pos, }
+\item[{double3 $\ast$}]{vel, }
+\item[{double3 $\ast$}]{acc, }
+\item[{int}]{number\+Of\+Atoms}
+\end{DoxyParamCaption}
+)}}\label{move_atoms_8cuh_ad773cb3a8b3c26ec2feadda563a7d272}
+\hypertarget{move_atoms_8cuh_aab55560bb96302129a94cfa7584b2256}{\index{move\+Atoms.\+cuh@{move\+Atoms.\+cuh}!update\+Acc@{update\+Acc}}
+\index{update\+Acc@{update\+Acc}!move\+Atoms.\+cuh@{move\+Atoms.\+cuh}}
+\subsubsection[{update\+Acc}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+device\+\_\+\+\_\+ double3 update\+Acc (
+\begin{DoxyParamCaption}
+\item[{double3}]{pos}
+\end{DoxyParamCaption}
+)}}\label{move_atoms_8cuh_aab55560bb96302129a94cfa7584b2256}
+\hypertarget{move_atoms_8cuh_a6fc01de03412c50d8220d2c617847179}{\index{move\+Atoms.\+cuh@{move\+Atoms.\+cuh}!update\+Pos@{update\+Pos}}
+\index{update\+Pos@{update\+Pos}!move\+Atoms.\+cuh@{move\+Atoms.\+cuh}}
+\subsubsection[{update\+Pos}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+device\+\_\+\+\_\+ double3 update\+Pos (
+\begin{DoxyParamCaption}
+\item[{double3}]{pos, }
+\item[{double3}]{vel}
+\end{DoxyParamCaption}
+)}}\label{move_atoms_8cuh_a6fc01de03412c50d8220d2c617847179}
+\hypertarget{move_atoms_8cuh_aebf2f5bae0865bdce93e42043725a589}{\index{move\+Atoms.\+cuh@{move\+Atoms.\+cuh}!update\+Vel\+Half\+Step@{update\+Vel\+Half\+Step}}
+\index{update\+Vel\+Half\+Step@{update\+Vel\+Half\+Step}!move\+Atoms.\+cuh@{move\+Atoms.\+cuh}}
+\subsubsection[{update\+Vel\+Half\+Step}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+device\+\_\+\+\_\+ double3 update\+Vel\+Half\+Step (
+\begin{DoxyParamCaption}
+\item[{double3}]{vel, }
+\item[{double3}]{acc}
+\end{DoxyParamCaption}
+)}}\label{move_atoms_8cuh_aebf2f5bae0865bdce93e42043725a589}

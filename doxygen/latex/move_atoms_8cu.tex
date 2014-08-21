@@ -1,0 +1,116 @@
+\hypertarget{move_atoms_8cu}{\section{C\+U\+D\+A\+D\+S\+M\+C/src/move\+Atoms.cu File Reference}
+\label{move_atoms_8cu}\index{C\+U\+D\+A\+D\+S\+M\+C/src/move\+Atoms.\+cu@{C\+U\+D\+A\+D\+S\+M\+C/src/move\+Atoms.\+cu}}
+}
+{\ttfamily \#include $<$stdio.\+h$>$}\\*
+{\ttfamily \#include $<$cuda.\+h$>$}\\*
+{\ttfamily \#include \char`\"{}move\+Atoms.\+cuh\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}vector\+Math.\+cuh\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}math.\+h\char`\"{}}\\*
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\+\_\+\+\_\+global\+\_\+\+\_\+ void \hyperlink{move_atoms_8cu_ad773cb3a8b3c26ec2feadda563a7d272}{move\+Atoms} (double3 $\ast$pos, double3 $\ast$vel, double3 $\ast$acc, int \hyperlink{initial_system_parameters_8cuh_a5ce690e43012981ef3034cbf0c746489}{number\+Of\+Atoms})
+\item 
+\+\_\+\+\_\+device\+\_\+\+\_\+ double3 \hyperlink{move_atoms_8cu_aebf2f5bae0865bdce93e42043725a589}{update\+Vel\+Half\+Step} (double3 vel, double3 acc)
+\item 
+\+\_\+\+\_\+device\+\_\+\+\_\+ double3 \hyperlink{move_atoms_8cu_a6fc01de03412c50d8220d2c617847179}{update\+Pos} (double3 pos, double3 vel)
+\item 
+\+\_\+\+\_\+device\+\_\+\+\_\+ double3 \hyperlink{move_atoms_8cu_aab55560bb96302129a94cfa7584b2256}{update\+Acc} (double3 pos)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\+\_\+\+\_\+constant\+\_\+\+\_\+ double \hyperlink{move_atoms_8cu_ad7fc9ddbbf69cdea9bade997bd3f58f4}{d\+\_\+gs} = 0.\+5
+\item 
+\+\_\+\+\_\+constant\+\_\+\+\_\+ double \hyperlink{move_atoms_8cu_ad5c6a29d5e5d7f81c07fcdeac2e12ee8}{d\+\_\+\+M\+F} = -\/1.\+0
+\item 
+\+\_\+\+\_\+constant\+\_\+\+\_\+ double \hyperlink{move_atoms_8cu_a93a53c442fbe59aedf7224c0f142979c}{d\+\_\+mu\+B} = 9.\+27400915e-\/24
+\item 
+\+\_\+\+\_\+constant\+\_\+\+\_\+ double \hyperlink{move_atoms_8cu_a19b0469e2c969c9dc1f4d2b9d075ef98}{d\+\_\+m\+Rb} = 1.\+443160648e-\/25
+\item 
+\+\_\+\+\_\+constant\+\_\+\+\_\+ double \hyperlink{move_atoms_8cu_a246b126f6551267fd21c168b0c1b4fac}{d\+\_\+pi} = 3.\+14159265
+\item 
+\+\_\+\+\_\+constant\+\_\+\+\_\+ double \hyperlink{move_atoms_8cu_a9de002c64acd76b9a5a11c0e3519838c}{d\+\_\+a} = 5.\+3e-\/9
+\item 
+\+\_\+\+\_\+constant\+\_\+\+\_\+ double \hyperlink{move_atoms_8cu_a02c2b3a2e3a9d15ae261492f19abb6e0}{d\+\_\+k\+B} = 1.\+3806503e-\/23
+\item 
+\+\_\+\+\_\+constant\+\_\+\+\_\+ double \hyperlink{move_atoms_8cu_a42ed36be77a88944d259857a94f80eb4}{d\+\_\+hbar} = 1.\+05457148e-\/34
+\item 
+\+\_\+\+\_\+constant\+\_\+\+\_\+ double \hyperlink{move_atoms_8cu_afa16fa4a33416df0d9677c9cbf1c6619}{d\+\_\+d\+Bdz} = 2.\+5
+\item 
+\+\_\+\+\_\+constant\+\_\+\+\_\+ double \hyperlink{move_atoms_8cu_a73197eed5bcda31eef79ed204c0928fe}{d\+\_\+dt} = 1.\+0e-\/6
+\item 
+\+\_\+\+\_\+device\+\_\+\+\_\+ int \hyperlink{move_atoms_8cu_a46df0a465a8e923e9973ea54f85a0a0d}{loops\+Per\+Collision} = 1000
+\end{DoxyCompactItemize}
+
+
+\subsection{Function Documentation}
+\hypertarget{move_atoms_8cu_ad773cb3a8b3c26ec2feadda563a7d272}{\index{move\+Atoms.\+cu@{move\+Atoms.\+cu}!move\+Atoms@{move\+Atoms}}
+\index{move\+Atoms@{move\+Atoms}!move\+Atoms.\+cu@{move\+Atoms.\+cu}}
+\subsubsection[{move\+Atoms}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+global\+\_\+\+\_\+ void move\+Atoms (
+\begin{DoxyParamCaption}
+\item[{double3 $\ast$}]{pos, }
+\item[{double3 $\ast$}]{vel, }
+\item[{double3 $\ast$}]{acc, }
+\item[{int}]{number\+Of\+Atoms}
+\end{DoxyParamCaption}
+)}}\label{move_atoms_8cu_ad773cb3a8b3c26ec2feadda563a7d272}
+\hypertarget{move_atoms_8cu_aab55560bb96302129a94cfa7584b2256}{\index{move\+Atoms.\+cu@{move\+Atoms.\+cu}!update\+Acc@{update\+Acc}}
+\index{update\+Acc@{update\+Acc}!move\+Atoms.\+cu@{move\+Atoms.\+cu}}
+\subsubsection[{update\+Acc}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+device\+\_\+\+\_\+ double3 update\+Acc (
+\begin{DoxyParamCaption}
+\item[{double3}]{pos}
+\end{DoxyParamCaption}
+)}}\label{move_atoms_8cu_aab55560bb96302129a94cfa7584b2256}
+\hypertarget{move_atoms_8cu_a6fc01de03412c50d8220d2c617847179}{\index{move\+Atoms.\+cu@{move\+Atoms.\+cu}!update\+Pos@{update\+Pos}}
+\index{update\+Pos@{update\+Pos}!move\+Atoms.\+cu@{move\+Atoms.\+cu}}
+\subsubsection[{update\+Pos}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+device\+\_\+\+\_\+ double3 update\+Pos (
+\begin{DoxyParamCaption}
+\item[{double3}]{pos, }
+\item[{double3}]{vel}
+\end{DoxyParamCaption}
+)}}\label{move_atoms_8cu_a6fc01de03412c50d8220d2c617847179}
+\hypertarget{move_atoms_8cu_aebf2f5bae0865bdce93e42043725a589}{\index{move\+Atoms.\+cu@{move\+Atoms.\+cu}!update\+Vel\+Half\+Step@{update\+Vel\+Half\+Step}}
+\index{update\+Vel\+Half\+Step@{update\+Vel\+Half\+Step}!move\+Atoms.\+cu@{move\+Atoms.\+cu}}
+\subsubsection[{update\+Vel\+Half\+Step}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+device\+\_\+\+\_\+ double3 update\+Vel\+Half\+Step (
+\begin{DoxyParamCaption}
+\item[{double3}]{vel, }
+\item[{double3}]{acc}
+\end{DoxyParamCaption}
+)}}\label{move_atoms_8cu_aebf2f5bae0865bdce93e42043725a589}
+
+
+\subsection{Variable Documentation}
+\hypertarget{move_atoms_8cu_a9de002c64acd76b9a5a11c0e3519838c}{\index{move\+Atoms.\+cu@{move\+Atoms.\+cu}!d\+\_\+a@{d\+\_\+a}}
+\index{d\+\_\+a@{d\+\_\+a}!move\+Atoms.\+cu@{move\+Atoms.\+cu}}
+\subsubsection[{d\+\_\+a}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+constant\+\_\+\+\_\+ double d\+\_\+a = 5.\+3e-\/9}}\label{move_atoms_8cu_a9de002c64acd76b9a5a11c0e3519838c}
+\hypertarget{move_atoms_8cu_afa16fa4a33416df0d9677c9cbf1c6619}{\index{move\+Atoms.\+cu@{move\+Atoms.\+cu}!d\+\_\+d\+Bdz@{d\+\_\+d\+Bdz}}
+\index{d\+\_\+d\+Bdz@{d\+\_\+d\+Bdz}!move\+Atoms.\+cu@{move\+Atoms.\+cu}}
+\subsubsection[{d\+\_\+d\+Bdz}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+constant\+\_\+\+\_\+ double d\+\_\+d\+Bdz = 2.\+5}}\label{move_atoms_8cu_afa16fa4a33416df0d9677c9cbf1c6619}
+\hypertarget{move_atoms_8cu_a73197eed5bcda31eef79ed204c0928fe}{\index{move\+Atoms.\+cu@{move\+Atoms.\+cu}!d\+\_\+dt@{d\+\_\+dt}}
+\index{d\+\_\+dt@{d\+\_\+dt}!move\+Atoms.\+cu@{move\+Atoms.\+cu}}
+\subsubsection[{d\+\_\+dt}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+constant\+\_\+\+\_\+ double d\+\_\+dt = 1.\+0e-\/6}}\label{move_atoms_8cu_a73197eed5bcda31eef79ed204c0928fe}
+\hypertarget{move_atoms_8cu_ad7fc9ddbbf69cdea9bade997bd3f58f4}{\index{move\+Atoms.\+cu@{move\+Atoms.\+cu}!d\+\_\+gs@{d\+\_\+gs}}
+\index{d\+\_\+gs@{d\+\_\+gs}!move\+Atoms.\+cu@{move\+Atoms.\+cu}}
+\subsubsection[{d\+\_\+gs}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+constant\+\_\+\+\_\+ double d\+\_\+gs = 0.\+5}}\label{move_atoms_8cu_ad7fc9ddbbf69cdea9bade997bd3f58f4}
+\hypertarget{move_atoms_8cu_a42ed36be77a88944d259857a94f80eb4}{\index{move\+Atoms.\+cu@{move\+Atoms.\+cu}!d\+\_\+hbar@{d\+\_\+hbar}}
+\index{d\+\_\+hbar@{d\+\_\+hbar}!move\+Atoms.\+cu@{move\+Atoms.\+cu}}
+\subsubsection[{d\+\_\+hbar}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+constant\+\_\+\+\_\+ double d\+\_\+hbar = 1.\+05457148e-\/34}}\label{move_atoms_8cu_a42ed36be77a88944d259857a94f80eb4}
+\hypertarget{move_atoms_8cu_a02c2b3a2e3a9d15ae261492f19abb6e0}{\index{move\+Atoms.\+cu@{move\+Atoms.\+cu}!d\+\_\+k\+B@{d\+\_\+k\+B}}
+\index{d\+\_\+k\+B@{d\+\_\+k\+B}!move\+Atoms.\+cu@{move\+Atoms.\+cu}}
+\subsubsection[{d\+\_\+k\+B}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+constant\+\_\+\+\_\+ double d\+\_\+k\+B = 1.\+3806503e-\/23}}\label{move_atoms_8cu_a02c2b3a2e3a9d15ae261492f19abb6e0}
+\hypertarget{move_atoms_8cu_ad5c6a29d5e5d7f81c07fcdeac2e12ee8}{\index{move\+Atoms.\+cu@{move\+Atoms.\+cu}!d\+\_\+\+M\+F@{d\+\_\+\+M\+F}}
+\index{d\+\_\+\+M\+F@{d\+\_\+\+M\+F}!move\+Atoms.\+cu@{move\+Atoms.\+cu}}
+\subsubsection[{d\+\_\+\+M\+F}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+constant\+\_\+\+\_\+ double d\+\_\+\+M\+F = -\/1.\+0}}\label{move_atoms_8cu_ad5c6a29d5e5d7f81c07fcdeac2e12ee8}
+\hypertarget{move_atoms_8cu_a19b0469e2c969c9dc1f4d2b9d075ef98}{\index{move\+Atoms.\+cu@{move\+Atoms.\+cu}!d\+\_\+m\+Rb@{d\+\_\+m\+Rb}}
+\index{d\+\_\+m\+Rb@{d\+\_\+m\+Rb}!move\+Atoms.\+cu@{move\+Atoms.\+cu}}
+\subsubsection[{d\+\_\+m\+Rb}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+constant\+\_\+\+\_\+ double d\+\_\+m\+Rb = 1.\+443160648e-\/25}}\label{move_atoms_8cu_a19b0469e2c969c9dc1f4d2b9d075ef98}
+\hypertarget{move_atoms_8cu_a93a53c442fbe59aedf7224c0f142979c}{\index{move\+Atoms.\+cu@{move\+Atoms.\+cu}!d\+\_\+mu\+B@{d\+\_\+mu\+B}}
+\index{d\+\_\+mu\+B@{d\+\_\+mu\+B}!move\+Atoms.\+cu@{move\+Atoms.\+cu}}
+\subsubsection[{d\+\_\+mu\+B}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+constant\+\_\+\+\_\+ double d\+\_\+mu\+B = 9.\+27400915e-\/24}}\label{move_atoms_8cu_a93a53c442fbe59aedf7224c0f142979c}
+\hypertarget{move_atoms_8cu_a246b126f6551267fd21c168b0c1b4fac}{\index{move\+Atoms.\+cu@{move\+Atoms.\+cu}!d\+\_\+pi@{d\+\_\+pi}}
+\index{d\+\_\+pi@{d\+\_\+pi}!move\+Atoms.\+cu@{move\+Atoms.\+cu}}
+\subsubsection[{d\+\_\+pi}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+constant\+\_\+\+\_\+ double d\+\_\+pi = 3.\+14159265}}\label{move_atoms_8cu_a246b126f6551267fd21c168b0c1b4fac}
+\hypertarget{move_atoms_8cu_a46df0a465a8e923e9973ea54f85a0a0d}{\index{move\+Atoms.\+cu@{move\+Atoms.\+cu}!loops\+Per\+Collision@{loops\+Per\+Collision}}
+\index{loops\+Per\+Collision@{loops\+Per\+Collision}!move\+Atoms.\+cu@{move\+Atoms.\+cu}}
+\subsubsection[{loops\+Per\+Collision}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+device\+\_\+\+\_\+ int loops\+Per\+Collision = 1000}}\label{move_atoms_8cu_a46df0a465a8e923e9973ea54f85a0a0d}

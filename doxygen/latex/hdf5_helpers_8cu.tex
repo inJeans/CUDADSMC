@@ -1,0 +1,52 @@
+\hypertarget{hdf5_helpers_8cu}{\section{C\+U\+D\+A\+D\+S\+M\+C/src/hdf5\+Helpers.cu File Reference}
+\label{hdf5_helpers_8cu}\index{C\+U\+D\+A\+D\+S\+M\+C/src/hdf5\+Helpers.\+cu@{C\+U\+D\+A\+D\+S\+M\+C/src/hdf5\+Helpers.\+cu}}
+}
+{\ttfamily \#include $<$stdio.\+h$>$}\\*
+{\ttfamily \#include \char`\"{}hdf5\+Helpers.\+cuh\char`\"{}}\\*
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{structhdf5_file_handle}{hdf5\+File\+Handle} \hyperlink{hdf5_helpers_8cu_ac7967eb74c2b889d3ff30829b7ad5354}{create\+H\+D\+F5\+Handle} (int \hyperlink{initial_system_parameters_8cuh_a5ce690e43012981ef3034cbf0c746489}{number\+Of\+Atoms}, char $\ast$datasetname)
+\item 
+void \hyperlink{hdf5_helpers_8cu_aa934ce2162402ac5571b0a9273a8d540}{create\+H\+D\+F5\+File} (char $\ast$\hyperlink{main_8cu_a6c2affe0788e6ba12dce7a51e1bd35c3}{filename}, char $\ast$\hyperlink{main_8cu_a8fed0c6a45def4b6cfc33b6c2d6b529a}{groupname})
+\item 
+void \hyperlink{hdf5_helpers_8cu_ad645ffddc471fbc80396e341cd9c5b46}{intialise\+H\+D\+F5\+File} (\hyperlink{structhdf5_file_handle}{hdf5\+File\+Handle} \&hdf5handle, char $\ast$\hyperlink{main_8cu_a6c2affe0788e6ba12dce7a51e1bd35c3}{filename})
+\item 
+void \hyperlink{hdf5_helpers_8cu_a8afd9ab3ed3821c7405255e317542636}{write\+H\+D\+F5\+File} (\hyperlink{structhdf5_file_handle}{hdf5\+File\+Handle} \&hdf5handle, char $\ast$\hyperlink{main_8cu_a6c2affe0788e6ba12dce7a51e1bd35c3}{filename}, double3 $\ast$data)
+\end{DoxyCompactItemize}
+
+
+\subsection{Function Documentation}
+\hypertarget{hdf5_helpers_8cu_aa934ce2162402ac5571b0a9273a8d540}{\index{hdf5\+Helpers.\+cu@{hdf5\+Helpers.\+cu}!create\+H\+D\+F5\+File@{create\+H\+D\+F5\+File}}
+\index{create\+H\+D\+F5\+File@{create\+H\+D\+F5\+File}!hdf5\+Helpers.\+cu@{hdf5\+Helpers.\+cu}}
+\subsubsection[{create\+H\+D\+F5\+File}]{\setlength{\rightskip}{0pt plus 5cm}void create\+H\+D\+F5\+File (
+\begin{DoxyParamCaption}
+\item[{char $\ast$}]{filename, }
+\item[{char $\ast$}]{groupname}
+\end{DoxyParamCaption}
+)}}\label{hdf5_helpers_8cu_aa934ce2162402ac5571b0a9273a8d540}
+\hypertarget{hdf5_helpers_8cu_ac7967eb74c2b889d3ff30829b7ad5354}{\index{hdf5\+Helpers.\+cu@{hdf5\+Helpers.\+cu}!create\+H\+D\+F5\+Handle@{create\+H\+D\+F5\+Handle}}
+\index{create\+H\+D\+F5\+Handle@{create\+H\+D\+F5\+Handle}!hdf5\+Helpers.\+cu@{hdf5\+Helpers.\+cu}}
+\subsubsection[{create\+H\+D\+F5\+Handle}]{\setlength{\rightskip}{0pt plus 5cm}{\bf hdf5\+File\+Handle} create\+H\+D\+F5\+Handle (
+\begin{DoxyParamCaption}
+\item[{int}]{number\+Of\+Atoms, }
+\item[{char $\ast$}]{datasetname}
+\end{DoxyParamCaption}
+)}}\label{hdf5_helpers_8cu_ac7967eb74c2b889d3ff30829b7ad5354}
+\hypertarget{hdf5_helpers_8cu_ad645ffddc471fbc80396e341cd9c5b46}{\index{hdf5\+Helpers.\+cu@{hdf5\+Helpers.\+cu}!intialise\+H\+D\+F5\+File@{intialise\+H\+D\+F5\+File}}
+\index{intialise\+H\+D\+F5\+File@{intialise\+H\+D\+F5\+File}!hdf5\+Helpers.\+cu@{hdf5\+Helpers.\+cu}}
+\subsubsection[{intialise\+H\+D\+F5\+File}]{\setlength{\rightskip}{0pt plus 5cm}void intialise\+H\+D\+F5\+File (
+\begin{DoxyParamCaption}
+\item[{{\bf hdf5\+File\+Handle} \&}]{hdf5handle, }
+\item[{char $\ast$}]{filename}
+\end{DoxyParamCaption}
+)}}\label{hdf5_helpers_8cu_ad645ffddc471fbc80396e341cd9c5b46}
+\hypertarget{hdf5_helpers_8cu_a8afd9ab3ed3821c7405255e317542636}{\index{hdf5\+Helpers.\+cu@{hdf5\+Helpers.\+cu}!write\+H\+D\+F5\+File@{write\+H\+D\+F5\+File}}
+\index{write\+H\+D\+F5\+File@{write\+H\+D\+F5\+File}!hdf5\+Helpers.\+cu@{hdf5\+Helpers.\+cu}}
+\subsubsection[{write\+H\+D\+F5\+File}]{\setlength{\rightskip}{0pt plus 5cm}void write\+H\+D\+F5\+File (
+\begin{DoxyParamCaption}
+\item[{{\bf hdf5\+File\+Handle} \&}]{hdf5handle, }
+\item[{char $\ast$}]{filename, }
+\item[{double3 $\ast$}]{data}
+\end{DoxyParamCaption}
+)}}\label{hdf5_helpers_8cu_a8afd9ab3ed3821c7405255e317542636}

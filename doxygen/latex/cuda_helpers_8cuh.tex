@@ -1,0 +1,68 @@
+\hypertarget{cuda_helpers_8cuh}{\section{C\+U\+D\+A\+D\+S\+M\+C/include/cuda\+Helpers.cuh File Reference}
+\label{cuda_helpers_8cuh}\index{C\+U\+D\+A\+D\+S\+M\+C/include/cuda\+Helpers.\+cuh@{C\+U\+D\+A\+D\+S\+M\+C/include/cuda\+Helpers.\+cuh}}
+}
+{\ttfamily \#include $<$stdio.\+h$>$}\\*
+{\ttfamily \#include $<$stdlib.\+h$>$}\\*
+{\ttfamily \#include $<$cuda.\+h$>$}\\*
+\subsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \hyperlink{cuda_helpers_8cuh_a40e204da84e275f42e4908d9001b2020}{C\+U\+D\+A\+D\+S\+M\+C\+\_\+cuda\+Helpers\+\_\+cuh}
+\item 
+\#define \hyperlink{cuda_helpers_8cuh_a4be8a1ef53f2b51cf88a1cb8d7d4fa56}{cuda\+Calloc}(A, B, C)
+\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+int \hyperlink{cuda_helpers_8cuh_a3932624435386d42fbbae3baa5427ea7}{set\+Max\+C\+U\+D\+A\+Device} (void)
+\item 
+int \hyperlink{cuda_helpers_8cuh_aa9d1113c5dfae69bf665cde1540b10b0}{get\+Max\+C\+U\+D\+A\+Device} (void)
+\item 
+int \hyperlink{cuda_helpers_8cuh_a5a240b2ccb6a4fdb776a9bf0a338a6ea}{find\+Max\+C\+U\+D\+A\+Device} (int number\+Of\+C\+U\+D\+A\+Devices)
+\end{DoxyCompactItemize}
+
+
+\subsection{Macro Definition Documentation}
+\hypertarget{cuda_helpers_8cuh_a4be8a1ef53f2b51cf88a1cb8d7d4fa56}{\index{cuda\+Helpers.\+cuh@{cuda\+Helpers.\+cuh}!cuda\+Calloc@{cuda\+Calloc}}
+\index{cuda\+Calloc@{cuda\+Calloc}!cuda\+Helpers.\+cuh@{cuda\+Helpers.\+cuh}}
+\subsubsection[{cuda\+Calloc}]{\setlength{\rightskip}{0pt plus 5cm}\#define cuda\+Calloc(
+\begin{DoxyParamCaption}
+\item[{}]{A, }
+\item[{}]{B, }
+\item[{}]{C}
+\end{DoxyParamCaption}
+)}}\label{cuda_helpers_8cuh_a4be8a1ef53f2b51cf88a1cb8d7d4fa56}
+{\bfseries Value\+:}
+\begin{DoxyCode}
+\textcolor{keywordflow}{do} \{ \(\backslash\)
+cudaError\_t \_\_cudaCalloc\_err = cudaMalloc(A, (B)*C); \(\backslash\)
+if (\_\_cudaCalloc\_err == cudaSuccess) cudaMemset(*A, 0, (B)*C); \(\backslash\)
+\} while (0)
+\end{DoxyCode}
+\hypertarget{cuda_helpers_8cuh_a40e204da84e275f42e4908d9001b2020}{\index{cuda\+Helpers.\+cuh@{cuda\+Helpers.\+cuh}!C\+U\+D\+A\+D\+S\+M\+C\+\_\+cuda\+Helpers\+\_\+cuh@{C\+U\+D\+A\+D\+S\+M\+C\+\_\+cuda\+Helpers\+\_\+cuh}}
+\index{C\+U\+D\+A\+D\+S\+M\+C\+\_\+cuda\+Helpers\+\_\+cuh@{C\+U\+D\+A\+D\+S\+M\+C\+\_\+cuda\+Helpers\+\_\+cuh}!cuda\+Helpers.\+cuh@{cuda\+Helpers.\+cuh}}
+\subsubsection[{C\+U\+D\+A\+D\+S\+M\+C\+\_\+cuda\+Helpers\+\_\+cuh}]{\setlength{\rightskip}{0pt plus 5cm}\#define C\+U\+D\+A\+D\+S\+M\+C\+\_\+cuda\+Helpers\+\_\+cuh}}\label{cuda_helpers_8cuh_a40e204da84e275f42e4908d9001b2020}
+
+
+\subsection{Function Documentation}
+\hypertarget{cuda_helpers_8cuh_a5a240b2ccb6a4fdb776a9bf0a338a6ea}{\index{cuda\+Helpers.\+cuh@{cuda\+Helpers.\+cuh}!find\+Max\+C\+U\+D\+A\+Device@{find\+Max\+C\+U\+D\+A\+Device}}
+\index{find\+Max\+C\+U\+D\+A\+Device@{find\+Max\+C\+U\+D\+A\+Device}!cuda\+Helpers.\+cuh@{cuda\+Helpers.\+cuh}}
+\subsubsection[{find\+Max\+C\+U\+D\+A\+Device}]{\setlength{\rightskip}{0pt plus 5cm}int find\+Max\+C\+U\+D\+A\+Device (
+\begin{DoxyParamCaption}
+\item[{int}]{number\+Of\+C\+U\+D\+A\+Devices}
+\end{DoxyParamCaption}
+)}}\label{cuda_helpers_8cuh_a5a240b2ccb6a4fdb776a9bf0a338a6ea}
+\hypertarget{cuda_helpers_8cuh_aa9d1113c5dfae69bf665cde1540b10b0}{\index{cuda\+Helpers.\+cuh@{cuda\+Helpers.\+cuh}!get\+Max\+C\+U\+D\+A\+Device@{get\+Max\+C\+U\+D\+A\+Device}}
+\index{get\+Max\+C\+U\+D\+A\+Device@{get\+Max\+C\+U\+D\+A\+Device}!cuda\+Helpers.\+cuh@{cuda\+Helpers.\+cuh}}
+\subsubsection[{get\+Max\+C\+U\+D\+A\+Device}]{\setlength{\rightskip}{0pt plus 5cm}int get\+Max\+C\+U\+D\+A\+Device (
+\begin{DoxyParamCaption}
+\item[{void}]{}
+\end{DoxyParamCaption}
+)}}\label{cuda_helpers_8cuh_aa9d1113c5dfae69bf665cde1540b10b0}
+\hypertarget{cuda_helpers_8cuh_a3932624435386d42fbbae3baa5427ea7}{\index{cuda\+Helpers.\+cuh@{cuda\+Helpers.\+cuh}!set\+Max\+C\+U\+D\+A\+Device@{set\+Max\+C\+U\+D\+A\+Device}}
+\index{set\+Max\+C\+U\+D\+A\+Device@{set\+Max\+C\+U\+D\+A\+Device}!cuda\+Helpers.\+cuh@{cuda\+Helpers.\+cuh}}
+\subsubsection[{set\+Max\+C\+U\+D\+A\+Device}]{\setlength{\rightskip}{0pt plus 5cm}int set\+Max\+C\+U\+D\+A\+Device (
+\begin{DoxyParamCaption}
+\item[{void}]{}
+\end{DoxyParamCaption}
+)}}\label{cuda_helpers_8cuh_a3932624435386d42fbbae3baa5427ea7}

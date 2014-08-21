@@ -1,0 +1,140 @@
+\hypertarget{collisions_8cuh}{\section{C\+U\+D\+A\+D\+S\+M\+C/include/collisions.cuh File Reference}
+\label{collisions_8cuh}\index{C\+U\+D\+A\+D\+S\+M\+C/include/collisions.\+cuh@{C\+U\+D\+A\+D\+S\+M\+C/include/collisions.\+cuh}}
+}
+\subsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \hyperlink{collisions_8cuh_ab4c77f199ade636b07ef359166ed4642}{C\+U\+D\+A\+D\+S\+M\+C\+\_\+collisions\+\_\+cuh}
+\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \hyperlink{collisions_8cuh_af197639ca430cb8ebe15f6ca7b6f40ab}{index\+Atoms} (double3 $\ast$d\+\_\+pos, int $\ast$d\+\_\+cell\+I\+D)
+\item 
+\+\_\+\+\_\+global\+\_\+\+\_\+ void \hyperlink{collisions_8cuh_a5ccf998d9adc2625a01e1438fef20c0c}{calculate\+Radius} (double3 $\ast$pos, float $\ast$radius, int \hyperlink{initial_system_parameters_8cuh_a5ce690e43012981ef3034cbf0c746489}{number\+Of\+Atoms})
+\item 
+float \hyperlink{collisions_8cuh_ad5d1d3a668210a5440e936d793155b29}{find\+Median} (float $\ast$v, int N)
+\item 
+\+\_\+\+\_\+global\+\_\+\+\_\+ void \hyperlink{collisions_8cuh_a672fa6a0f8d774696c4644e1fec55e40}{get\+Median} (float $\ast$v, float $\ast$median, int \hyperlink{initial_system_parameters_8cuh_a5ce690e43012981ef3034cbf0c746489}{number\+Of\+Atoms})
+\item 
+\+\_\+\+\_\+global\+\_\+\+\_\+ void \hyperlink{collisions_8cuh_a58c3c9352a43130c74ebe2f70308fb49}{find\+Atom\+Index} (double3 $\ast$pos, int $\ast$cell\+I\+D, float median\+R, int \hyperlink{initial_system_parameters_8cuh_a5ce690e43012981ef3034cbf0c746489}{number\+Of\+Atoms})
+\item 
+\+\_\+\+\_\+device\+\_\+\+\_\+ int3 \hyperlink{collisions_8cuh_a695113a00662455ab948335ebd4f5d4d}{get\+Cell\+Indices} (double3 pos, float median\+R)
+\item 
+\+\_\+\+\_\+device\+\_\+\+\_\+ int \hyperlink{collisions_8cuh_a81f6e38ecb6fb429a8ed20023a87571f}{get\+Cell\+I\+D} (int3 index)
+\item 
+\+\_\+\+\_\+global\+\_\+\+\_\+ void \hyperlink{collisions_8cuh_aa4ade56a340c2c03dc05ee50cd66e9cb}{cell\+Startand\+End\+Kernel} (int $\ast$cell\+I\+D, int2 $\ast$cell\+Start\+End, int \hyperlink{initial_system_parameters_8cuh_a5ce690e43012981ef3034cbf0c746489}{number\+Of\+Atoms})
+\item 
+\+\_\+\+\_\+global\+\_\+\+\_\+ void \hyperlink{collisions_8cuh_aa1ebf4327d2fdae4fb65c2d6246af28a}{find\+Number\+Of\+Atoms\+In\+Cell} (int2 $\ast$cell\+Start\+End, int $\ast$number\+Of\+Atoms\+In\+Cell, int \hyperlink{initial_system_parameters_8cuh_ae88ac292f19dd72c295602c5dbb17bd6}{number\+Of\+Cells})
+\item 
+void \hyperlink{collisions_8cuh_ae795ca12557f5648cfc29a292280591e}{sort\+Arrays} (double3 $\ast$d\+\_\+pos, double3 $\ast$d\+\_\+vel, double3 $\ast$d\+\_\+acc, int $\ast$d\+\_\+cell\+I\+D)
+\item 
+\+\_\+\+\_\+global\+\_\+\+\_\+ void \hyperlink{collisions_8cuh_a234c8db8e15b25ca114203652185a8af}{collide} (double3 $\ast$pos, double3 $\ast$vel, int $\ast$cell\+I\+D, int $\ast$number\+Of\+Atoms\+In\+Cell, int \hyperlink{initial_system_parameters_8cuh_ae88ac292f19dd72c295602c5dbb17bd6}{number\+Of\+Cells})
+\end{DoxyCompactItemize}
+
+
+\subsection{Macro Definition Documentation}
+\hypertarget{collisions_8cuh_ab4c77f199ade636b07ef359166ed4642}{\index{collisions.\+cuh@{collisions.\+cuh}!C\+U\+D\+A\+D\+S\+M\+C\+\_\+collisions\+\_\+cuh@{C\+U\+D\+A\+D\+S\+M\+C\+\_\+collisions\+\_\+cuh}}
+\index{C\+U\+D\+A\+D\+S\+M\+C\+\_\+collisions\+\_\+cuh@{C\+U\+D\+A\+D\+S\+M\+C\+\_\+collisions\+\_\+cuh}!collisions.\+cuh@{collisions.\+cuh}}
+\subsubsection[{C\+U\+D\+A\+D\+S\+M\+C\+\_\+collisions\+\_\+cuh}]{\setlength{\rightskip}{0pt plus 5cm}\#define C\+U\+D\+A\+D\+S\+M\+C\+\_\+collisions\+\_\+cuh}}\label{collisions_8cuh_ab4c77f199ade636b07ef359166ed4642}
+
+
+\subsection{Function Documentation}
+\hypertarget{collisions_8cuh_a5ccf998d9adc2625a01e1438fef20c0c}{\index{collisions.\+cuh@{collisions.\+cuh}!calculate\+Radius@{calculate\+Radius}}
+\index{calculate\+Radius@{calculate\+Radius}!collisions.\+cuh@{collisions.\+cuh}}
+\subsubsection[{calculate\+Radius}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+global\+\_\+\+\_\+ void calculate\+Radius (
+\begin{DoxyParamCaption}
+\item[{double3 $\ast$}]{pos, }
+\item[{float $\ast$}]{radius, }
+\item[{int}]{number\+Of\+Atoms}
+\end{DoxyParamCaption}
+)}}\label{collisions_8cuh_a5ccf998d9adc2625a01e1438fef20c0c}
+\hypertarget{collisions_8cuh_aa4ade56a340c2c03dc05ee50cd66e9cb}{\index{collisions.\+cuh@{collisions.\+cuh}!cell\+Startand\+End\+Kernel@{cell\+Startand\+End\+Kernel}}
+\index{cell\+Startand\+End\+Kernel@{cell\+Startand\+End\+Kernel}!collisions.\+cuh@{collisions.\+cuh}}
+\subsubsection[{cell\+Startand\+End\+Kernel}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+global\+\_\+\+\_\+ void cell\+Startand\+End\+Kernel (
+\begin{DoxyParamCaption}
+\item[{int $\ast$}]{cell\+I\+D, }
+\item[{int2 $\ast$}]{cell\+Start\+End, }
+\item[{int}]{number\+Of\+Atoms}
+\end{DoxyParamCaption}
+)}}\label{collisions_8cuh_aa4ade56a340c2c03dc05ee50cd66e9cb}
+\hypertarget{collisions_8cuh_a234c8db8e15b25ca114203652185a8af}{\index{collisions.\+cuh@{collisions.\+cuh}!collide@{collide}}
+\index{collide@{collide}!collisions.\+cuh@{collisions.\+cuh}}
+\subsubsection[{collide}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+global\+\_\+\+\_\+ void collide (
+\begin{DoxyParamCaption}
+\item[{double3 $\ast$}]{pos, }
+\item[{double3 $\ast$}]{vel, }
+\item[{int $\ast$}]{cell\+I\+D, }
+\item[{int $\ast$}]{number\+Of\+Atoms\+In\+Cell, }
+\item[{int}]{number\+Of\+Cells}
+\end{DoxyParamCaption}
+)}}\label{collisions_8cuh_a234c8db8e15b25ca114203652185a8af}
+\hypertarget{collisions_8cuh_a58c3c9352a43130c74ebe2f70308fb49}{\index{collisions.\+cuh@{collisions.\+cuh}!find\+Atom\+Index@{find\+Atom\+Index}}
+\index{find\+Atom\+Index@{find\+Atom\+Index}!collisions.\+cuh@{collisions.\+cuh}}
+\subsubsection[{find\+Atom\+Index}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+global\+\_\+\+\_\+ void find\+Atom\+Index (
+\begin{DoxyParamCaption}
+\item[{double3 $\ast$}]{pos, }
+\item[{int $\ast$}]{cell\+I\+D, }
+\item[{float}]{median\+R, }
+\item[{int}]{number\+Of\+Atoms}
+\end{DoxyParamCaption}
+)}}\label{collisions_8cuh_a58c3c9352a43130c74ebe2f70308fb49}
+\hypertarget{collisions_8cuh_ad5d1d3a668210a5440e936d793155b29}{\index{collisions.\+cuh@{collisions.\+cuh}!find\+Median@{find\+Median}}
+\index{find\+Median@{find\+Median}!collisions.\+cuh@{collisions.\+cuh}}
+\subsubsection[{find\+Median}]{\setlength{\rightskip}{0pt plus 5cm}float find\+Median (
+\begin{DoxyParamCaption}
+\item[{float $\ast$}]{v, }
+\item[{int}]{N}
+\end{DoxyParamCaption}
+)}}\label{collisions_8cuh_ad5d1d3a668210a5440e936d793155b29}
+\hypertarget{collisions_8cuh_aa1ebf4327d2fdae4fb65c2d6246af28a}{\index{collisions.\+cuh@{collisions.\+cuh}!find\+Number\+Of\+Atoms\+In\+Cell@{find\+Number\+Of\+Atoms\+In\+Cell}}
+\index{find\+Number\+Of\+Atoms\+In\+Cell@{find\+Number\+Of\+Atoms\+In\+Cell}!collisions.\+cuh@{collisions.\+cuh}}
+\subsubsection[{find\+Number\+Of\+Atoms\+In\+Cell}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+global\+\_\+\+\_\+ void find\+Number\+Of\+Atoms\+In\+Cell (
+\begin{DoxyParamCaption}
+\item[{int2 $\ast$}]{cell\+Start\+End, }
+\item[{int $\ast$}]{number\+Of\+Atoms\+In\+Cell, }
+\item[{int}]{number\+Of\+Cells}
+\end{DoxyParamCaption}
+)}}\label{collisions_8cuh_aa1ebf4327d2fdae4fb65c2d6246af28a}
+\hypertarget{collisions_8cuh_a81f6e38ecb6fb429a8ed20023a87571f}{\index{collisions.\+cuh@{collisions.\+cuh}!get\+Cell\+I\+D@{get\+Cell\+I\+D}}
+\index{get\+Cell\+I\+D@{get\+Cell\+I\+D}!collisions.\+cuh@{collisions.\+cuh}}
+\subsubsection[{get\+Cell\+I\+D}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+device\+\_\+\+\_\+ int get\+Cell\+I\+D (
+\begin{DoxyParamCaption}
+\item[{int3}]{index}
+\end{DoxyParamCaption}
+)}}\label{collisions_8cuh_a81f6e38ecb6fb429a8ed20023a87571f}
+\hypertarget{collisions_8cuh_a695113a00662455ab948335ebd4f5d4d}{\index{collisions.\+cuh@{collisions.\+cuh}!get\+Cell\+Indices@{get\+Cell\+Indices}}
+\index{get\+Cell\+Indices@{get\+Cell\+Indices}!collisions.\+cuh@{collisions.\+cuh}}
+\subsubsection[{get\+Cell\+Indices}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+device\+\_\+\+\_\+ int3 get\+Cell\+Indices (
+\begin{DoxyParamCaption}
+\item[{double3}]{pos, }
+\item[{float}]{median\+R}
+\end{DoxyParamCaption}
+)}}\label{collisions_8cuh_a695113a00662455ab948335ebd4f5d4d}
+\hypertarget{collisions_8cuh_a672fa6a0f8d774696c4644e1fec55e40}{\index{collisions.\+cuh@{collisions.\+cuh}!get\+Median@{get\+Median}}
+\index{get\+Median@{get\+Median}!collisions.\+cuh@{collisions.\+cuh}}
+\subsubsection[{get\+Median}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+global\+\_\+\+\_\+ void get\+Median (
+\begin{DoxyParamCaption}
+\item[{float $\ast$}]{v, }
+\item[{float $\ast$}]{median, }
+\item[{int}]{number\+Of\+Atoms}
+\end{DoxyParamCaption}
+)}}\label{collisions_8cuh_a672fa6a0f8d774696c4644e1fec55e40}
+\hypertarget{collisions_8cuh_af197639ca430cb8ebe15f6ca7b6f40ab}{\index{collisions.\+cuh@{collisions.\+cuh}!index\+Atoms@{index\+Atoms}}
+\index{index\+Atoms@{index\+Atoms}!collisions.\+cuh@{collisions.\+cuh}}
+\subsubsection[{index\+Atoms}]{\setlength{\rightskip}{0pt plus 5cm}void index\+Atoms (
+\begin{DoxyParamCaption}
+\item[{double3 $\ast$}]{d\+\_\+pos, }
+\item[{int $\ast$}]{d\+\_\+cell\+I\+D}
+\end{DoxyParamCaption}
+)}}\label{collisions_8cuh_af197639ca430cb8ebe15f6ca7b6f40ab}
+\hypertarget{collisions_8cuh_ae795ca12557f5648cfc29a292280591e}{\index{collisions.\+cuh@{collisions.\+cuh}!sort\+Arrays@{sort\+Arrays}}
+\index{sort\+Arrays@{sort\+Arrays}!collisions.\+cuh@{collisions.\+cuh}}
+\subsubsection[{sort\+Arrays}]{\setlength{\rightskip}{0pt plus 5cm}void sort\+Arrays (
+\begin{DoxyParamCaption}
+\item[{double3 $\ast$}]{d\+\_\+pos, }
+\item[{double3 $\ast$}]{d\+\_\+vel, }
+\item[{double3 $\ast$}]{d\+\_\+acc, }
+\item[{int $\ast$}]{d\+\_\+cell\+I\+D}
+\end{DoxyParamCaption}
+)}}\label{collisions_8cuh_ae795ca12557f5648cfc29a292280591e}

@@ -1,0 +1,110 @@
+\hypertarget{set_up_8cuh}{\section{C\+U\+D\+A\+D\+S\+M\+C/include/set\+Up.cuh File Reference}
+\label{set_up_8cuh}\index{C\+U\+D\+A\+D\+S\+M\+C/include/set\+Up.\+cuh@{C\+U\+D\+A\+D\+S\+M\+C/include/set\+Up.\+cuh}}
+}
+{\ttfamily \#include $<$stdio.\+h$>$}\\*
+{\ttfamily \#include $<$cuda.\+h$>$}\\*
+{\ttfamily \#include $<$curand\+\_\+kernel.\+h$>$}\\*
+\subsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \hyperlink{set_up_8cuh_a8e794708e8c84134303c969fd48f72eb}{C\+U\+D\+A\+D\+S\+M\+C\+\_\+set\+Up\+\_\+cuh}
+\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\+\_\+\+\_\+global\+\_\+\+\_\+ void \hyperlink{set_up_8cuh_a59b2f493671738afe527c78b5403abc6}{init\+R\+N\+G} (curand\+State\+Philox4\+\_\+32\+\_\+10\+\_\+t $\ast$rng\+State, int \hyperlink{initial_system_parameters_8cuh_a5ce690e43012981ef3034cbf0c746489}{number\+Of\+Atoms})
+\item 
+\+\_\+\+\_\+global\+\_\+\+\_\+ void \hyperlink{set_up_8cuh_a2270711d34c72488e0e0bf52daaeee4b}{generate\+Initial\+Dist} (double3 $\ast$pos, double3 $\ast$vel, double3 $\ast$acc, int \hyperlink{initial_system_parameters_8cuh_a5ce690e43012981ef3034cbf0c746489}{number\+Of\+Atoms}, double Temp, double \hyperlink{initial_system_parameters_8cuh_a25fc2a358206c74d3dfd41c48d05bb9d}{d\+Bdz}, curand\+State\+Philox4\+\_\+32\+\_\+10\+\_\+t $\ast$rng\+State)
+\item 
+\+\_\+\+\_\+device\+\_\+\+\_\+ double3 \hyperlink{set_up_8cuh_a0ffd35e69bde34e9f1c41797f7382f5e}{get\+Random\+Velocity} (double Temp, curand\+State\+Philox4\+\_\+32\+\_\+10\+\_\+t $\ast$rng\+State)
+\item 
+\+\_\+\+\_\+device\+\_\+\+\_\+ double3 \hyperlink{set_up_8cuh_a47d515269c13a8396d1fb013d5843c0b}{get\+Random\+Point\+On\+Unit\+Sphere} (curand\+State\+Philox4\+\_\+32\+\_\+10\+\_\+t $\ast$rng\+State)
+\item 
+\+\_\+\+\_\+device\+\_\+\+\_\+ double3 \hyperlink{set_up_8cuh_ae4b8b56540614cdfa269005ac68c1bff}{select\+Atom\+In\+Distribution} (double \hyperlink{initial_system_parameters_8cuh_a25fc2a358206c74d3dfd41c48d05bb9d}{d\+Bdz}, double Temp, curand\+State\+Philox4\+\_\+32\+\_\+10\+\_\+t $\ast$rng\+State)
+\item 
+\+\_\+\+\_\+device\+\_\+\+\_\+ double3 \hyperlink{set_up_8cuh_ad83d6db13f08f46be5179dac799cd0d9}{get\+Gaussian\+Point} (double mean, double std, curand\+State\+Philox4\+\_\+32\+\_\+10\+\_\+t $\ast$rng\+State)
+\item 
+\+\_\+\+\_\+device\+\_\+\+\_\+ bool \hyperlink{set_up_8cuh_a32f8cb52c6e7f4459effb9cd9bdf90e7}{point\+Is\+In\+Distribution} (double3 point, double \hyperlink{initial_system_parameters_8cuh_a25fc2a358206c74d3dfd41c48d05bb9d}{d\+Bdz}, double Temp, curand\+State\+Philox4\+\_\+32\+\_\+10\+\_\+t $\ast$rng\+State)
+\item 
+\+\_\+\+\_\+device\+\_\+\+\_\+ double3 \hyperlink{set_up_8cuh_a5fedaa6e6674256749ed34658343bfa3}{update\+Accel} (double3 pos)
+\end{DoxyCompactItemize}
+
+
+\subsection{Macro Definition Documentation}
+\hypertarget{set_up_8cuh_a8e794708e8c84134303c969fd48f72eb}{\index{set\+Up.\+cuh@{set\+Up.\+cuh}!C\+U\+D\+A\+D\+S\+M\+C\+\_\+set\+Up\+\_\+cuh@{C\+U\+D\+A\+D\+S\+M\+C\+\_\+set\+Up\+\_\+cuh}}
+\index{C\+U\+D\+A\+D\+S\+M\+C\+\_\+set\+Up\+\_\+cuh@{C\+U\+D\+A\+D\+S\+M\+C\+\_\+set\+Up\+\_\+cuh}!set\+Up.\+cuh@{set\+Up.\+cuh}}
+\subsubsection[{C\+U\+D\+A\+D\+S\+M\+C\+\_\+set\+Up\+\_\+cuh}]{\setlength{\rightskip}{0pt plus 5cm}\#define C\+U\+D\+A\+D\+S\+M\+C\+\_\+set\+Up\+\_\+cuh}}\label{set_up_8cuh_a8e794708e8c84134303c969fd48f72eb}
+
+
+\subsection{Function Documentation}
+\hypertarget{set_up_8cuh_a2270711d34c72488e0e0bf52daaeee4b}{\index{set\+Up.\+cuh@{set\+Up.\+cuh}!generate\+Initial\+Dist@{generate\+Initial\+Dist}}
+\index{generate\+Initial\+Dist@{generate\+Initial\+Dist}!set\+Up.\+cuh@{set\+Up.\+cuh}}
+\subsubsection[{generate\+Initial\+Dist}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+global\+\_\+\+\_\+ void generate\+Initial\+Dist (
+\begin{DoxyParamCaption}
+\item[{double3 $\ast$}]{pos, }
+\item[{double3 $\ast$}]{vel, }
+\item[{double3 $\ast$}]{acc, }
+\item[{int}]{number\+Of\+Atoms, }
+\item[{double}]{Temp, }
+\item[{double}]{d\+Bdz, }
+\item[{curand\+State\+Philox4\+\_\+32\+\_\+10\+\_\+t $\ast$}]{rng\+State}
+\end{DoxyParamCaption}
+)}}\label{set_up_8cuh_a2270711d34c72488e0e0bf52daaeee4b}
+\hypertarget{set_up_8cuh_ad83d6db13f08f46be5179dac799cd0d9}{\index{set\+Up.\+cuh@{set\+Up.\+cuh}!get\+Gaussian\+Point@{get\+Gaussian\+Point}}
+\index{get\+Gaussian\+Point@{get\+Gaussian\+Point}!set\+Up.\+cuh@{set\+Up.\+cuh}}
+\subsubsection[{get\+Gaussian\+Point}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+device\+\_\+\+\_\+ double3 get\+Gaussian\+Point (
+\begin{DoxyParamCaption}
+\item[{double}]{mean, }
+\item[{double}]{std, }
+\item[{curand\+State\+Philox4\+\_\+32\+\_\+10\+\_\+t $\ast$}]{rng\+State}
+\end{DoxyParamCaption}
+)}}\label{set_up_8cuh_ad83d6db13f08f46be5179dac799cd0d9}
+\hypertarget{set_up_8cuh_a47d515269c13a8396d1fb013d5843c0b}{\index{set\+Up.\+cuh@{set\+Up.\+cuh}!get\+Random\+Point\+On\+Unit\+Sphere@{get\+Random\+Point\+On\+Unit\+Sphere}}
+\index{get\+Random\+Point\+On\+Unit\+Sphere@{get\+Random\+Point\+On\+Unit\+Sphere}!set\+Up.\+cuh@{set\+Up.\+cuh}}
+\subsubsection[{get\+Random\+Point\+On\+Unit\+Sphere}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+device\+\_\+\+\_\+ double3 get\+Random\+Point\+On\+Unit\+Sphere (
+\begin{DoxyParamCaption}
+\item[{curand\+State\+Philox4\+\_\+32\+\_\+10\+\_\+t $\ast$}]{rng\+State}
+\end{DoxyParamCaption}
+)}}\label{set_up_8cuh_a47d515269c13a8396d1fb013d5843c0b}
+\hypertarget{set_up_8cuh_a0ffd35e69bde34e9f1c41797f7382f5e}{\index{set\+Up.\+cuh@{set\+Up.\+cuh}!get\+Random\+Velocity@{get\+Random\+Velocity}}
+\index{get\+Random\+Velocity@{get\+Random\+Velocity}!set\+Up.\+cuh@{set\+Up.\+cuh}}
+\subsubsection[{get\+Random\+Velocity}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+device\+\_\+\+\_\+ double3 get\+Random\+Velocity (
+\begin{DoxyParamCaption}
+\item[{double}]{Temp, }
+\item[{curand\+State\+Philox4\+\_\+32\+\_\+10\+\_\+t $\ast$}]{rng\+State}
+\end{DoxyParamCaption}
+)}}\label{set_up_8cuh_a0ffd35e69bde34e9f1c41797f7382f5e}
+\hypertarget{set_up_8cuh_a59b2f493671738afe527c78b5403abc6}{\index{set\+Up.\+cuh@{set\+Up.\+cuh}!init\+R\+N\+G@{init\+R\+N\+G}}
+\index{init\+R\+N\+G@{init\+R\+N\+G}!set\+Up.\+cuh@{set\+Up.\+cuh}}
+\subsubsection[{init\+R\+N\+G}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+global\+\_\+\+\_\+ void init\+R\+N\+G (
+\begin{DoxyParamCaption}
+\item[{curand\+State\+Philox4\+\_\+32\+\_\+10\+\_\+t $\ast$}]{rng\+State, }
+\item[{int}]{number\+Of\+Atoms}
+\end{DoxyParamCaption}
+)}}\label{set_up_8cuh_a59b2f493671738afe527c78b5403abc6}
+\hypertarget{set_up_8cuh_a32f8cb52c6e7f4459effb9cd9bdf90e7}{\index{set\+Up.\+cuh@{set\+Up.\+cuh}!point\+Is\+In\+Distribution@{point\+Is\+In\+Distribution}}
+\index{point\+Is\+In\+Distribution@{point\+Is\+In\+Distribution}!set\+Up.\+cuh@{set\+Up.\+cuh}}
+\subsubsection[{point\+Is\+In\+Distribution}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+device\+\_\+\+\_\+ bool point\+Is\+In\+Distribution (
+\begin{DoxyParamCaption}
+\item[{double3}]{point, }
+\item[{double}]{d\+Bdz, }
+\item[{double}]{Temp, }
+\item[{curand\+State\+Philox4\+\_\+32\+\_\+10\+\_\+t $\ast$}]{rng\+State}
+\end{DoxyParamCaption}
+)}}\label{set_up_8cuh_a32f8cb52c6e7f4459effb9cd9bdf90e7}
+\hypertarget{set_up_8cuh_ae4b8b56540614cdfa269005ac68c1bff}{\index{set\+Up.\+cuh@{set\+Up.\+cuh}!select\+Atom\+In\+Distribution@{select\+Atom\+In\+Distribution}}
+\index{select\+Atom\+In\+Distribution@{select\+Atom\+In\+Distribution}!set\+Up.\+cuh@{set\+Up.\+cuh}}
+\subsubsection[{select\+Atom\+In\+Distribution}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+device\+\_\+\+\_\+ double3 select\+Atom\+In\+Distribution (
+\begin{DoxyParamCaption}
+\item[{double}]{d\+Bdz, }
+\item[{double}]{Temp, }
+\item[{curand\+State\+Philox4\+\_\+32\+\_\+10\+\_\+t $\ast$}]{rng\+State}
+\end{DoxyParamCaption}
+)}}\label{set_up_8cuh_ae4b8b56540614cdfa269005ac68c1bff}
+\hypertarget{set_up_8cuh_a5fedaa6e6674256749ed34658343bfa3}{\index{set\+Up.\+cuh@{set\+Up.\+cuh}!update\+Accel@{update\+Accel}}
+\index{update\+Accel@{update\+Accel}!set\+Up.\+cuh@{set\+Up.\+cuh}}
+\subsubsection[{update\+Accel}]{\setlength{\rightskip}{0pt plus 5cm}\+\_\+\+\_\+device\+\_\+\+\_\+ double3 update\+Accel (
+\begin{DoxyParamCaption}
+\item[{double3}]{pos}
+\end{DoxyParamCaption}
+)}}\label{set_up_8cuh_a5fedaa6e6674256749ed34658343bfa3}
