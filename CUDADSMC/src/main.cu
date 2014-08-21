@@ -136,11 +136,6 @@ int main(int argc, const char * argv[])
     {
         indexAtoms( d_pos,
                     d_cellID );
-		cudaMemcpy( h_cellID, d_cellID, numberOfAtoms*sizeof(int), cudaMemcpyDeviceToHost );
-		
-		for (int j=0; j<numberOfAtoms; j++) {
-			printf("cellID #%i = %i\n", j, h_cellID[i]);
-		}
         sortArrays( d_pos,
                     d_vel,
                     d_acc,
@@ -152,18 +147,12 @@ int main(int argc, const char * argv[])
         findNumberOfAtomsInCell<<<numberOfCells+1,1>>>( d_cellStartEnd,
                                                          d_numberOfAtomsInCell,
                                                          numberOfCells );
-		
-		cudaMemcpy( h_numberOfAtomsInCell, d_numberOfAtomsInCell, (numberOfCells+1)*sizeof(int), cudaMemcpyDeviceToHost );
-		
-		for (int j=0; j<numberOfCells; j++) {
-			printf("cell #%i = %i\n", j, h_numberOfAtomsInCell[i]);
-		}
         
-        collide<<<numberOfCells,64,6144>>>( d_pos,
-                                            d_vel,
-                                            d_cellID,
-                                            d_numberOfAtomsInCell,
-                                            numberOfCells );
+//        collide<<<numberOfCells,64,6144>>>( d_pos,
+//                                            d_vel,
+//                                            d_cellID,
+//                                            d_numberOfAtomsInCell,
+//                                            numberOfCells );
         
         moveAtoms<<<gridSize,blockSize>>>( d_pos,
                                            d_vel,
