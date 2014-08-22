@@ -17,7 +17,7 @@
 
 #pragma mark - Indexing
 
-void  indexAtoms( double3 *d_pos, int *d_cellID )
+float indexAtoms( double3 *d_pos, int *d_cellID )
 {
     float *d_radius;
     cudaCalloc( (void **)&d_radius, numberOfAtoms, sizeof(float) );
@@ -28,7 +28,7 @@ void  indexAtoms( double3 *d_pos, int *d_cellID )
 	
 	cudaOccupancyMaxPotentialBlockSize( &minGridSize,
                                         &blockSize,
-                                        calculateRadius,
+                                        (const void *) calculateRadius,
                                         0,
                                         numberOfAtoms );
 	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
@@ -45,7 +45,7 @@ void  indexAtoms( double3 *d_pos, int *d_cellID )
     
     cudaOccupancyMaxPotentialBlockSize( &minGridSize,
                                         &blockSize,
-                                        findAtomIndex,
+                                        (const void *) findAtomIndex,
                                         0,
                                         numberOfAtoms );
 	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
@@ -55,7 +55,7 @@ void  indexAtoms( double3 *d_pos, int *d_cellID )
     
     cudaFree( d_radius );
     
-    return;
+    return medianR;
 }
 
 __global__ void calculateRadius( double3 *pos, float *radius, int numberOfAtoms )
@@ -110,22 +110,23 @@ __global__ void findAtomIndex( double3 *pos, int *cellID, float medianR, int num
 		 atom += blockDim.x * gridDim.x)
 	{
         double3 l_pos = pos[atom];
+        
+        float3 gridMin    = -d_alpha * medianR * make_float3( 1., 1., 1. );
+        float3 cellLength =  (float) 2.0 * d_alpha * medianR / d_cellsPerDimension;
     
-        int3 indices = getCellIndices( l_pos,
-                                       medianR );
+        int3 cellIndices = getCellIndices( l_pos,
+                                           gridMin,
+                                           cellLength );
 		
-        cellID[atom] = getCellID( indices );
+        cellID[atom] = getCellID( cellIndices );
     }
     
     return;
 }
 
-__device__ int3 getCellIndices( double3 pos, float medianR )
+__device__ int3 getCellIndices( double3 pos, float3 gridMin, float3 cellLength )
 {
     int3 index = { 0, 0, 0 };
-    
-    float3 gridMin    = -1.5 * medianR * make_float3( 1., 1., 1. );
-    float3 cellLength =  (float) 3.0 * medianR / d_cellsPerDimension;
     
     index.x = __float2int_rd ( (pos.x - gridMin.x) / cellLength.x );
     index.y = __float2int_rd ( (pos.y - gridMin.y) / cellLength.y );
@@ -233,15 +234,37 @@ void sortArrays( double3 *d_pos, double3 *d_vel, double3 *d_acc, int *d_cellID )
 
 #pragma mark - Collisions
 
-__global__ void collide( double3 *pos, double3 *vel, int *cellID, int *numberOfAtomsInCell, int numberOfCells )
+__global__ void collide( double3 *pos, double3 *vel, int *prefixScanNumberOfAtomsInCell, float medianR, int numberOfCells )
 {
     int cell   = blockIdx.x;
     int l_atom = threadIdx.x;
-    int g_atom = blockIdx.x * blockDim.x + threadIdx.x;
+    int g_atom = prefixScanNumberOfAtomsInCell[cell] + l_atom;
+    int numberOfAtomsInCell = prefixScanNumberOfAtomsInCell[cell+1] - prefixScanNumberOfAtomsInCell[cell];
     
-    extern __shared__ double3 sh_pos[];
-    if (l_atom < numberOfAtomsInCell[cell]) {
+    int3 cellIndex = { 0, 0, 0 };
+    
+    cellIndex.z = cell / (d_cellsPerDimension.x*d_cellsPerDimension.y);
+    cellIndex.y = ( cell - cellIndex.z*d_cellsPerDimension.x*d_cellsPerDimension.y ) / d_cellsPerDimension.x;
+    cellIndex.x = cell - cellIndex.z*d_cellsPerDimension.x*d_cellsPerDimension.y - cellIndex.y*d_cellsPerDimension.x;
+    
+    int numberOfSubCellsPerDimension = 4;
+    
+    float3 cellLength    = (float) 2.0 * d_alpha * medianR / d_cellsPerDimension;
+    float3 subCellLength = cellLength / numberOfSubCellsPerDimension;
+    float3 cellMin       = cellIndex * cellLength;
+    
+    __shared__ double3 sh_pos[MAXATOMS];
+    __shared__ double3 sh_vel[MAXATOMS];
+    __shared__ int     sh_subcellID[MAXATOMS];
+    
+    if ( l_atom < numberOfAtomsInCell ) {
         sh_pos[l_atom] = pos[g_atom];
+        sh_vel[l_atom] = vel[g_atom];
+        
+        int3 subCellIndices = getCellIndices( sh_pos[l_atom],
+                                              cellMin,
+                                              subCellLength );
+        sh_subcellID[l_atom] = getCellID( subCellIndices );
     }
     __syncthreads();
     

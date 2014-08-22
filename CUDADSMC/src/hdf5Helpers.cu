@@ -123,7 +123,7 @@ void writeHDF5File( hdf5FileHandle &hdf5handle, char *filename, double3 *data )
 	hid_t file = H5Fopen (filename,
 						  H5F_ACC_RDWR,
 						  H5P_DEFAULT);
-	
+    
 	hdf5handle.dataset = H5Dopen2 (file,
 								   hdf5handle.datasetname,
 								   H5P_DEFAULT);

@@ -12,6 +12,7 @@
 #include <curand_kernel.h>
 #include <thrust/device_vector.h>
 #include <thrust/sort.h>
+#include <thrust/scan.h>
 
 #include "declareInitialSystemParameters.cuh"
 #include "initialSystemParameters.cuh"
@@ -48,7 +49,7 @@ int main(int argc, const char * argv[])
 	
 	cudaOccupancyMaxPotentialBlockSize( &minGridSize,
                                         &blockSize,
-                                        initRNG,
+                                        (const void *) initRNG,
                                         0,
                                         numberOfAtoms );
 	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
@@ -61,10 +62,13 @@ int main(int argc, const char * argv[])
     double3 *d_vel;
     double3 *d_acc;
     
+    float medianR;
+    
     int2 *d_cellStartEnd;
     
     int *d_cellID;
     int *d_numberOfAtomsInCell;
+    int *d_prefixScanNumberOfAtomsInCell;
 
     cudaCalloc( (void **)&d_pos, numberOfAtoms, sizeof(double3) );
     cudaCalloc( (void **)&d_vel, numberOfAtoms, sizeof(double3) );
@@ -74,16 +78,20 @@ int main(int argc, const char * argv[])
     
     cudaCalloc( (void **)&d_cellID, numberOfAtoms, sizeof(int) );
     cudaCalloc( (void **)&d_numberOfAtomsInCell, numberOfCells+1, sizeof(int) );
+    cudaCalloc( (void **)&d_prefixScanNumberOfAtomsInCell, numberOfCells+1, sizeof(int) );
     
     double3 *h_pos = (double3*) calloc( numberOfAtoms, sizeof(double3) );
     double3 *h_vel = (double3*) calloc( numberOfAtoms, sizeof(double3) );
+    
+    thrust::device_ptr<int> th_numberOfAtomsInCell = thrust::device_pointer_cast( d_numberOfAtomsInCell );
+    thrust::device_ptr<int> th_prefixScanNumberOfAtomsInCell = thrust::device_pointer_cast( d_prefixScanNumberOfAtomsInCell );
     
     int *h_numberOfAtomsInCell = (int*) calloc( numberOfCells+1, sizeof(int) );
 	int *h_cellID = (int*) calloc( numberOfAtoms, sizeof(int) );
     
     cudaOccupancyMaxPotentialBlockSize( &minGridSize,
                                         &blockSize,
-                                        generateInitialDist,
+                                        (const void *) generateInitialDist,
                                         0,
                                         numberOfAtoms );
 	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
@@ -96,8 +104,8 @@ int main(int argc, const char * argv[])
                                                  dBdz,
                                                  rngStates );
     
-    indexAtoms( d_pos,
-                d_cellID );
+    medianR = indexAtoms( d_pos,
+                          d_cellID );
 	sortArrays( d_pos,
                 d_vel,
                 d_acc,
@@ -105,8 +113,11 @@ int main(int argc, const char * argv[])
     
     createHDF5File( filename, groupname );
     
+    
     cudaMemcpy( h_pos, d_pos, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
-	hdf5FileHandle hdf5handlePos = createHDF5Handle( numberOfAtoms, "/atomData/positions" );
+	char posDatasetName[] = "/atomData/positions";
+    hdf5FileHandle hdf5handlePos = createHDF5Handle( numberOfAtoms,
+                                                     posDatasetName );
 	intialiseHDF5File( hdf5handlePos,
                        filename );
 	writeHDF5File( hdf5handlePos,
@@ -114,45 +125,50 @@ int main(int argc, const char * argv[])
                    h_pos );
     
     cudaMemcpy( h_vel, d_vel, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
-    hdf5FileHandle hdf5handleVel = createHDF5Handle( numberOfAtoms, "/atomData/velocities" );
+    char velDatasetName[] = "/atomData/velocities";
+    hdf5FileHandle hdf5handleVel = createHDF5Handle( numberOfAtoms,
+                                                     velDatasetName );
 	intialiseHDF5File( hdf5handleVel,
                        filename );
 	writeHDF5File( hdf5handleVel,
                    filename,
                    h_vel );
-
+    
 #pragma mark - Main Loop
     
     cudaOccupancyMaxPotentialBlockSize( &minGridSize,
-                                       &blockSize,
-                                       moveAtoms,
-                                       0,
-                                       numberOfAtoms );
+                                        &blockSize,
+                                        (const void *) moveAtoms,
+                                        0,
+                                        numberOfAtoms );
 	
 	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
     printf("moveAtoms:           gridSize = %i, blockSize = %i\n", gridSize, blockSize);
     
-    for (int i=0; i<1; i++)
+    for (int i=0; i<10; i++)
     {
-        indexAtoms( d_pos,
-                    d_cellID );
+        medianR = indexAtoms( d_pos,
+                              d_cellID );
         sortArrays( d_pos,
                     d_vel,
                     d_acc,
                     d_cellID );
 		
-		
-        
-		cellStartandEndKernel<<<gridSize,blockSize>>>( d_cellID, d_cellStartEnd, numberOfAtoms );
+		cellStartandEndKernel<<<gridSize,blockSize>>>( d_cellID,
+                                                       d_cellStartEnd,
+                                                       numberOfAtoms );
         findNumberOfAtomsInCell<<<numberOfCells+1,1>>>( d_cellStartEnd,
-                                                         d_numberOfAtomsInCell,
-                                                         numberOfCells );
+                                                        d_numberOfAtomsInCell,
+                                                        numberOfCells );
+        thrust::exclusive_scan( th_numberOfAtomsInCell,
+                                th_numberOfAtomsInCell + numberOfCells + 1,
+                                th_prefixScanNumberOfAtomsInCell );
         
-//        collide<<<numberOfCells,64,6144>>>( d_pos,
-//                                            d_vel,
-//                                            d_cellID,
-//                                            d_numberOfAtomsInCell,
-//                                            numberOfCells );
+        collide<<<numberOfCells,64>>>( d_pos,
+                                       d_vel,
+                                       d_prefixScanNumberOfAtomsInCell,
+                                       medianR,
+                                       numberOfCells );
         
         moveAtoms<<<gridSize,blockSize>>>( d_pos,
                                            d_vel,
@@ -185,6 +201,7 @@ int main(int argc, const char * argv[])
     cudaFree( d_cellStartEnd );
     cudaFree( d_cellID );
     cudaFree( d_numberOfAtomsInCell );
+    cudaFree( d_prefixScanNumberOfAtomsInCell );
     cudaFree( rngStates );
     
     cudaDeviceReset();

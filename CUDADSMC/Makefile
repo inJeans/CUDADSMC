@@ -4,6 +4,16 @@
 #  Created by Christopher Watkins on 1/08/2014.
 #  Copyright (c) 2014 WIJ. All rights reserved.
 
+# Colour coding the makfile :-)
+NO_COLOR=\033[0m
+OK_COLOR=\033[0;33m
+ERROR_COLOR=\x1b[31;01m
+WARN_COLOR=\x1b[33;01m
+
+OK_STRING=$(OK_COLOR)[OK]$(NO_COLOR)
+ERROR_STRING=$(ERROR_COLOR)[ERRORS]$(NO_COLOR)
+WARN_STRING=$(WARN_COLOR)[WARNINGS]$(NO_COLOR)
+
 # Common binaries
 GCC   ?= g++
 CLANG ?= /usr/bin/clang
@@ -11,12 +21,10 @@ CLANG ?= /usr/bin/clang
 UNAME_S := $(shell uname -s)
 
 ifeq ($(UNAME_S),Darwin) #If building on an OSX system
-	#	CUDA_PATH= /usr/local/cuda
 	CUDA_PATH= /Developer/NVIDIA/CUDA-6.5
 	CUDA_INC = -I/Developer/NVIDIA/CUDA-6.5/include
 	CUDA_LIB = -L/Developer/NVIDIA/CUDA-6.5/lib
 	NVCC     = $(CUDA_PATH)/bin/nvcc -ccbin $(CLANG)
-	#    NVCC = nvcc
 else                     #If building on a Linux system
 	CUDA_INC = -I/usr/local/cuda-5.5/include
 	UNAME_P := $(shell uname -p)
@@ -28,48 +36,35 @@ else                     #If building on a Linux system
 	NVCC = nvcc
 endif
 
-BUILDDIR =
+NVCCFLAGS = -m 64 -arch=compute_30 -code=sm_30,compute_30
+
+BUILDDIR = bin/
 OBJDIR   = $(BUILDDIR)obj/
 SRCDIR   = src/
+
+EXEC = $(BUILDDIR)CUDADSMC
 
 INCLUDE = -I include/ -I /usr/local/hdf5/include
 LIB     = -L /usr/local/hdf5/lib
 
-all: build
+all: $(EXEC)
 
-build: CUDADSMC
+debug: NVCCFLAGS += -g -G
+debug: clean
+debug: $(EXEC)
 
-CUDADSMC: main.o setUp.o moveAtoms.o collisions.o cudaHelpers.o hdf5Helpers.o
-	$(NVCC) -m 64 -pg -g -G -arch=compute_30 -code=sm_30,compute_30 -o $(addprefix $(BUILDDIR), $@ ) $(INCLUDE) $(addprefix $(OBJDIR), $^ ) $(LIB) $(CUDA_LIB) -lcurand -lcublas -lhdf5 -lhdf5_hl
+profile: NVCCFLAGS += -pg
+profile: $(EXEC)
 
-main.o: $(addprefix $(SRCDIR), main.cu )
-	$(NVCC) -m 64 -pg -g -G -arch=compute_30 -code=sm_30,compute_30 $(INCLUDE) -o $(addprefix $(OBJDIR), $@ ) -c $?
+$(EXEC): $(addprefix $(OBJDIR), main.o setUp.o moveAtoms.o collisions.o cudaHelpers.o hdf5Helpers.o )
+	$(NVCC) -o $@ $(INCLUDE) $^ $(LIB) $(CUDA_LIB) -lcurand -lcublas -lhdf5 -lhdf5_hl
 
-setUp.o: $(addprefix $(SRCDIR), setUp.cu )
-	$(NVCC) -m 64 -pg -g -G -arch=compute_30 -code=sm_30,compute_30 $(INCLUDE) -o $(addprefix $(OBJDIR), $@ ) -c $?
-
-moveAtoms.o: $(addprefix $(SRCDIR), moveAtoms.cu )
-	$(NVCC) -m 64 -pg -g -G -arch=compute_30 -code=sm_30,compute_30 $(INCLUDE) -o $(addprefix $(OBJDIR), $@ ) -c $?
-
-collisions.o: $(addprefix $(SRCDIR), collisions.cu )
-	$(NVCC) -m 64 -pg -g -G -arch=compute_30 -code=sm_30,compute_30 $(INCLUDE) -o $(addprefix $(OBJDIR), $@ ) -c $?
-
-cudaHelpers.o: $(addprefix $(SRCDIR), cudaHelpers.cu )
-	$(NVCC) -m 64 -pg -g -G -arch=compute_30 -code=sm_30,compute_30 $(INCLUDE) -o $(addprefix $(OBJDIR), $@ ) -c $?
-
-hdf5Helpers.o: $(addprefix $(SRCDIR), hdf5Helpers.cu )
-	$(NVCC) -m 64 -pg -g -G -arch=compute_30 -code=sm_30,compute_30 $(INCLUDE) -o $(addprefix $(OBJDIR), $@ ) -c $?
-
-buildTest: test
-
-test: mainTest.o setUp.o statTests.o cudaHelpers.o
-	$(NVCC) -m 64 -pg -arch=compute_30 -code=sm_30,compute_30 -o $(addprefix $(BUILDDIR), $@ ) $(INCLUDE) $(addprefix $(OBJDIR), $^ ) $(LIB) $(CUDA_LIB) -lcurand -lcublas -lhdf5
-
-mainTest.o: $(addprefix $(SRCDIR), mainTest.cu )
-	$(NVCC) -m 64 -pg -arch=compute_30 -code=sm_30,compute_30 $(INCLUDE) -o $(addprefix $(OBJDIR), $@ ) -c $?
-
-statTests.o: $(addprefix $(SRCDIR), statTests.cu )
-	$(NVCC) -m 64 -pg -arch=compute_30 -code=sm_30,compute_30 $(INCLUDE) -o $(addprefix $(OBJDIR), $@ ) -c $?
+$(OBJDIR)%.o: $(SRCDIR)%.cu
+	@echo 'Building file: $<'
+	@echo 'Invoking: NVCC Compiler'
+	$(NVCC) $(NVCCFLAGS) $(INCLUDE) -o $@ -c $?
+	@echo "Finished building: $< $(OK_STRING)"
+	@echo ' '
 
 run:
 	{ time ./$(BUILDDIR)CUDADSMC ; } | tee output.txt
