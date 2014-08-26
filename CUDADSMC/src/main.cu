@@ -62,7 +62,9 @@ int main(int argc, const char * argv[])
     double3 *d_vel;
     double3 *d_acc;
     
-    float medianR;
+    double *d_sigvrmax;
+    
+    double medianR;
     
     int2 *d_cellStartEnd;
     
@@ -73,6 +75,8 @@ int main(int argc, const char * argv[])
     cudaCalloc( (void **)&d_pos, numberOfAtoms, sizeof(double3) );
     cudaCalloc( (void **)&d_vel, numberOfAtoms, sizeof(double3) );
     cudaCalloc( (void **)&d_acc, numberOfAtoms, sizeof(double3) );
+    
+    cudaCalloc( (void **)&d_sigvrmax, numberOfCells+1, sizeof(double) );
     
     cudaCalloc( (void **)&d_cellStartEnd, numberOfCells+1, sizeof(int2) );
     
@@ -145,7 +149,7 @@ int main(int argc, const char * argv[])
 	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
     printf("moveAtoms:           gridSize = %i, blockSize = %i\n", gridSize, blockSize);
     
-    for (int i=0; i<10; i++)
+    for (int i=0; i<1; i++)
     {
         medianR = indexAtoms( d_pos,
                               d_cellID );
@@ -163,9 +167,15 @@ int main(int argc, const char * argv[])
         thrust::exclusive_scan( th_numberOfAtomsInCell,
                                 th_numberOfAtomsInCell + numberOfCells + 1,
                                 th_prefixScanNumberOfAtomsInCell );
-        
-        collide<<<numberOfCells,64>>>( d_pos,
+//        int *h_prefixScanNumberOfAtomsInCell = (int*) calloc( numberOfCells+1, sizeof(int) );
+//        cudaMemcpy( h_prefixScanNumberOfAtomsInCell, d_prefixScanNumberOfAtomsInCell, (numberOfCells+1)*sizeof(int), cudaMemcpyDeviceToHost );
+//        for (int j=0; j<numberOfCells+1; j++) {
+//            printf("h_prefixScanNumberOfAtomsInCell[%i] = %i\n", j, h_prefixScanNumberOfAtomsInCell[j]);
+//        }
+//        return;
+        collide<<<numberOfCells,1>>>( d_pos,
                                        d_vel,
+                                       d_sigvrmax,
                                        d_prefixScanNumberOfAtomsInCell,
                                        medianR,
                                        numberOfCells );
@@ -187,6 +197,7 @@ int main(int argc, const char * argv[])
         
         printf("i = %i\n", i);
     }
+    
     // insert code here...
     printf("\n");
     
@@ -198,6 +209,7 @@ int main(int argc, const char * argv[])
     cudaFree( d_pos );
     cudaFree( d_vel );
     cudaFree( d_acc );
+    cudaFree( d_sigvrmax );
     cudaFree( d_cellStartEnd );
     cudaFree( d_cellID );
     cudaFree( d_numberOfAtomsInCell );

@@ -50,14 +50,18 @@ LIB     = -L /usr/local/hdf5/lib
 all: $(EXEC)
 
 debug: NVCCFLAGS += -g -G
-debug: clean
+#debug: clean
 debug: $(EXEC)
 
 profile: NVCCFLAGS += -pg
 profile: $(EXEC)
 
 $(EXEC): $(addprefix $(OBJDIR), main.o setUp.o moveAtoms.o collisions.o cudaHelpers.o hdf5Helpers.o )
+	@echo 'Building file: $<'
+	@echo 'Invoking: NVCC Linker'
 	$(NVCC) -o $@ $(INCLUDE) $^ $(LIB) $(CUDA_LIB) -lcurand -lcublas -lhdf5 -lhdf5_hl
+	@echo "Finished building: $< $(OK_STRING)"
+	@echo ' '
 
 $(OBJDIR)%.o: $(SRCDIR)%.cu
 	@echo 'Building file: $<'
@@ -74,7 +78,14 @@ run:
 	echo "" >> output.txt
 	echo "----------------------------------------" >> output.txt
 	echo "" >> output.txt
-
 	tput bel
+
+memcheck:
+	{ time cuda-memcheck ./$(BUILDDIR)CUDADSMC ; } | tee output.txt
+	echo "" >> output.txt
+	echo "----------------------------------------" >> output.txt
+	echo "" >> output.txt
+	tput bel
+
 clean:
 	rm -rf $(OBJDIR)*.o $(BUILDDIR)CUDADSMC
