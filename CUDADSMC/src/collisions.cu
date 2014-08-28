@@ -353,6 +353,38 @@ __global__ void collide( double3 *pos,
             sigvrmax[cell] = VR * crossSection;
         }
         
+		// Collide with the collision probability.
+		if (Fn * stepsPerCol * dt / cellVol * VR * crossSection / lambda > hybridTaus( rngState ) ) {
+			// Find centre of mass velocities.
+			Vcm.x = (gpuPrec)0.5*(vel[atom1].x + vel[atom2].x);
+			Vcm.y = (gpuPrec)0.5*(vel[atom1].y + vel[atom2].y);
+			Vcm.z = (gpuPrec)0.5*(vel[atom1].z + vel[atom2].z);
+			Vcm.w = 0.0;
+			
+			// Generate a random velocity on the unit sphere.
+			B = (gpuPrec)2.0*hybridTaus( rngState ) - (gpuPrec)1.0;
+			A = sqrt((gpuPrec)1.0 - B*B);
+			C = (gpuPrec)2.0*d_pi*hybridTaus( rngState );
+			
+			newV.x = B*VR;
+			newV.y = A*VR*cos(C);
+			newV.z = A*VR*sin(C);
+			newV.w = 0.0;
+			
+			// Calculate the post collison velocities. Adding one half of the new velocity
+			vel[atom1].x = Vcm.x - (gpuPrec)0.5*newV.x;
+			vel[atom1].y = Vcm.y - (gpuPrec)0.5*newV.y;
+			vel[atom1].z = Vcm.z - (gpuPrec)0.5*newV.z;
+			vel[atom1].w = 0.0;
+			vel[atom2].x = Vcm.x + (gpuPrec)0.5*newV.x;
+			vel[atom2].y = Vcm.y + (gpuPrec)0.5*newV.y;
+			vel[atom2].z = Vcm.z + (gpuPrec)0.5*newV.z;
+			vel[atom2].w = 0.0;
+			
+			// Count the collsion
+			collisionCounter[cellCounter] += Fn;
+		}
+		
         rngState[g_collisionId] = l_rngState;
     }
     
