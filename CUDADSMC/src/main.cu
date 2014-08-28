@@ -39,8 +39,16 @@ int main(int argc, const char * argv[])
 	
 #pragma mark - Set up atom system
 	
+	int sizeOfRNG = 0;
+	if (numberOfAtoms > 64*numberOfCells) {
+		sizeOfRNG = numberOfAtoms;
+	}
+	else
+	{
+		sizeOfRNG = 64*numberOfCells;
+	}
 	curandStatePhilox4_32_10_t *d_rngStates;
-	cudaMalloc( (void **)&d_rngStates, numberOfAtoms*sizeof(curandStatePhilox4_32_10_t) );
+	cudaMalloc( (void **)&d_rngStates, sizeOfRNG*sizeof(curandStatePhilox4_32_10_t) );
 	
 	int blockSize;
 	int minGridSize;
@@ -51,10 +59,10 @@ int main(int argc, const char * argv[])
                                         &blockSize,
                                         (const void *) initRNG,
                                         0,
-                                        numberOfAtoms );
+                                        sizeOfRNG );
 	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
 	printf("initRNG:             gridSize = %i, blockSize = %i\n", gridSize, blockSize);
-	initRNG<<<gridSize,blockSize>>>( d_rngStates, numberOfAtoms );
+	initRNG<<<gridSize,blockSize>>>( d_rngStates, sizeOfRNG );
     
 #pragma mark - Memory Allocation
     
@@ -150,7 +158,7 @@ int main(int argc, const char * argv[])
 	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
     printf("moveAtoms:           gridSize = %i, blockSize = %i\n", gridSize, blockSize);
     
-    for (int i=0; i<2; i++)
+    for (int i=0; i<100; i++)
     {
         medianR = indexAtoms( d_pos,
                               d_cellID );

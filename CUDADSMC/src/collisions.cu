@@ -342,9 +342,9 @@ __global__ void collide( double3 *pos,
         }
         
         // Calculate the atoms' relative speed.
-        vRel.x = vel[collidingAtoms.x].x - vel[collidingAtoms.y].x;
-        vRel.y = vel[collidingAtoms.x].y - vel[collidingAtoms.y].y;
-        vRel.z = vel[collidingAtoms.x].z - vel[collidingAtoms.y].z;
+        vRel.x = sh_vel[collidingAtoms.x].x - sh_vel[collidingAtoms.y].x;
+        vRel.y = sh_vel[collidingAtoms.x].y - sh_vel[collidingAtoms.y].y;
+        vRel.z = sh_vel[collidingAtoms.x].z - sh_vel[collidingAtoms.y].z;
         VR     = sqrt(vRel.x*vRel.x + vRel.y*vRel.y + vRel.z*vRel.z);
         
         // Check if this is the more probable than current most probable.

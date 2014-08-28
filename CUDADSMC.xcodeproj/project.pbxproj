@@ -41,6 +41,7 @@
 		1DC74A22199D7DD200C41388 /* hdf5Helpers.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = hdf5Helpers.cuh; path = include/hdf5Helpers.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		1DD39FB1198B4BD5007645E2 /* setUp.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = setUp.cuh; path = include/setUp.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		1DD39FB4198B5041007645E2 /* initialSystemParameters.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = initialSystemParameters.cuh; path = include/initialSystemParameters.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		1DE20FC119AFEB9C00B7E8EA /* energyChecker.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = energyChecker.py; sourceTree = "<group>"; };
 		1DF72A081995B3D500E6659A /* statTests.cu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = statTests.cu; path = src/statTests.cu; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		1DF72A091995B6FE00E6659A /* statTests.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = statTests.cuh; path = include/statTests.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		443C4637198A00C50079A2C8 /* CUDADSMC */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = CUDADSMC; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -109,6 +110,7 @@
 		443C4639198A00C50079A2C8 /* CUDADSMC */ = {
 			isa = PBXGroup;
 			children = (
+				1DE20FC119AFEB9C00B7E8EA /* energyChecker.py */,
 				1D9486A6198B10A800324396 /* Makefile */,
 				443C4644198A01280079A2C8 /* src */,
 				1D9486A5198B0F9B00324396 /* include */,

@@ -55,7 +55,7 @@ __device__ double3 updateVelHalfStep( double3 vel, double3 acc )
 
 __device__ double3 updatePos( double3 pos, double3 vel )
 {
-    return pos + pos * d_dt;
+    return pos + vel * d_dt;
 }
 
 __device__ double3 updateAcc( double3 pos )
