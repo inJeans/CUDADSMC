@@ -46,6 +46,11 @@ static __inline__ __device__ double3 operator* ( double3 a, double b )
 	return make_double3( a.x*b, a.y*b, a.z*b );
 }
 
+static __inline__ __device__ double3 operator/ ( double3 a, int3 b )
+{
+	return make_double3( a.x/b.x, a.y/b.y, a.z/b.z );
+}
+
 static __inline__ __device__ double3 operator/ ( double3 a, int b )
 {
 	return make_double3( a.x/b, a.y/b, a.z/b );
@@ -91,16 +96,26 @@ static __inline__ __device__ float3 operator/ ( float3 a, int b )
 	return make_float3( a.x/b, a.y/b, a.z/b );
 }
 
+static __inline__ __device__ int2 operator+ ( int a, int2 b )
+{
+	return make_int2( a+b.x, a+b.y );
+}
+
 #pragma mark - Vector Functions
 
-static __device__ double dot( double3 a, double3 b )
+static __inline __device__ double dot( double3 a, double3 b )
 {
     return a.x*b.x + a.y*b.y + a.z*b.z ;
 }
 
-static __device__ float lengthf( double3 v )
+static __inline__ __device__ float lengthf( double3 v )
 {
     return sqrtf( (float) dot(v,v) );
+}
+
+static __inline__ __device__ int2 double2Toint2_rd( double2 a )
+{
+	return make_int2( __double2int_rd(a.x), __double2int_rd(a.y) );
 }
 
 #endif

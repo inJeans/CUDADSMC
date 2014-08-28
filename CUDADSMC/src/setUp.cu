@@ -9,23 +9,10 @@
 #include "setUp.cuh"
 #include "vectorMath.cuh"
 #include "math.h"
+#include "cudaHelpers.cuh"
 
-////////////////////////////////////////////////////////////////////////////////
-// Define some global variables on the device                                 //
-////////////////////////////////////////////////////////////////////////////////
-
-__constant__ double d_gs   =  0.5;				// Gyromagnetic ratio
-__constant__ double d_MF   = -1.0;				// Magnetic quantum number
-__constant__ double d_muB  = 9.27400915e-24;	// Bohr magneton
-__constant__ double d_mRb  = 1.443160648e-25;	// 87Rb mass
-__constant__ double d_pi   = 3.14159265;		// Pi
-__constant__ double d_a    = 5.3e-9;			// Constant cross-section formula
-__constant__ double d_kB   = 1.3806503e-23;		// Boltzmann's Constant
-__constant__ double d_hbar = 1.05457148e-34;	// hbar
-
-__constant__ double d_dBdz = 2.5;	    // field gradient
-
-/////////////////////////////////////////////////////////////////////////////////
+#include "declareInitialSystemParameters.cuh"
+#include "declareDeviceSystemParameters.cuh"
 
 #pragma mark - Random Number Generator
 __global__ void initRNG( curandStatePhilox4_32_10_t *rngState, int numberOfAtoms )
@@ -159,4 +146,11 @@ __device__ double3 updateAccel( double3 pos )
 	accel.z = 4.0 * potential * pos.z;
     
     return accel;
+}
+
+void initSigvrmax( double *d_sigvrmax, int numberOfCells )
+{
+    double sigvrmax = sqrt(3.*h_kB*Tinit/h_mRb)*8.*h_pi*h_a*h_a;
+    
+    cudaSetMem( d_sigvrmax, sigvrmax, numberOfCells + 1 );
 }

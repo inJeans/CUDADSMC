@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <cuda.h>
 
-#include "declareInitialSystemParameters.cuh"
+#include "declareDeviceSystemParameters.cuh"
 #include "moveAtoms.cuh"
 #include "vectorMath.cuh"
 #include "math.h"
@@ -18,7 +18,6 @@
 // Define some global variables on the device                                 //
 ////////////////////////////////////////////////////////////////////////////////
 
-__constant__ double d_dBdz = 2.5;	    // field gradient
 __device__   int    loopsPerCollision = 1000;	// loops per collision
 
 /////////////////////////////////////////////////////////////////////////////////

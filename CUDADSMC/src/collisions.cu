@@ -7,10 +7,12 @@
 //
 
 #include <stdio.h>
+#include <curand_kernel.h>
 #include <thrust/device_vector.h>
 #include <thrust/sort.h>
 
 #include "declareInitialSystemParameters.cuh"
+#include "declareDeviceSystemParameters.cuh"
 #include "collisions.cuh"
 #include "vectorMath.cuh"
 #include "cudaHelpers.cuh"
@@ -111,14 +113,14 @@ __global__ void findAtomIndex( double3 *pos, int *cellID, double medianR, int nu
 	{
         double3 l_pos = pos[atom];
         
-        double3 gridMin    = -d_meshWidth * medianR * make_double3( 1., 1., 1. );
-        double3 cellLength =  (double) 2.0 * d_meshWidth * medianR / d_cellsPerDimension;
+        double3 gridMin    = getGridMin( medianR );
+        double3 cellLength = (double) 2.0 * d_meshWidth * medianR / d_cellsPerDimension;
     
         int3 cellIndices = getCellIndices( l_pos,
                                            gridMin,
                                            cellLength );
 		
-        cellID[atom] = getCellID( cellIndices );
+        cellID[atom] = getCellID( cellIndices, d_cellsPerDimension );
     }
     
     return;
@@ -135,18 +137,25 @@ __device__ int3 getCellIndices( double3 pos, double3 gridMin, double3 cellLength
     return index;
 }
 
-__device__ int getCellID( int3 index )
+__device__ int getCellID( int3 index, int3 cellsPerDimension )
 {
     int cellID = 0;
     
-    if (index.x > -1 && index.x < d_cellsPerDimension.x && index.y > -1 && index.y < d_cellsPerDimension.y && index.z > -1 && index.z < d_cellsPerDimension.z) {
-        cellID = index.z*d_cellsPerDimension.x*d_cellsPerDimension.y + index.y*d_cellsPerDimension.x + index.x;
+    if (index.x > -1 && index.x < cellsPerDimension.x && index.y > -1 && index.y < cellsPerDimension.y && index.z > -1 && index.z < cellsPerDimension.z) {
+        cellID = index.z*cellsPerDimension.x*cellsPerDimension.y + index.y*cellsPerDimension.x + index.x;
     }
     else {
-        cellID = d_cellsPerDimension.x * d_cellsPerDimension.y * d_cellsPerDimension.z;
+        cellID = cellsPerDimension.x * cellsPerDimension.y * cellsPerDimension.z;
     }
     
     return cellID;
+}
+
+__device__ double3 getGridMin( double medianR )
+{
+    double3 gridMin = -d_meshWidth * medianR * make_double3( 1., 1., 1. );
+    
+    return  gridMin;
 }
 
 __global__ void cellStartandEndKernel( int *cellID, int2 *cellStartEnd, int numberOfAtoms )
@@ -276,55 +285,90 @@ __global__ void collide( double3 *pos,
                          double3 *vel,
                          double  *sigvrmax,
                          int     *prefixScanNumberOfAtomsInCell,
-                         double    medianR,
-                         int      numberOfCells )
+                         double   medianR,
+                         int      numberOfCells,
+                         curandStatePhilox4_32_10_t *rngState )
 {
     int cell   = blockIdx.x;
     int numberOfAtomsInCell = prefixScanNumberOfAtomsInCell[cell+1] - prefixScanNumberOfAtomsInCell[cell];
     int g_atom = 0;
-    int3 cellIndex = { 0, 0, 0 };
-    
-    cellIndex.z = cell / (d_cellsPerDimension.x*d_cellsPerDimension.y);
-    cellIndex.y = ( cell - cellIndex.z*d_cellsPerDimension.x*d_cellsPerDimension.y ) / d_cellsPerDimension.x;
-    cellIndex.x = cell - cellIndex.z*d_cellsPerDimension.x*d_cellsPerDimension.y - cellIndex.y*d_cellsPerDimension.x;
-    
-    int numberOfSubCellsPerDimension = 4;
-    int numberOfSubCells = numberOfSubCellsPerDimension * numberOfSubCellsPerDimension * numberOfSubCellsPerDimension;
     
     double3 cellLength    = (double) 2.0 * d_meshWidth * medianR / d_cellsPerDimension;
-    double3 subCellLength = cellLength / numberOfSubCellsPerDimension;
-    double3 cellMin       = cellIndex * cellLength;
     
     __shared__ double3 sh_pos[MAXATOMS];
     __shared__ double3 sh_vel[MAXATOMS];
-    __shared__ int     sh_subcellID[MAXATOMS];
-    
-    printf("number of atoms in cell %i = %i\n", cell, numberOfAtomsInCell );
     __syncthreads();
     
-    for (int l_atom = threadIdx.x;                                                                                                
-		 l_atom += gridDim.x) 	{
+    if (numberOfAtomsInCell > MAXATOMS) {
+        numberOfAtomsInCell = MAXATOMS;
+    }
+    
+    for ( int l_atom = threadIdx.x;
+          l_atom < numberOfAtomsInCell;
+		  l_atom += blockDim.x )
+    {
         g_atom = prefixScanNumberOfAtomsInCell[cell] + l_atom;
         
         sh_pos[l_atom] = pos[g_atom];
         sh_vel[l_atom] = vel[g_atom];
-        
-        int3 subCellIndices = getCellIndices( sh_pos[l_atom],
-                                              cellMin,
-                                              subCellLength );
-        sh_subcellID[l_atom] = getCellID( subCellIndices );
-        printf("sh_subcellID[%i] = %i\n", l_atom, sh_subcellID[l_atom]);
     }
     __syncthreads();
-    
-    int2 l_subCellStartEnd[MAXSUBCELLS];
-    int  l_numberOfAtomsInSubCell[MAXSUBCELLS];
-    
-    serialCellStartandEndKernel( sh_subcellID, l_subCellStartEnd, numberOfAtomsInCell );
-    serialFindNumberOfAtomsInCell( l_subCellStartEnd, l_numberOfAtomsInSubCell, numberOfSubCells );
     
     double cellVolume = cellLength.x * cellLength.y * cellLength.z;
     int Mc = __double2int_ru( 0.5 * d_alpha * (numberOfAtomsInCell - 1) * numberOfAtomsInCell * d_dt * sigvrmax[cell] / cellVolume );
     
+    double3 vRel;
+    int2 collidingAtoms;
+    
+    double crossSection = 8.*d_pi*d_a*d_a;
+    double VR;
+    
+    for ( int l_collision = threadIdx.x;
+          l_collision < Mc;
+          l_collision += blockDim.x )
+    {
+        int g_collisionId = l_collision + cell*blockDim.x;
+        curandStatePhilox4_32_10_t l_rngState = rngState[g_collisionId];
+        
+        collidingAtoms.x = 0;
+        collidingAtoms.y = 0;
+        
+        if (numberOfAtomsInCell == 2) {
+            collidingAtoms.x = 0;
+            collidingAtoms.y = 1;
+        }
+        else {
+            collidingAtoms = chooseCollidingAtoms( numberOfAtomsInCell, &l_rngState );
+        }
+        
+        // Calculate the atoms' relative speed.
+        vRel.x = vel[collidingAtoms.x].x - vel[collidingAtoms.y].x;
+        vRel.y = vel[collidingAtoms.x].y - vel[collidingAtoms.y].y;
+        vRel.z = vel[collidingAtoms.x].z - vel[collidingAtoms.y].z;
+        VR     = sqrt(vRel.x*vRel.x + vRel.y*vRel.y + vRel.z*vRel.z);
+        
+        // Check if this is the more probable than current most probable.
+        if (VR*crossSection > sigvrmax[cell]) {
+            printf("Making it bigger %g -> %g\n", sigvrmax[cell], VR * crossSection);
+            sigvrmax[cell] = VR * crossSection;
+        }
+        
+        rngState[g_collisionId] = l_rngState;
+    }
+    
+    __syncthreads();
+    
     return;
+}
+
+__device__ int2 chooseCollidingAtoms( int numberOfAtomsInCell, curandStatePhilox4_32_10_t *rngState )
+{
+    int2 collidingAtoms = { 0, 0 };
+    
+    // Randomly choose particles in this cell to collide.
+    while (collidingAtoms.x == collidingAtoms.y) {
+        collidingAtoms = double2Toint2_rd( curand_uniform2_double ( &rngState[0] ) * (numberOfAtomsInCell-1) );
+    }
+    
+    return collidingAtoms;
 }

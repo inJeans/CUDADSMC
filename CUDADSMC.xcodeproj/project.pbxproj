@@ -53,6 +53,7 @@
 		44570CA119A310CD003541D9 /* declareInitialSystemParameters.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = declareInitialSystemParameters.cuh; path = include/declareInitialSystemParameters.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		4498B4611999C2D400305A43 /* moveAtoms.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = moveAtoms.cuh; path = include/moveAtoms.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		4498B4631999C57000305A43 /* vectorMath.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = vectorMath.cuh; path = include/vectorMath.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		44D2EA1819AEF78B00441BB7 /* declareDeviceSystemParameters.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = declareDeviceSystemParameters.cuh; path = include/declareDeviceSystemParameters.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -74,6 +75,7 @@
 			children = (
 				1DD39FB4198B5041007645E2 /* initialSystemParameters.cuh */,
 				44570CA119A310CD003541D9 /* declareInitialSystemParameters.cuh */,
+				44D2EA1819AEF78B00441BB7 /* declareDeviceSystemParameters.cuh */,
 				1DD39FB1198B4BD5007645E2 /* setUp.cuh */,
 				4498B4611999C2D400305A43 /* moveAtoms.cuh */,
 				44570CA019A30781003541D9 /* collisions.cuh */,

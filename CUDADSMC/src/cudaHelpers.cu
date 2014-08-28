@@ -57,3 +57,21 @@ int findMaxCUDADevice( int numberOfCUDADevices )
 	
 	return maxDevice;
 }
+
+void cudaSetMem( double *d_array, double value, int lengthOfArray )
+{
+    double *h_array = (double*) calloc( lengthOfArray, sizeof(double) );
+    
+    for ( int i=0;
+          i<lengthOfArray;
+          i++ )
+    {
+        h_array[i] = value;
+    }
+    
+    cudaMemcpy( d_array, h_array, lengthOfArray*sizeof(double), cudaMemcpyHostToDevice );
+
+    free( h_array );
+    
+    return;
+}

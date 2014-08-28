@@ -39,8 +39,8 @@ int main(int argc, const char * argv[])
 	
 #pragma mark - Set up atom system
 	
-	curandStatePhilox4_32_10_t *rngStates;
-	cudaMalloc( (void **)&rngStates, numberOfAtoms*sizeof(curandStatePhilox4_32_10_t) );
+	curandStatePhilox4_32_10_t *d_rngStates;
+	cudaMalloc( (void **)&d_rngStates, numberOfAtoms*sizeof(curandStatePhilox4_32_10_t) );
 	
 	int blockSize;
 	int minGridSize;
@@ -54,7 +54,7 @@ int main(int argc, const char * argv[])
                                         numberOfAtoms );
 	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
 	printf("initRNG:             gridSize = %i, blockSize = %i\n", gridSize, blockSize);
-	initRNG<<<gridSize,blockSize>>>( rngStates, numberOfAtoms );
+	initRNG<<<gridSize,blockSize>>>( d_rngStates, numberOfAtoms );
     
 #pragma mark - Memory Allocation
     
@@ -77,6 +77,7 @@ int main(int argc, const char * argv[])
     cudaCalloc( (void **)&d_acc, numberOfAtoms, sizeof(double3) );
     
     cudaCalloc( (void **)&d_sigvrmax, numberOfCells+1, sizeof(double) );
+    initSigvrmax( d_sigvrmax, numberOfCells );
     
     cudaCalloc( (void **)&d_cellStartEnd, numberOfCells+1, sizeof(int2) );
     
@@ -106,7 +107,7 @@ int main(int argc, const char * argv[])
                                                  numberOfAtoms,
                                                  Tinit,
                                                  dBdz,
-                                                 rngStates );
+                                                 d_rngStates );
     
     medianR = indexAtoms( d_pos,
                           d_cellID );
@@ -149,7 +150,7 @@ int main(int argc, const char * argv[])
 	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
     printf("moveAtoms:           gridSize = %i, blockSize = %i\n", gridSize, blockSize);
     
-    for (int i=0; i<1; i++)
+    for (int i=0; i<2; i++)
     {
         medianR = indexAtoms( d_pos,
                               d_cellID );
@@ -167,18 +168,14 @@ int main(int argc, const char * argv[])
         thrust::exclusive_scan( th_numberOfAtomsInCell,
                                 th_numberOfAtomsInCell + numberOfCells + 1,
                                 th_prefixScanNumberOfAtomsInCell );
-//        int *h_prefixScanNumberOfAtomsInCell = (int*) calloc( numberOfCells+1, sizeof(int) );
-//        cudaMemcpy( h_prefixScanNumberOfAtomsInCell, d_prefixScanNumberOfAtomsInCell, (numberOfCells+1)*sizeof(int), cudaMemcpyDeviceToHost );
-//        for (int j=0; j<numberOfCells+1; j++) {
-//            printf("h_prefixScanNumberOfAtomsInCell[%i] = %i\n", j, h_prefixScanNumberOfAtomsInCell[j]);
-//        }
-//        return;
-        collide<<<numberOfCells,1>>>( d_pos,
+        
+        collide<<<numberOfCells,64>>>( d_pos,
                                        d_vel,
                                        d_sigvrmax,
                                        d_prefixScanNumberOfAtomsInCell,
                                        medianR,
-                                       numberOfCells );
+                                       numberOfCells,
+                                       d_rngStates );
         
         moveAtoms<<<gridSize,blockSize>>>( d_pos,
                                            d_vel,
@@ -214,7 +211,7 @@ int main(int argc, const char * argv[])
     cudaFree( d_cellID );
     cudaFree( d_numberOfAtomsInCell );
     cudaFree( d_prefixScanNumberOfAtomsInCell );
-    cudaFree( rngStates );
+    cudaFree( d_rngStates );
     
     cudaDeviceReset();
     

@@ -18,6 +18,13 @@ int3   cellsPerDimension = { 10, 10, 10 };
 int    numberOfCells = cellsPerDimension.x*cellsPerDimension.y*cellsPerDimension.z;
 double dt = 1.0e-6;
 
+#pragma mark Physics Constants
+
+double h_mRb = 1.443160648e-25; // 87Rb mass;
+double h_pi  = 3.14159265;		// Pi;
+double h_a   = 5.3e-9;			// Constant cross-section formula;
+double h_kB  = 1.3806503e-23;	// Boltzmann's Constant
+
 #pragma mark Environmental Parameters
 double Tinit   = 20.0e-6;
 

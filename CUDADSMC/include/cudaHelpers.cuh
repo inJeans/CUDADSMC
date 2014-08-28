@@ -22,5 +22,6 @@ if (__cudaCalloc_err == cudaSuccess) cudaMemset(*A, 0, (B)*C); \
 int setMaxCUDADevice( void );
 int getMaxCUDADevice( void );
 int findMaxCUDADevice( int numberOfCUDADevices );
+void cudaSetMem( double *d_array, double value, int lengthOfArray );
 
 #endif

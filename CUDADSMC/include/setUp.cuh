@@ -44,4 +44,6 @@ __device__ bool pointIsInDistribution( double3 point,
 
 __device__ double3 updateAccel( double3 pos );
 
+void initSigvrmax( double *d_sigvrmax, int numberOfCells );
+
 #endif
