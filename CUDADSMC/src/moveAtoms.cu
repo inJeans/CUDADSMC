@@ -14,14 +14,6 @@
 #include "vectorMath.cuh"
 #include "math.h"
 
-////////////////////////////////////////////////////////////////////////////////
-// Define some global variables on the device                                 //
-////////////////////////////////////////////////////////////////////////////////
-
-__device__   int    loopsPerCollision = 1000;	// loops per collision
-
-/////////////////////////////////////////////////////////////////////////////////
-
 __global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, int numberOfAtoms )
 {
     for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
@@ -32,7 +24,7 @@ __global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, int numberO
         double3 l_vel = vel[atom];
         double3 l_acc = acc[atom];
         
-        for (int i=0; i<loopsPerCollision; i++) {
+        for (int i=0; i<d_loopsPerCollision; i++) {
             l_vel = updateVelHalfStep( l_vel, l_acc );
             l_pos = updatePos( l_pos, l_vel );
             l_acc = updateAcc( l_pos );

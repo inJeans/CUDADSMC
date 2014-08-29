@@ -22,13 +22,14 @@ __device__ void serialCellStartandEndKernel( int *cellID, int2 *cellStartEnd, in
 __global__ void findNumberOfAtomsInCell( int2 *cellStartEnd, int *numberOfAtomsInCell, int numberOfCells );
 __device__ void serialFindNumberOfAtomsInCell( int2 *cellStartEnd, int *numberOfAtomsInCell, int numberOfCells );
 void sortArrays( double3 *d_pos, double3 *d_vel, double3 *d_acc, int *d_cellID );
-__global__ void collide( double3 *pos,
-                        double3 *vel,
-                        double  *sigvrmax,
-                        int     *prefixScanNumberOfAtomsInCell,
-                        double   medianR,
-                        int      numberOfCells,
-                        curandStatePhilox4_32_10_t *rngState );
+__global__ void collide( double3 *vel,
+                         double  *sigvrmax,
+                         int     *prefixScanNumberOfAtomsInCell,
+                         double   medianR,
+                         int      numberOfCells,
+                         curandStatePhilox4_32_10_t *rngState );
 __device__ int2 chooseCollidingAtoms( int numberOfAtomsInCell, curandStatePhilox4_32_10_t *rngState );
+__device__ double calculateRelativeVelocity( double3 *vel, int2 collidingAtoms );
+__device__ double3 getRandomPointOnSphere( curandStatePhilox4_32_10_t *rngState );
 
 #endif

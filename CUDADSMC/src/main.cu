@@ -177,8 +177,7 @@ int main(int argc, const char * argv[])
                                 th_numberOfAtomsInCell + numberOfCells + 1,
                                 th_prefixScanNumberOfAtomsInCell );
         
-        collide<<<numberOfCells,64>>>( d_pos,
-                                       d_vel,
+        collide<<<numberOfCells,64>>>( d_vel,
                                        d_sigvrmax,
                                        d_prefixScanNumberOfAtomsInCell,
                                        medianR,

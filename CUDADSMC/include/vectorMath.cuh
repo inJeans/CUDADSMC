@@ -66,6 +66,11 @@ static __inline__ __device__ double3 operator+ ( double3 a, double3 b )
 	return make_double3( a.x+b.x, a.y+b.y, a.z+b.z );
 }
 
+static __inline__ __device__ double3 operator- ( double3 a, double3 b )
+{
+	return make_double3( a.x-b.x, a.y-b.y, a.z-b.z );
+}
+
 static __inline__ __device__ double2 operator* ( double2 a, double b )
 {
 	return make_double2( a.x*b, a.y*b );

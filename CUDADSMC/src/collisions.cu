@@ -281,8 +281,7 @@ void sortArrays( double3 *d_pos, double3 *d_vel, double3 *d_acc, int *d_cellID )
 
 #pragma mark - Collisions
 
-__global__ void collide( double3 *pos,
-                         double3 *vel,
+__global__ void collide( double3 *vel,
                          double  *sigvrmax,
                          int     *prefixScanNumberOfAtomsInCell,
                          double   medianR,
@@ -295,7 +294,6 @@ __global__ void collide( double3 *pos,
     
     double3 cellLength    = (double) 2.0 * d_meshWidth * medianR / d_cellsPerDimension;
     
-    __shared__ double3 sh_pos[MAXATOMS];
     __shared__ double3 sh_vel[MAXATOMS];
     __syncthreads();
     
@@ -309,7 +307,6 @@ __global__ void collide( double3 *pos,
     {
         g_atom = prefixScanNumberOfAtomsInCell[cell] + l_atom;
         
-        sh_pos[l_atom] = pos[g_atom];
         sh_vel[l_atom] = vel[g_atom];
     }
     __syncthreads();
@@ -317,11 +314,13 @@ __global__ void collide( double3 *pos,
     double cellVolume = cellLength.x * cellLength.y * cellLength.z;
     int Mc = __double2int_ru( 0.5 * d_alpha * (numberOfAtomsInCell - 1) * numberOfAtomsInCell * d_dt * sigvrmax[cell] / cellVolume );
     
-    double3 vRel;
-    int2 collidingAtoms;
+    int2 collidingAtoms, g_collidingAtoms;
+    
+    double3 velcm, newVel, pointOnSphere;
     
     double crossSection = 8.*d_pi*d_a*d_a;
-    double VR;
+    double magVrel;
+    double ProbCol;
     
     for ( int l_collision = threadIdx.x;
           l_collision < Mc;
@@ -341,48 +340,30 @@ __global__ void collide( double3 *pos,
             collidingAtoms = chooseCollidingAtoms( numberOfAtomsInCell, &l_rngState );
         }
         
-        // Calculate the atoms' relative speed.
-        vRel.x = sh_vel[collidingAtoms.x].x - sh_vel[collidingAtoms.y].x;
-        vRel.y = sh_vel[collidingAtoms.x].y - sh_vel[collidingAtoms.y].y;
-        vRel.z = sh_vel[collidingAtoms.x].z - sh_vel[collidingAtoms.y].z;
-        VR     = sqrt(vRel.x*vRel.x + vRel.y*vRel.y + vRel.z*vRel.z);
+        magVrel = calculateRelativeVelocity( sh_vel, collidingAtoms );
         
         // Check if this is the more probable than current most probable.
-        if (VR*crossSection > sigvrmax[cell]) {
-            printf("Making it bigger %g -> %g\n", sigvrmax[cell], VR * crossSection);
-            sigvrmax[cell] = VR * crossSection;
+        if (magVrel*crossSection > sigvrmax[cell]) {
+            sigvrmax[cell] = magVrel * crossSection;
         }
         
+        ProbCol = 0.5 * d_Fn * d_loopsPerCollision * d_dt / cellVolume * magVrel * crossSection * numberOfAtomsInCell * ( numberOfAtomsInCell - 1. ) / Mc;
+        
 		// Collide with the collision probability.
-		if (Fn * stepsPerCol * dt / cellVol * VR * crossSection / lambda > hybridTaus( rngState ) ) {
+		if ( ProbCol > curand_uniform_double ( &l_rngState ) ) {
 			// Find centre of mass velocities.
-			Vcm.x = (gpuPrec)0.5*(vel[atom1].x + vel[atom2].x);
-			Vcm.y = (gpuPrec)0.5*(vel[atom1].y + vel[atom2].y);
-			Vcm.z = (gpuPrec)0.5*(vel[atom1].z + vel[atom2].z);
-			Vcm.w = 0.0;
+			velcm = 0.5*(sh_vel[collidingAtoms.x] + sh_vel[collidingAtoms.y]);
 			
 			// Generate a random velocity on the unit sphere.
-			B = (gpuPrec)2.0*hybridTaus( rngState ) - (gpuPrec)1.0;
-			A = sqrt((gpuPrec)1.0 - B*B);
-			C = (gpuPrec)2.0*d_pi*hybridTaus( rngState );
+			pointOnSphere = getRandomPointOnSphere( &l_rngState );
 			
-			newV.x = B*VR;
-			newV.y = A*VR*cos(C);
-			newV.z = A*VR*sin(C);
-			newV.w = 0.0;
+			newVel = magVrel * pointOnSphere;
+            
+            g_collidingAtoms = prefixScanNumberOfAtomsInCell[cell] + collidingAtoms;
 			
 			// Calculate the post collison velocities. Adding one half of the new velocity
-			vel[atom1].x = Vcm.x - (gpuPrec)0.5*newV.x;
-			vel[atom1].y = Vcm.y - (gpuPrec)0.5*newV.y;
-			vel[atom1].z = Vcm.z - (gpuPrec)0.5*newV.z;
-			vel[atom1].w = 0.0;
-			vel[atom2].x = Vcm.x + (gpuPrec)0.5*newV.x;
-			vel[atom2].y = Vcm.y + (gpuPrec)0.5*newV.y;
-			vel[atom2].z = Vcm.z + (gpuPrec)0.5*newV.z;
-			vel[atom2].w = 0.0;
-			
-			// Count the collsion
-			collisionCounter[cellCounter] += Fn;
+			vel[g_collidingAtoms.x] = velcm - 0.5 * newVel;
+			vel[g_collidingAtoms.y] = velcm + 0.5 * newVel;
 		}
 		
         rngState[g_collisionId] = l_rngState;
@@ -403,4 +384,22 @@ __device__ int2 chooseCollidingAtoms( int numberOfAtomsInCell, curandStatePhilox
     }
     
     return collidingAtoms;
+}
+
+__device__ double calculateRelativeVelocity( double3 *vel, int2 collidingAtoms )
+{
+    double3 vRel = vel[collidingAtoms.x] - vel[collidingAtoms.y];
+    double magVrel = sqrt(vRel.x*vRel.x + vRel.y*vRel.y + vRel.z*vRel.z);
+    
+    return magVrel;
+}
+
+__device__ double3 getRandomPointOnSphere( curandStatePhilox4_32_10_t *rngState )
+{
+    double2 r1 = curand_normal2_double ( &rngState[0] );
+    double  r2 = curand_normal_double  ( &rngState[0] );
+    
+    double3 pointOnSphere = make_double3( r1.x, r1.y, r2 ) * rsqrt( r1.x*r1.x + r1.y*r1.y + r2*r2 );
+    
+    return pointOnSphere;
 }

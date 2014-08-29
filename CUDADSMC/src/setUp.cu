@@ -73,16 +73,12 @@ __device__ double3 getRandomVelocity( double Temp, curandStatePhilox4_32_10_t *r
 
 __device__ double3 getRandomPointOnUnitSphere( curandStatePhilox4_32_10_t *rngState )
 {
-	double3 pointOnSphere = make_double3( 0., 0., 0. );
-	
-	double2 r1 = curand_uniform2_double ( &rngState[0] );
-	double2 r2 = curand_uniform2_double ( &rngState[0] );
-	
-	pointOnSphere.x = (double) sqrt(-2.0*log(r1.x)) * sin(2*d_pi*r1.y);
-	pointOnSphere.y = (double) sqrt(-2.0*log(r2.x)) * cos(2*d_pi*r2.y);
-	pointOnSphere.z = (double) sqrt(-2.0*log(r2.x)) * sin(2*d_pi*r2.y);
-	
-	return pointOnSphere;
+    double2 r1 = curand_normal2_double ( &rngState[0] );
+    double  r2 = curand_normal_double  ( &rngState[0] );
+    
+    double3 pointOnSphere = make_double3( r1.x, r1.y, r2 ) * rsqrt( r1.x*r1.x + r1.y*r1.y + r2*r2 );
+    
+    return pointOnSphere;
 }
 
 __device__ double3 selectAtomInDistribution( double dBdz, double Temp, curandStatePhilox4_32_10_t *rngState )
