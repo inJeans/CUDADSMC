@@ -167,6 +167,9 @@ int main(int argc, const char * argv[])
                     d_acc,
                     d_cellID );
 		
+		deviceMemset<<<numberOfCells+1,1>>>( d_cellStartEnd,
+											 make_int2( -1, -1 ),
+											 numberOfCells + 1 );
 		cellStartandEndKernel<<<gridSize,blockSize>>>( d_cellID,
                                                        d_cellStartEnd,
                                                        numberOfAtoms );

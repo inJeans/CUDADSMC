@@ -75,3 +75,36 @@ void cudaSetMem( double *d_array, double value, int lengthOfArray )
     
     return;
 }
+
+__global__ void deviceMemset( double *d_array, double value, int lengthOfArray )
+{
+	for ( int element = blockIdx.x * blockDim.x + threadIdx.x;
+		  element < lengthOfArray;
+		  element += blockDim.x * gridDim.x)
+	{
+		d_array[element] = value;
+	}
+	return;
+}
+
+__global__ void deviceMemset( int2 *d_array, int2 value, int lengthOfArray )
+{
+	for ( int element = blockIdx.x * blockDim.x + threadIdx.x;
+		 element < lengthOfArray;
+		 element += blockDim.x * gridDim.x)
+	{
+		d_array[element] = value;
+	}
+	return;
+}
+
+__global__ void deviceMemset( int *d_array, int value, int lengthOfArray )
+{
+	for ( int element = blockIdx.x * blockDim.x + threadIdx.x;
+		 element < lengthOfArray;
+		 element += blockDim.x * gridDim.x)
+	{
+		d_array[element] = value;
+	}
+	return;
+}

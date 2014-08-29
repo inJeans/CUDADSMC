@@ -23,5 +23,8 @@ int setMaxCUDADevice( void );
 int getMaxCUDADevice( void );
 int findMaxCUDADevice( int numberOfCUDADevices );
 void cudaSetMem( double *d_array, double value, int lengthOfArray );
+__global__ void deviceMemset( double *d_array, double value, int lengthOfArray );
+__global__ void deviceMemset( int2 *d_array, int2 value, int lengthOfArray );
+__global__ void deviceMemset( int *d_array, int value, int lengthOfArray );
 
 #endif

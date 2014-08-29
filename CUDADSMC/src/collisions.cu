@@ -216,7 +216,17 @@ __global__ void findNumberOfAtomsInCell( int2 *cellStartEnd, int *numberOfAtomsI
 		 cell < numberOfCells+1;
 		 cell += blockDim.x * gridDim.x)
 	{
-        numberOfAtomsInCell[cell] = cellStartEnd[cell].y - cellStartEnd[cell].x + 1;
+		if (cellStartEnd[cell].x == -1)
+		{
+			numberOfAtomsInCell[cell] = 0;
+		}
+		else
+		{
+			numberOfAtomsInCell[cell] = cellStartEnd[cell].y - cellStartEnd[cell].x + 1;
+		}
+		if (numberOfAtomsInCell[cell] <  0) {
+			printf("cell[%i] = %i\n", cell, numberOfAtomsInCell[cell]);
+		}
     }
     
     return;
