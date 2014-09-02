@@ -32,7 +32,8 @@ typedef struct hdf5FileHandle {
 
 void createHDF5File( char *filename, char *groupname );
 hdf5FileHandle createHDF5Handle( int numberOfAtoms, char *datasetname );
+hdf5FileHandle createHDF5HandleTime( char *datasetname );
 void intialiseHDF5File( hdf5FileHandle &hdf5handle, char *filename );
-void writeHDF5File( hdf5FileHandle &hdf5handle, char *filename, double3 *data );
+void writeHDF5File( hdf5FileHandle &hdf5handle, char *filename, void *data );
 
 #endif

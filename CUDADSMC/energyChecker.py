@@ -3,6 +3,14 @@ import numpy as np
 import pylab as pl
 import os
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[34m'
+    OKGREEN = '\033[32m'
+    WARNING = '\033[35m'
+    FAIL = '\033[31m'
+    ENDC = '\033[0m'
+
 # Set some physical constants
 gs   = -0.5 * -1.0;
 muB  = 9.27400915e-24;
@@ -16,10 +24,14 @@ dBdz = 2.5;
 tres = 101;
 ntrials = 1e4;
 
+time = np.zeros((tres));
 pos = np.zeros((ntrials,3,tres));
 vel = np.zeros((ntrials,3,tres));
 
-f = h5py.File('outputData.h5');
+f = h5py.File('motionTest.h5');
+
+dset = f.require_dataset('atomData/simuatedTime',(1,1,tres),False,False);
+dset.read_direct(time);
 
 dset = f.require_dataset('atomData/positions',(ntrials,3,tres),False,False);
 dset.read_direct(pos);
@@ -31,3 +43,21 @@ f.close()
 
 Ek = np.sum( 0.5 * mRb * np.sum(vel**2, 1), 0 ) / ntrials / kB * 1.e6
 Ep = np.sum( 0.5*gs*muB*dBdz*np.sqrt(pos[:,0,:]**2 + pos[:,1,:]**2 + 4.0*pos[:,2,:]**2 ), 0 ) / ntrials / kB * 1.e6
+Et = Ek+Ep
+
+pl.clf()
+pl.plot(time,Ek)
+pl.plot(time,Ep)
+pl.plot(time,Et)
+pl.xlabel('time (s)')
+pl.ylabel('energy (uK)')
+pl.draw()
+
+dE = max( (Et - Et[0]) / Et[0] * 100 )
+
+if dE < 1.e-3:
+    print bcolors.OKGREEN + "Motion integrator passed, dE = %%%.3g" % dE + bcolors.ENDC
+else:
+    print bcolors.FAIL + "Motion integrator failed, dE = %%%.3g" % dE + bcolors.ENDC
+
+pl.show()

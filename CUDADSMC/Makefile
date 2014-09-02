@@ -43,6 +43,7 @@ OBJDIR   = $(BUILDDIR)obj/
 SRCDIR   = src/
 
 EXEC = $(BUILDDIR)CUDADSMC
+TESTMOTION = $(BUILDDIR)testMotion
 
 INCLUDE = -I include/ -I /usr/local/hdf5/include
 LIB     = -L /usr/local/hdf5/lib
@@ -70,21 +71,44 @@ $(OBJDIR)%.o: $(SRCDIR)%.cu
 	@echo "Finished building: $< $(OK_STRING)"
 	@echo ' '
 
+testMotion: $(TESTMOTION)
+
+$(TESTMOTION): $(addprefix $(OBJDIR), moveTest.o setUp.o moveAtoms.o collisions.o cudaHelpers.o hdf5Helpers.o )
+	@echo 'Building file: $<'
+	@echo 'Invoking: NVCC Linker'
+	$(NVCC) -o $@ $(INCLUDE) $^ $(LIB) $(CUDA_LIB) -lcurand -lcublas -lhdf5 -lhdf5_hl
+	@echo "Finished building: $< $(OK_STRING)"
+	@echo ' '
+	@echo 'Testing...'
+	{ time ./$(BUILDDIR)testMotion ; } | tee motionTest.txt
+	@echo "... Test complete $< $(OK_STRING)"
+	@echo " " >> motionTest.txt
+	@echo "----------------------------------------" >> motionTest.txt
+	@echo " " >> motionTest.txt
+	tput bel
+
+$(OBJDIR)moveTest.o: $(SRCDIR)moveTest.cu
+	@echo 'Building file: $<'
+	@echo 'Invoking: NVCC Compiler'
+	$(NVCC) $(NVCCFLAGS) $(INCLUDE) -o $@ -c $?
+	@echo "Finished building: $< $(OK_STRING)"
+	@echo ' '
+
 run:
 	{ time ./$(BUILDDIR)CUDADSMC ; } | tee output.txt
 #	/usr/local/hdf5/bin/h5import "./src/main.cu" -c "./hdfimportconfig/h5import-main.conf" -o "mmDataMCWF.h5"
 #	/usr/local/hdf5/bin/h5import "./src/evolveSpin.cu" -c "./hdfimportconfig/h5import-evolveSpin.conf" -o "mmDataMCWF.h5"
 #	/usr/local/hdf5/bin/h5import "Makefile" -c "./hdfimportconfig/h5import-makefile.conf" -o "mmDataMCWF.h5"
-	echo "" >> output.txt
-	echo "----------------------------------------" >> output.txt
-	echo "" >> output.txt
+	@echo "" >> output.txt
+	@echo "----------------------------------------" >> output.txt
+	@echo "" >> output.txt
 	tput bel
 
 memcheck:
 	{ time cuda-memcheck ./$(BUILDDIR)CUDADSMC ; } | tee output.txt
-	echo "" >> output.txt
-	echo "----------------------------------------" >> output.txt
-	echo "" >> output.txt
+	@echo "" >> output.txt
+	@echo "----------------------------------------" >> output.txt
+	@echo "" >> output.txt
 	tput bel
 
 clean:

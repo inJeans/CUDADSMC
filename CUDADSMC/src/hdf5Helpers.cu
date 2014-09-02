@@ -41,6 +41,37 @@ hdf5FileHandle createHDF5Handle( int numberOfAtoms, char *datasetname )
 	return hdf5handle;
 }
 
+hdf5FileHandle createHDF5HandleTime( char *datasetname )
+{
+	hdf5FileHandle hdf5handle;
+    
+    hdf5handle.datasetname = datasetname;
+	
+	hdf5handle.rank = RANK;
+	
+	hdf5handle.dims[0]      = 1;
+	hdf5handle.dims[1]      = 1;
+	hdf5handle.dims[2]      = 1;
+	
+	hdf5handle.maxdims[0]   = 1;
+	hdf5handle.maxdims[1]   = 1;
+	hdf5handle.maxdims[2]   = H5S_UNLIMITED;
+	
+	hdf5handle.chunkdims[0] = 1;
+	hdf5handle.chunkdims[1] = 1;
+	hdf5handle.chunkdims[2] = 1;
+	
+	hdf5handle.extdims[0]   = 0;
+	hdf5handle.extdims[1]   = 0;
+	hdf5handle.extdims[2]   = 1;
+	
+	hdf5handle.offset[0]    = 0;
+	hdf5handle.offset[1]    = 0;
+	hdf5handle.offset[2]    = 0;
+	
+	return hdf5handle;
+}
+
 void createHDF5File( char *filename, char *groupname )
 {
     herr_t status;
@@ -116,7 +147,7 @@ void intialiseHDF5File( hdf5FileHandle &hdf5handle, char *filename )
 }
 
 
-void writeHDF5File( hdf5FileHandle &hdf5handle, char *filename, double3 *data )
+void writeHDF5File( hdf5FileHandle &hdf5handle, char *filename, void *data )
 {
 	herr_t status;
 
