@@ -10,6 +10,9 @@
 #define CUDADSMC_moveAtoms_cuh
 
 __global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, int numberOfAtoms );
+__device__ void velocityVerletUpdate( double3 *pos, double3 *vel, double3 *acc );
+__device__ void symplecticEulerUpdate( double3 *pos, double3 *vel, double3 *acc );
+__device__ double3 updateVel( double3 vel, double3 acc );
 __device__ double3 updateVelHalfStep( double3 vel, double3 acc );
 __device__ double3 updatePos( double3 pos, double3 vel );
 __device__ double3 updateAcc( double3 pos );

@@ -25,10 +25,9 @@ __global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, int numberO
         double3 l_acc = acc[atom];
         
         for (int i=0; i<d_loopsPerCollision; i++) {
-            l_vel = updateVelHalfStep( l_vel, l_acc );
-            l_pos = updatePos( l_pos, l_vel );
-            l_acc = updateAcc( l_pos );
-            l_vel = updateVelHalfStep( l_vel, l_acc );
+            velocityVerletUpdate( &l_pos,
+                                  &l_vel,
+                                  &l_acc );
         }
     
         pos[atom] = l_pos;
@@ -38,6 +37,26 @@ __global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, int numberO
     }
     
     return;
+}
+
+__device__ void velocityVerletUpdate( double3 *pos, double3 *vel, double3 *acc )
+{
+    vel[0] = updateVelHalfStep( vel[0], acc[0] );
+    pos[0] = updatePos( pos[0], vel[0] );
+    acc[0] = updateAcc( pos[0] );
+    vel[0] = updateVelHalfStep( vel[0], acc[0] );
+}
+
+__device__ void symplecticEulerUpdate( double3 *pos, double3 *vel, double3 *acc )
+{
+    acc[0] = updateAcc( pos[0] );
+    vel[0] = updateVel( vel[0], acc[0] );
+    pos[0] = updatePos( pos[0], vel[0] );
+}
+
+__device__ double3 updateVel( double3 vel, double3 acc )
+{
+    return vel + acc * d_dt;
 }
 
 __device__ double3 updateVelHalfStep( double3 vel, double3 acc )
