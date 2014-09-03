@@ -23,7 +23,7 @@ dBdz = 2.5;
 
 tres = 101;
 ntrials = 1e4;
-dt = 1e-6;
+dt = 5e-6;
 
 time = np.zeros((tres));
 pos = np.zeros((ntrials,3,tres));
@@ -46,7 +46,7 @@ Ek = np.sum( 0.5 * mRb * np.sum(vel**2, 1), 0 ) / ntrials / kB * 1.e6
 Ep = np.sum( 0.5*gs*muB*dBdz*np.sqrt(pos[:,0,:]**2 + pos[:,1,:]**2 + 4.0*pos[:,2,:]**2 ), 0 ) / ntrials / kB * 1.e6
 Et = Ek+Ep
 
-dE = max( (Et - Et[0]) / Et[0] * 100 )
+dE = max( abs(Et - Et[0]) / Et[0] * 100 )
 
 pl.clf()
 pl.plot(time,Ek)
@@ -62,10 +62,10 @@ else:
     print bcolors.FAIL + "Motion integrator failed, dE = %%%.3g, dt = %.3g" % (dE,dt) + bcolors.ENDC
 
 pl.draw()
-figurename = './Tests/Motion/motionTest-%f' % dt + '.eps'
+figurename = './Tests/Motion/motionTest-%.3g' % dt + '.eps'
 pl.savefig( figurename )
 
-filename = './Tests/Motion/motionTest-%f' % dt + '.npy'
+filename = './Tests/Motion/motionTest-%.3g' % dt + '.npy'
 file = open(filename, "w")
 np.save( file, Ek )
 np.save( file, Ep )
