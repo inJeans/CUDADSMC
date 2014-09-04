@@ -28,8 +28,8 @@ time = np.zeros((tres));
 pos = np.zeros((ntrials,3,tres));
 vel = np.zeros((ntrials,3,tres));
 
-dt = np.zeros( (27,) );
-dE = np.zeros( (27,) );
+dtV = np.zeros( (27,) );
+dEV = np.zeros( (27,) );
 
 for i in range(1,10):
     for j in range(5,8):
@@ -53,16 +53,51 @@ for i in range(1,10):
         Ep = np.sum( 0.5*gs*muB*dBdz*np.sqrt(pos[:,0,:]**2 + pos[:,1,:]**2 + 4.0*pos[:,2,:]**2 ), 0 ) / ntrials / kB * 1.e6
         Et = Ek+Ep
         
-        dt[i+(j-5)*9] = i*pow(10.,-j);
-        dE[i+(j-5)*9] = max( abs(Et - Et[0]) / Et[0] * 100 );
+        dtV[(i-1)+(j-5)*9] = i*pow(10.,-j);
+        dEV[(i-1)+(j-5)*9] = max( abs(Et - Et[0]) / Et[0] * 100 );
 
 
-#p = np.polyfit( np.log(dt), np.log(dE), 1 );
+p = np.polyfit( np.log(dt), np.log(dEV), 1 );
 
-#dEfit = np.exp(p[1])*pow(dt,p[0])
+dEVfit = np.exp(p[1])*pow(dt,p[0])
 
-pl.loglog( dt, dE, 'o' )
-pl.loglog( dt, dEfit )
+dtSE = np.zeros( (27,) );
+dESE = np.zeros( (27,) );
+
+for i in range(1,10):
+    for j in range(5,8):
+        
+        sourcefile = 'Tests/Motion/symplecticEuler-' + str(i) + '.e-' + str(j) + '.h5'
+        
+        f = h5py.File( sourcefile );
+        
+        dset = f.require_dataset('atomData/simuatedTime',(1,1,tres),False,False);
+        dset.read_direct(time);
+        
+        dset = f.require_dataset('atomData/positions',(ntrials,3,tres),False,False);
+        dset.read_direct(pos);
+        
+        dset = f.require_dataset('atomData/velocities',(ntrials,3,tres),False,False);
+        dset.read_direct(vel);
+        
+        f.close()
+        
+        Ek = np.sum( 0.5 * mRb * np.sum(vel**2, 1), 0 ) / ntrials / kB * 1.e6
+        Ep = np.sum( 0.5*gs*muB*dBdz*np.sqrt(pos[:,0,:]**2 + pos[:,1,:]**2 + 4.0*pos[:,2,:]**2 ), 0 ) / ntrials / kB * 1.e6
+        Et = Ek+Ep
+        
+        dtSE[(i-1)+(j-5)*9] = i*pow(10.,-j);
+        dESE[(i-1)+(j-5)*9] = max( abs(Et - Et[0]) / Et[0] * 100 );
+
+
+p = np.polyfit( np.log(dt), np.log(dESE), 1 );
+
+dESEfit = np.exp(p[1])*pow(dt,p[0])
+
+pl.loglog( dt, dEV, 'o' )
+pl.loglog( dt, dEVfit )
+pl.loglog( dt, dESE, 'o' )
+pl.loglog( dt, dESEfit )
 pl.xlabel(r'$\Delta t$')
 pl.ylabel(r'$|\Delta E|_{max}$')
 
