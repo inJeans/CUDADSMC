@@ -25,9 +25,9 @@ extern __device__ int    d_numberOfCells = 10*10*10;
 extern __device__ double d_Fn = 1.;
 extern __device__ double d_meshWidth = 1.5;
 extern __device__ double d_alpha = 1.e7 / 1.e4;
-extern __device__ double d_dt = 5.0e-6;
+extern __device__ double d_dt;
 extern __device__ double d_dBdz = 2.5;
 
-extern __device__ int d_loopsPerCollision = 60000;	// loops per collision
+extern __device__ int d_loopsPerCollision;	// loops per collision
 
 #endif

@@ -44,7 +44,6 @@ __global__ void generateInitialDist(double3 *pos,
 		 atom < numberOfAtoms;
 		 atom += blockDim.x * gridDim.x)
 	{
-		
 		/* Copy state to local memory for efficiency */
 		curandStatePhilox4_32_10_t localrngState = rngState[atom];
 		

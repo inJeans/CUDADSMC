@@ -14,6 +14,14 @@
 #include "vectorMath.cuh"
 #include "math.h"
 
+__global__ void copyConstantsToDevice( double dt )
+{
+	d_dt = dt;
+	d_loopsPerCollision = 0.3 / d_dt;
+	
+	return;
+}
+
 __global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, int numberOfAtoms )
 {
     for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
@@ -23,7 +31,7 @@ __global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, int numberO
 		double3 l_pos = pos[atom];
         double3 l_vel = vel[atom];
         double3 l_acc = acc[atom];
-        
+		
         for (int i=0; i<d_loopsPerCollision; i++) {
             velocityVerletUpdate( &l_pos,
                                   &l_vel,

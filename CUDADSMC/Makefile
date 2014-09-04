@@ -80,7 +80,12 @@ $(TESTMOTION): $(addprefix $(OBJDIR), moveTest.o setUp.o moveAtoms.o collisions.
 	@echo "Finished building: $< $(OK_STRING)"
 	@echo ' '
 	@echo 'Testing...'
-	{ time ./$(BUILDDIR)testMotion ; } | tee motionTest.txt
+	for p in 1 2 3 4 5 6 7 8 9; do \
+		for q in 5 6 7; do \
+			{ time ./$(BUILDDIR)testMotion $$p.e-$$q; } | tee motionTest.txt; \
+			mv motionTest.h5 Tests/Motion/verlet-$$p.e-$$q.h5; \
+		done; \
+	done
 	@echo "... Test complete $< $(OK_STRING)"
 	@echo " " >> motionTest.txt
 	@echo "----------------------------------------" >> motionTest.txt

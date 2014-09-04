@@ -39,6 +39,24 @@ int main(int argc, const char * argv[])
 	
 #pragma mark - Set up atom system
 	
+	if( argc == 2 )
+	{
+		dt = atof(argv[1]);
+		loopsPerCollision = 0.3 / dt;
+		printf("dt = %g\n", dt);
+	}
+	else if( argc > 2 )
+	{
+		printf("Too many arguments supplied.\n");
+		return 0;
+	}
+	else
+	{
+		dt = 1.e-6;
+	}
+	
+	copyConstantsToDevice<<<1,1>>>( dt );
+	
 	int sizeOfRNG = numberOfAtoms;
     
 	curandStatePhilox4_32_10_t *d_rngStates;
