@@ -28,6 +28,9 @@ time = np.zeros((tres));
 pos = np.zeros((ntrials,3,tres));
 vel = np.zeros((ntrials,3,tres));
 
+dt = np.zeros( (27,) );
+dE = np.zeros( (27,) );
+
 for i in range(1,10):
     for j in range(5,8):
         
@@ -50,8 +53,8 @@ for i in range(1,10):
         Ep = np.sum( 0.5*gs*muB*dBdz*np.sqrt(pos[:,0,:]**2 + pos[:,1,:]**2 + 4.0*pos[:,2,:]**2 ), 0 ) / ntrials / kB * 1.e6
         Et = Ek+Ep
         
-        dt[i+(j-5)*10] = i*pow(10.,-j);
-        dE[i+(j-5)*10] = max( abs(Et - Et[0]) / Et[0] * 100 );
+        dt[i+(j-5)*9] = i*pow(10.,-j);
+        dE[i+(j-5)*9] = max( abs(Et - Et[0]) / Et[0] * 100 );
 
 
 #p = np.polyfit( np.log(dt), np.log(dE), 1 );
