@@ -25,6 +25,7 @@ void sortArrays( double3 *d_pos, double3 *d_vel, double3 *d_acc, int *d_cellID )
 __global__ void collide( double3 *vel,
                          double  *sigvrmax,
                          int     *prefixScanNumberOfAtomsInCell,
+                         int     *collisionCount,
                          double   medianR,
                          int      numberOfCells,
                          curandStatePhilox4_32_10_t *rngState );

@@ -13,6 +13,8 @@
 #include <cuda.h>
 #include <curand_kernel.h>
 
+int findRNGArrayLength( void );
+
 __global__ void initRNG( curandStatePhilox4_32_10_t *rngState,
                          int numberOfAtoms );
 

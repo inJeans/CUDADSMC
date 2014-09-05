@@ -15,6 +15,21 @@
 #include "declareDeviceSystemParameters.cuh"
 
 #pragma mark - Random Number Generator
+int findRNGArrayLength( void )
+{
+    int sizeOfRNG = 0;
+    
+    if (numberOfAtoms > 64*numberOfCells) {
+		sizeOfRNG = numberOfAtoms;
+	}
+	else
+	{
+		sizeOfRNG = 64*numberOfCells;
+	}
+    
+    return sizeOfRNG;
+}
+
 __global__ void initRNG( curandStatePhilox4_32_10_t *rngState, int numberOfAtoms )
 {
 	for (int atom = blockIdx.x * blockDim.x + threadIdx.x;

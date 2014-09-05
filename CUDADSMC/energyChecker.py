@@ -29,7 +29,7 @@ time = np.zeros((tres));
 pos = np.zeros((ntrials,3,tres));
 vel = np.zeros((ntrials,3,tres));
 
-f = h5py.File('motionTest.h5');
+f = h5py.File('collideTest.h5');
 
 dset = f.require_dataset('atomData/simuatedTime',(1,1,tres),False,False);
 dset.read_direct(time);
@@ -62,14 +62,10 @@ else:
     print bcolors.FAIL + "Motion integrator failed, dE = %%%.3g, dt = %.3g" % (dE,dt) + bcolors.ENDC
 
 pl.draw()
-figurename = './Tests/Motion/motionTest-%.3g' % dt + '.eps'
-pl.savefig( figurename )
+#figurename = './Tests/Motion/motionTest-%.3g' % dt + '.eps'
+#pl.savefig( figurename )
 
-filename = './Tests/Motion/motionTest-%.3g' % dt + '.npy'
-file = open(filename, "w")
-np.save( file, Ek )
-np.save( file, Ep )
-np.save( file, Et )
-np.save( file, time )
+#filename = './Tests/Motion/motionTest-%.3g' % dt + '.npy'
+#file = open(filename, "w")
 
 pl.show()

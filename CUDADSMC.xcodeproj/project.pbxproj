@@ -55,6 +55,7 @@
 		44570CA119A310CD003541D9 /* declareInitialSystemParameters.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = declareInitialSystemParameters.cuh; path = include/declareInitialSystemParameters.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		4498B4611999C2D400305A43 /* moveAtoms.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = moveAtoms.cuh; path = include/moveAtoms.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		4498B4631999C57000305A43 /* vectorMath.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = vectorMath.cuh; path = include/vectorMath.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		44D2737C19B82A17003DC8A8 /* collideTest.cu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = collideTest.cu; path = src/collideTest.cu; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		44D2EA1819AEF78B00441BB7 /* declareDeviceSystemParameters.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = declareDeviceSystemParameters.cuh; path = include/declareDeviceSystemParameters.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 /* End PBXFileReference section */
 
@@ -131,6 +132,7 @@
 				1D9486A3198B0CAB00324396 /* cudaHelpers.cu */,
 				1DC74A21199D7DAB00C41388 /* hdf5Helpers.cu */,
 				443C464719930AC60079A2C8 /* moveTest.cu */,
+				44D2737C19B82A17003DC8A8 /* collideTest.cu */,
 				1DF72A081995B3D500E6659A /* statTests.cu */,
 			);
 			name = src;

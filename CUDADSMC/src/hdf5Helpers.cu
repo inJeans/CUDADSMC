@@ -10,56 +10,27 @@
 
 #include "hdf5Helpers.cuh"
 
-hdf5FileHandle createHDF5Handle( int numberOfAtoms, char *datasetname )
+hdf5FileHandle createHDF5Handle( int3 dataDims, hid_t datatype, char *datasetname )
 {
 	hdf5FileHandle hdf5handle;
+    
+    hdf5handle.datatype = datatype;
     
     hdf5handle.datasetname = datasetname;
 	
 	hdf5handle.rank = RANK;
 	
-	hdf5handle.dims[0]      = numberOfAtoms;
-	hdf5handle.dims[1]      = 3;
-	hdf5handle.dims[2]      = 1;
+	hdf5handle.dims[0]      = dataDims.x;
+	hdf5handle.dims[1]      = dataDims.y;
+	hdf5handle.dims[2]      = dataDims.z;
 	
-	hdf5handle.maxdims[0]   = numberOfAtoms;
-	hdf5handle.maxdims[1]   = 3;
+	hdf5handle.maxdims[0]   = dataDims.x;
+	hdf5handle.maxdims[1]   = dataDims.y;
 	hdf5handle.maxdims[2]   = H5S_UNLIMITED;
 	
-	hdf5handle.chunkdims[0] = numberOfAtoms;
-	hdf5handle.chunkdims[1] = 3;
-	hdf5handle.chunkdims[2] = 1;
-	
-	hdf5handle.extdims[0]   = 0;
-	hdf5handle.extdims[1]   = 0;
-	hdf5handle.extdims[2]   = 1;
-	
-	hdf5handle.offset[0]    = 0;
-	hdf5handle.offset[1]    = 0;
-	hdf5handle.offset[2]    = 0;
-	
-	return hdf5handle;
-}
-
-hdf5FileHandle createHDF5HandleTime( char *datasetname )
-{
-	hdf5FileHandle hdf5handle;
-    
-    hdf5handle.datasetname = datasetname;
-	
-	hdf5handle.rank = RANK;
-	
-	hdf5handle.dims[0]      = 1;
-	hdf5handle.dims[1]      = 1;
-	hdf5handle.dims[2]      = 1;
-	
-	hdf5handle.maxdims[0]   = 1;
-	hdf5handle.maxdims[1]   = 1;
-	hdf5handle.maxdims[2]   = H5S_UNLIMITED;
-	
-	hdf5handle.chunkdims[0] = 1;
-	hdf5handle.chunkdims[1] = 1;
-	hdf5handle.chunkdims[2] = 1;
+	hdf5handle.chunkdims[0] = dataDims.x;
+	hdf5handle.chunkdims[1] = dataDims.y;
+	hdf5handle.chunkdims[2] = dataDims.z;
 	
 	hdf5handle.extdims[0]   = 0;
 	hdf5handle.extdims[1]   = 0;
@@ -120,7 +91,7 @@ void intialiseHDF5File( hdf5FileHandle &hdf5handle, char *filename )
 	 creation properties.  */
     hdf5handle.dataset = H5Dcreate2 (file,
 									 hdf5handle.datasetname,
-									 H5T_NATIVE_DOUBLE,
+									 hdf5handle.datatype,
 									 hdf5handle.dataspace,
 									 H5P_DEFAULT,
 									 hdf5handle.prop,
@@ -176,7 +147,7 @@ void writeHDF5File( hdf5FileHandle &hdf5handle, char *filename, void *data )
 											NULL);
 	
     status = H5Dwrite (hdf5handle.dataset,
-					   H5T_NATIVE_DOUBLE,
+					   hdf5handle.datatype,
 					   hdf5handle.memspace,
 					   hdf5handle.filespace,
                        H5P_DEFAULT,

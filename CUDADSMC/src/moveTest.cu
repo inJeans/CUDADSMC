@@ -115,8 +115,11 @@ int main(int argc, const char * argv[])
                 d_pos,
                 numberOfAtoms*sizeof(double3),
                 cudaMemcpyDeviceToHost );
+	cudaMemcpy( h_pos, d_pos, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
 	char posDatasetName[] = "/atomData/positions";
-    hdf5FileHandle hdf5handlePos = createHDF5Handle( numberOfAtoms,
+    int3 atomDims = { numberOfAtoms, 3, 1 };
+    hdf5FileHandle hdf5handlePos = createHDF5Handle( atomDims,
+                                                     H5T_NATIVE_DOUBLE,
                                                      posDatasetName );
 	intialiseHDF5File( hdf5handlePos,
                        filename );
@@ -124,21 +127,22 @@ int main(int argc, const char * argv[])
                    filename,
                    h_pos );
     
-    cudaMemcpy( h_vel,
-                d_vel,
-                numberOfAtoms*sizeof(double3),
-                cudaMemcpyDeviceToHost );
+    cudaMemcpy( h_vel, d_vel, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
     char velDatasetName[] = "/atomData/velocities";
-    hdf5FileHandle hdf5handleVel = createHDF5Handle( numberOfAtoms,
+    hdf5FileHandle hdf5handleVel = createHDF5Handle( atomDims,
+                                                     H5T_NATIVE_DOUBLE,
                                                      velDatasetName );
-	intialiseHDF5File( hdf5handleVel,
+    intialiseHDF5File( hdf5handleVel,
                        filename );
 	writeHDF5File( hdf5handleVel,
                    filename,
                    h_vel );
     
     char timeDatasetName[] = "/atomData/simuatedTime";
-    hdf5FileHandle hdf5handleTime = createHDF5HandleTime( timeDatasetName );
+    int3 timeDims = { 1, 1, 1 };
+    hdf5FileHandle hdf5handleTime = createHDF5Handle( timeDims,
+                                                      H5T_NATIVE_DOUBLE,
+                                                      timeDatasetName );
     intialiseHDF5File( hdf5handleTime,
                        filename );
 	writeHDF5File( hdf5handleTime,

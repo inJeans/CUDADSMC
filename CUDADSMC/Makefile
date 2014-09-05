@@ -6,9 +6,9 @@
 
 # Colour coding the makfile :-)
 NO_COLOR=\033[0m
-OK_COLOR=\033[0;33m
-ERROR_COLOR=\x1b[31;01m
-WARN_COLOR=\x1b[33;01m
+OK_COLOR=\033[32m
+ERROR_COLOR=\033[31m
+WARN_COLOR=\033[35m
 
 OK_STRING=$(OK_COLOR)[OK]$(NO_COLOR)
 ERROR_STRING=$(ERROR_COLOR)[ERRORS]$(NO_COLOR)
@@ -44,6 +44,7 @@ SRCDIR   = src/
 
 EXEC = $(BUILDDIR)CUDADSMC
 TESTMOTION = $(BUILDDIR)testMotion
+TESTCOLLISIONS = $(BUILDDIR)testCollisions
 
 INCLUDE = -I include/ -I /usr/local/hdf5/include
 LIB     = -L /usr/local/hdf5/lib
@@ -80,16 +81,32 @@ $(TESTMOTION): $(addprefix $(OBJDIR), moveTest.o setUp.o moveAtoms.o collisions.
 	@echo "Finished building: $< $(OK_STRING)"
 	@echo ' '
 	@echo 'Testing...'
-	for p in 1 2 3 4 5 6 7 8 9; do \
-		for q in 5 6 7; do \
-			{ time ./$(BUILDDIR)testMotion $$p.e-$$q; } | tee motionTest.txt; \
-			mv motionTest.h5 Tests/Motion/symplecticEuler-$$p.e-$$q.h5; \
-		done; \
-	done
+#	for p in 1 2 3 4 5 6 7 8 9; do \
+#		for q in 5 6 7; do \
+#			{ time ./$(BUILDDIR)testMotion $$p.e-$$q; } | tee motionTest.txt; \
+#			mv motionTest.h5 Tests/Motion/symplecticEuler-$$p.e-$$q.h5; \
+#		done; \
+#	done
 	@echo "... Test complete $< $(OK_STRING)"
 	@echo " " >> motionTest.txt
 	@echo "----------------------------------------" >> motionTest.txt
 	@echo " " >> motionTest.txt
+	tput bel
+
+testCollisions: $(TESTCOLLISIONS)
+
+$(TESTCOLLISIONS): $(addprefix $(OBJDIR), collideTest.o setUp.o moveAtoms.o collisions.o cudaHelpers.o hdf5Helpers.o )
+	@echo 'Building file: $<'
+	@echo 'Invoking: NVCC Linker'
+	$(NVCC) -o $@ $(INCLUDE) $^ $(LIB) $(CUDA_LIB) -lcurand -lcublas -lhdf5 -lhdf5_hl
+	@echo "Finished building: $< $(OK_STRING)"
+	@echo ' '
+	@echo 'Testing...'
+	{ time ./$(BUILDDIR)testCollisions; } | tee collideTest.txt;
+	@echo "... Test complete $< $(OK_STRING)"
+	@echo " " >> collideTest.txt
+	@echo "----------------------------------------" >> collideTest.txt
+	@echo " " >> collideTest.txt
 	tput bel
 
 $(OBJDIR)moveTest.o: $(SRCDIR)moveTest.cu

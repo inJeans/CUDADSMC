@@ -294,6 +294,7 @@ void sortArrays( double3 *d_pos, double3 *d_vel, double3 *d_acc, int *d_cellID )
 __global__ void collide( double3 *vel,
                          double  *sigvrmax,
                          int     *prefixScanNumberOfAtomsInCell,
+                         int     *collisionCount,
                          double   medianR,
                          int      numberOfCells,
                          curandStatePhilox4_32_10_t *rngState )
@@ -302,7 +303,10 @@ __global__ void collide( double3 *vel,
     int numberOfAtomsInCell = prefixScanNumberOfAtomsInCell[cell+1] - prefixScanNumberOfAtomsInCell[cell];
     int g_atom = 0;
     
-    double3 cellLength    = (double) 2.0 * d_meshWidth * medianR / d_cellsPerDimension;
+    double3 cellLength = (double) 2.0 * d_meshWidth * medianR / d_cellsPerDimension;
+    
+    d_dt = 5.e-6;
+	d_loopsPerCollision = 0.01 / d_dt;
     
     __shared__ double3 sh_vel[MAXATOMS];
     __syncthreads();
@@ -322,7 +326,7 @@ __global__ void collide( double3 *vel,
     __syncthreads();
     
     double cellVolume = cellLength.x * cellLength.y * cellLength.z;
-    int Mc = __double2int_ru( 0.5 * d_alpha * (numberOfAtomsInCell - 1) * numberOfAtomsInCell * d_dt * sigvrmax[cell] / cellVolume );
+    int Mc = __double2int_ru( 0.5 * d_alpha * (numberOfAtomsInCell - 1) * numberOfAtomsInCell * d_loopsPerCollision * d_dt * sigvrmax[cell] / cellVolume );
     
     int2 collidingAtoms, g_collidingAtoms;
     
@@ -336,6 +340,7 @@ __global__ void collide( double3 *vel,
           l_collision < Mc;
           l_collision += blockDim.x )
     {
+        
         int g_collisionId = l_collision + cell*blockDim.x;
         curandStatePhilox4_32_10_t l_rngState = rngState[g_collisionId];
         
@@ -374,6 +379,8 @@ __global__ void collide( double3 *vel,
 			// Calculate the post collison velocities. Adding one half of the new velocity
 			vel[g_collidingAtoms.x] = velcm - 0.5 * newVel;
 			vel[g_collidingAtoms.y] = velcm + 0.5 * newVel;
+            
+            collisionCount[cell]++;
 		}
 		
         rngState[g_collisionId] = l_rngState;
