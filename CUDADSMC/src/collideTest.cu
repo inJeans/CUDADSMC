@@ -54,7 +54,7 @@ int main(int argc, const char * argv[])
 		dt = 5.e-6;
 	}
 	
-    loopsPerCollision = 0.001 / dt;
+    loopsPerCollision = 0.01 / dt;
     
 	copyConstantsToDevice<<<1,1>>>( dt );
 	
@@ -112,6 +112,7 @@ int main(int argc, const char * argv[])
     double3 *h_pos = (double3*) calloc( numberOfAtoms, sizeof(double3) );
     double3 *h_vel = (double3*) calloc( numberOfAtoms, sizeof(double3) );
     
+    int *h_prefixSum = (int*) calloc( numberOfCells+1, sizeof(int) );
     int *h_numberOfAtomsInCell = (int*) calloc( numberOfCells+1, sizeof(int) );
 	int *h_cellID = (int*) calloc( numberOfAtoms, sizeof(int) );
     int *h_collisionCount = (int*) calloc( numberOfCells+1, sizeof(int) );
@@ -215,24 +216,24 @@ int main(int argc, const char * argv[])
     for (int i=0; i<numberOfPrints; i++)
     {
         medianR = indexAtoms( d_pos,
-                             d_cellID );
+                              d_cellID );
         sortArrays( d_pos,
-                   d_vel,
-                   d_acc,
-                   d_cellID );
+                    d_vel,
+                    d_acc,
+                    d_cellID );
 		
 		deviceMemset<<<numberOfCells+1,1>>>( d_cellStartEnd,
-                                            make_int2( -1, -1 ),
-                                            numberOfCells + 1 );
+                                             make_int2( -1, -1 ),
+                                             numberOfCells + 1 );
 		cellStartandEndKernel<<<gridSize,blockSize>>>( d_cellID,
-                                                      d_cellStartEnd,
-                                                      numberOfAtoms );
+                                                       d_cellStartEnd,
+                                                       numberOfAtoms );
         findNumberOfAtomsInCell<<<numberOfCells+1,1>>>( d_cellStartEnd,
-                                                       d_numberOfAtomsInCell,
-                                                       numberOfCells );
+                                                        d_numberOfAtomsInCell,
+                                                        numberOfCells );
         thrust::exclusive_scan( th_numberOfAtomsInCell,
-                               th_numberOfAtomsInCell + numberOfCells + 1,
-                               th_prefixScanNumberOfAtomsInCell );
+                                th_numberOfAtomsInCell + numberOfCells + 1,
+                                th_prefixScanNumberOfAtomsInCell );
         
         collide<<<numberOfCells,64>>>( d_vel,
                                        d_sigvrmax,
@@ -243,9 +244,9 @@ int main(int argc, const char * argv[])
                                        d_rngStates );
         
         moveAtoms<<<gridSize,blockSize>>>( d_pos,
-                                          d_vel,
-                                          d_acc,
-                                          numberOfAtoms );
+                                           d_vel,
+                                           d_acc,
+                                           numberOfAtoms );
         
         time += loopsPerCollision * dt;
         
@@ -254,11 +255,11 @@ int main(int argc, const char * argv[])
         cudaMemcpy( h_collisionCount, d_collisionCount, (numberOfCells+1)*sizeof(int), cudaMemcpyDeviceToHost );
         
         writeHDF5File( hdf5handlePos,
-                      filename,
-                      h_pos );
+                       filename,
+                       h_pos );
         writeHDF5File( hdf5handleVel,
-                      filename,
-                      h_vel );
+                       filename,
+                       h_vel );
         writeHDF5File( hdf5handleCollision,
                        filename,
                        h_collisionCount );
@@ -275,6 +276,7 @@ int main(int argc, const char * argv[])
     free( h_pos );
     free( h_vel );
     free( h_numberOfAtomsInCell );
+    free( h_prefixSum );
 	free( h_cellID );
     
     cudaFree( d_pos );

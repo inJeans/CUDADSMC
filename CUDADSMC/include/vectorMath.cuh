@@ -113,7 +113,7 @@ static __inline __device__ double dot( double3 a, double3 b )
     return a.x*b.x + a.y*b.y + a.z*b.z ;
 }
 
-static __inline__ __device__ float lengthf( double3 v )
+static __inline__ __device__ double length( double3 v )
 {
     return sqrtf( (float) dot(v,v) );
 }

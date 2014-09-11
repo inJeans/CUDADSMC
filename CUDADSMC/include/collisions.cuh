@@ -33,4 +33,9 @@ __device__ int2 chooseCollidingAtoms( int numberOfAtomsInCell, curandStatePhilox
 __device__ double calculateRelativeVelocity( double3 *vel, int2 collidingAtoms );
 __device__ double3 getRandomPointOnSphere( curandStatePhilox4_32_10_t *rngState );
 
+__global__ void shmemTest( double3 *vel,
+                          double3 *vout,
+                          int     *prefixScanNumberOfAtomsInCell,
+                          curandStatePhilox4_32_10_t *rngState );
+
 #endif

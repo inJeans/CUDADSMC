@@ -52,8 +52,8 @@ LIB     = -L /usr/local/hdf5/lib
 all: $(EXEC)
 
 debug: NVCCFLAGS += -g -G
-#debug: clean
-debug: $(EXEC)
+debug: clean
+debug: $(TESTCOLLISIONS)
 
 profile: NVCCFLAGS += -pg
 profile: $(EXEC)

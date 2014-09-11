@@ -41,7 +41,7 @@ double indexAtoms( double3 *d_pos, int *d_cellID )
                                              numberOfAtoms );
     
     double medianR = findMedian( d_radius,
-                                numberOfAtoms );
+                                 numberOfAtoms );
     
     printf("The median radius is %f\n", medianR );
     
@@ -66,7 +66,7 @@ __global__ void calculateRadius( double3 *pos, double *radius, int numberOfAtoms
 		 atom < numberOfAtoms;
 		 atom += blockDim.x * gridDim.x)
 	{
-        radius[atom] = lengthf(pos[atom]);
+        radius[atom] = length( pos[atom] );
     }
     
     return;
@@ -326,28 +326,30 @@ __global__ void collide( double3 *vel,
     __syncthreads();
     
     double cellVolume = cellLength.x * cellLength.y * cellLength.z;
-    int Mc = __double2int_ru( 0.5 * d_alpha * (numberOfAtomsInCell - 1) * numberOfAtomsInCell * d_loopsPerCollision * d_dt * sigvrmax[cell] / cellVolume );
-    
-    int2 collidingAtoms, g_collidingAtoms;
-    
+    int Mc = __double2int_ru( 0.05 * d_alpha * (numberOfAtomsInCell - 1) * numberOfAtomsInCell * d_loopsPerCollision * d_dt * sigvrmax[cell] / cellVolume );
+//
+//    int2 collidingAtoms, g_collidingAtoms;
+//    
     double3 velcm, newVel, pointOnSphere;
-    
+
     double crossSection = 8.*d_pi*d_a*d_a;
     double magVrel;
     double ProbCol;
     
-    for ( int l_collision = threadIdx.x;
-          l_collision < Mc;
-          l_collision += blockDim.x )
+    if (threadIdx.x==0) {
+    for ( int l_collision = 0;
+            l_collision < Mc;
+            l_collision++ )
     {
-        
-        int g_collisionId = l_collision + cell*blockDim.x;
+        int g_collisionId =  l_collision%64 + cell*blockDim.x;
         curandStatePhilox4_32_10_t l_rngState = rngState[g_collisionId];
         
-        collidingAtoms.x = 0;
-        collidingAtoms.y = 0;
+        int2 collidingAtoms = {0,0};
         
-        if (numberOfAtomsInCell == 2) {
+        if (numberOfAtomsInCell < 2) {
+            return;
+        }
+        else if (numberOfAtomsInCell == 2) {
             collidingAtoms.x = 0;
             collidingAtoms.y = 1;
         }
@@ -356,34 +358,45 @@ __global__ void collide( double3 *vel,
         }
         
         magVrel = calculateRelativeVelocity( sh_vel, collidingAtoms );
-        
+
         // Check if this is the more probable than current most probable.
         if (magVrel*crossSection > sigvrmax[cell]) {
             sigvrmax[cell] = magVrel * crossSection;
         }
-        
-        ProbCol = 0.5 * d_Fn * d_loopsPerCollision * d_dt / cellVolume * magVrel * crossSection * numberOfAtomsInCell * ( numberOfAtomsInCell - 1. ) / Mc;
+
+        ProbCol = 0.05 * d_alpha * d_loopsPerCollision * d_dt / cellVolume * magVrel * crossSection * numberOfAtomsInCell * ( numberOfAtomsInCell - 1. ) / Mc;
+
+//        printf("Mc = %i, ProbCol = %g\n", Mc, ProbCol );
         
 		// Collide with the collision probability.
 		if ( ProbCol > curand_uniform_double ( &l_rngState ) ) {
-			// Find centre of mass velocities.
-			velcm = 0.5*(sh_vel[collidingAtoms.x] + sh_vel[collidingAtoms.y]);
-			
-			// Generate a random velocity on the unit sphere.
-			pointOnSphere = getRandomPointOnSphere( &l_rngState );
-			
-			newVel = magVrel * pointOnSphere;
+            // Find centre of mass velocities.
+            velcm = 0.5*(sh_vel[collidingAtoms.x] + sh_vel[collidingAtoms.y]);
             
-            g_collidingAtoms = prefixScanNumberOfAtomsInCell[cell] + collidingAtoms;
-			
-			// Calculate the post collison velocities. Adding one half of the new velocity
-			vel[g_collidingAtoms.x] = velcm - 0.5 * newVel;
-			vel[g_collidingAtoms.y] = velcm + 0.5 * newVel;
+            // Generate a random velocity on the unit sphere.
+            pointOnSphere = getRandomPointOnSphere( &l_rngState );
+            newVel = magVrel * pointOnSphere;
             
-            collisionCount[cell]++;
-		}
-		
+            sh_vel[collidingAtoms.x] = velcm - 0.5 * newVel;
+            sh_vel[collidingAtoms.y] = velcm + 0.5 * newVel;
+            
+//            atomicAdd( &collisionCount[cell], d_alpha );
+            collisionCount[cell] += d_alpha;
+        }
+        
         rngState[g_collisionId] = l_rngState;
+        
+    }
+    }
+    __syncthreads();
+    
+    for ( int l_atom = threadIdx.x;
+         l_atom < numberOfAtomsInCell;
+         l_atom += blockDim.x )
+    {
+        g_atom = prefixScanNumberOfAtomsInCell[cell] + l_atom;
+        
+        vel[g_atom] = sh_vel[l_atom];
     }
     
     __syncthreads();
@@ -419,4 +432,65 @@ __device__ double3 getRandomPointOnSphere( curandStatePhilox4_32_10_t *rngState 
     double3 pointOnSphere = make_double3( r1.x, r1.y, r2 ) * rsqrt( r1.x*r1.x + r1.y*r1.y + r2*r2 );
     
     return pointOnSphere;
+}
+
+__global__ void shmemTest( double3 *vel,
+                          double3 *vout,
+                          int     *prefixScanNumberOfAtomsInCell,
+                          curandStatePhilox4_32_10_t *rngState )
+{
+    int cell   = blockIdx.x;
+    int numberOfAtomsInCell = prefixScanNumberOfAtomsInCell[cell+1] - prefixScanNumberOfAtomsInCell[cell];
+    int g_atom = 0;
+    
+    __shared__ double3 sh_vel[MAXATOMS];
+    __syncthreads();
+    
+    if (numberOfAtomsInCell > MAXATOMS) {
+        numberOfAtomsInCell = MAXATOMS;
+    }
+    
+    for ( int l_atom = threadIdx.x;
+         l_atom < numberOfAtomsInCell;
+         l_atom += blockDim.x )
+    {
+        g_atom = prefixScanNumberOfAtomsInCell[cell] + l_atom;
+        
+        sh_vel[l_atom] = vel[g_atom];
+    }
+    __syncthreads();
+    
+    for ( int l_collision = threadIdx.x;
+                 l_collision < 100;
+                l_collision += blockDim.x )
+    {
+        int g_collisionId =  l_collision%64 + cell*blockDim.x;
+        curandStatePhilox4_32_10_t l_rngState = rngState[g_collisionId];
+        
+        int2 collidingAtoms = {0,0};
+        
+        if (numberOfAtomsInCell < 2) {
+            return;
+        }
+        else if (numberOfAtomsInCell == 2) {
+            collidingAtoms.x = 0;
+            collidingAtoms.y = 1;
+        }
+        else {
+            collidingAtoms = chooseCollidingAtoms( numberOfAtomsInCell, &l_rngState );
+        }
+        
+        int2 g_collidingAtoms = prefixScanNumberOfAtomsInCell[cell] + collidingAtoms;
+        
+        if (vel[g_collidingAtoms.x].x != sh_vel[collidingAtoms.x].x) {
+            printf("g_vel[%i] = {%g, %g, %g}, sh_vel[%i] = {%g, %g, %g}, cell%i\n", g_collidingAtoms.x, vel[g_collidingAtoms.x].x, vel[g_collidingAtoms.x].y, vel[g_collidingAtoms.x].z, collidingAtoms.x, sh_vel[collidingAtoms.x].x, sh_vel[collidingAtoms.x].y, sh_vel[collidingAtoms.x].z, cell);
+        }
+        rngState[g_collisionId] = l_rngState;
+        
+    }
+    
+    
+    __syncthreads();
+    
+    return;
 }

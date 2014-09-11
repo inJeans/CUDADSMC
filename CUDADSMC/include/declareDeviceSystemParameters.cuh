@@ -22,7 +22,6 @@ extern __constant__ double d_hbar = 1.05457148e-34;	// hbar
 
 extern __device__ int3   d_cellsPerDimension = { 10, 10, 10 };
 extern __device__ int    d_numberOfCells = 10*10*10;
-extern __device__ double d_Fn = 1.;
 extern __device__ double d_meshWidth = 1.5;
 extern __device__ double d_alpha = 1.e7 / 1.e4;
 extern __device__ double d_dt;

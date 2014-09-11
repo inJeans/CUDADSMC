@@ -13,13 +13,13 @@
 
 #pragma mark -
 
-int numberOfPrints = 100;
-int loopsPerCollision = 60000;
-
 int    numberOfAtoms = 1e4;
 int3   cellsPerDimension = { 10, 10, 10 };
 int    numberOfCells = cellsPerDimension.x*cellsPerDimension.y*cellsPerDimension.z;
 double dt = 5.0e-6;
+
+int numberOfPrints = 50;
+int loopsPerCollision = 0.01 / dt;
 
 #pragma mark Physics Constants
 
