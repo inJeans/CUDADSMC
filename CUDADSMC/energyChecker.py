@@ -23,13 +23,14 @@ dBdz = 2.5;
 
 tres = 51;
 ntrials = 1e4;
-dt = 5e-6;
+dt = 1e-6;
 
 time = np.zeros((tres));
 pos = np.zeros((ntrials,3,tres));
 vel = np.zeros((ntrials,3,tres));
+isSpinUp = np.zeros((ntrials,1,tres));
 
-f = h5py.File('collideTest.h5');
+f = h5py.File('outputData.h5');
 
 dset = f.require_dataset('atomData/simuatedTime',(1,1,tres),False,False);
 dset.read_direct(time);
@@ -40,13 +41,35 @@ dset.read_direct(pos);
 dset = f.require_dataset('atomData/velocities',(ntrials,3,tres),False,False);
 dset.read_direct(vel);
 
+dset = f.require_dataset('atomData/isSpinUp',(ntrials,1,tres),False,False);
+dset.read_direct(isSpinUp);
+
 f.close()
 
+N = np.sum( isSpinUp[:,0,:], 0)
+isSpinUp = 2*isSpinUp[:,0,:] - 1;
+
 Ek = np.sum( 0.5 * mRb * np.sum(vel**2, 1), 0 ) / ntrials / kB * 1.e6
-Ep = np.sum( 0.5*gs*muB*dBdz*np.sqrt(pos[:,0,:]**2 + pos[:,1,:]**2 + 4.0*pos[:,2,:]**2 ), 0 ) / ntrials / kB * 1.e6
+Ep = np.sum( isSpinUp*0.5*gs*muB*dBdz*np.sqrt(pos[:,0,:]**2 + pos[:,1,:]**2 + 4.0*pos[:,2,:]**2 ), 0 ) / ntrials / kB * 1.e6
 Et = Ek+Ep
 
 dE = max( abs(Et - Et[0]) / Et[0] * 100 )
+
+up = np.where( isSpinUp > 0 );
+
+Temp = np.zeros((N.size,))
+test = np.zeros((N.size,))
+EkS = 0.5 * mRb * np.sum(vel**2, 1) / kB * 1.e6
+EpS = 0.5*gs*muB*dBdz*np.sqrt(pos[:,0,:]**2 + pos[:,1,:]**2 + 4.0*pos[:,2,:]**2 ) / kB * 1.e6
+EtS = EkS + EpS
+dEtS = EtS[:,-1] - EtS[:,0]
+
+for i in range(0,N.size):
+    now = np.where( up[1] == i );
+    Temp[i] = 2./3. * np.sum( 0.5 * mRb * np.sum(vel[up[0][now],:,up[1][now]]**2, 1), 0) / N[i] / kB * 1.e6
+#    test[i] = np.sum( isSpinUp[up[0][now], i], 0) / N[i]
+#    EkS[0:N[i],i] = 0.5 * mRb * np.sum(vel[up[0][now],:,up[1][now]]**2, 1) / kB * 1.e6
+#    EpS[0:N[i],i] = 0.5*gs*muB*dBdz*np.sqrt(pos[up[0][now],0,up[1][now]]**2 + pos[up[0][now],1,up[1][now]]**2 + 4.0*pos[up[0][now],2,up[1][now]]**2 ) / kB * 1.e6
 
 pl.clf()
 pl.plot(time,Ek)
@@ -61,11 +84,17 @@ if dE < 1.e-3:
 else:
     print bcolors.FAIL + "Motion integrator failed, dE = %%%.3g, dt = %.3g" % (dE,dt) + bcolors.ENDC
 
-pl.draw()
+#pl.draw()
 #figurename = './Tests/Motion/motionTest-%.3g' % dt + '.eps'
 #pl.savefig( figurename )
 
 #filename = './Tests/Motion/motionTest-%.3g' % dt + '.npy'
 #file = open(filename, "w")
+
+pl.figure(2)
+pl.plot( time, N )
+
+pl.figure(3)
+pl.plot( time, Temp )
 
 pl.show()

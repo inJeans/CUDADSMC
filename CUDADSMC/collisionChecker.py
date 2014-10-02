@@ -21,7 +21,7 @@ hbar = 1.05457148e-34;
 T    = 20.e-6;
 dBdz = 2.5;
 
-tres = 51;
+tres = 26;
 ntrials = 1e4;
 nAtoms = 1e7;
 nCells = 10**3 + 1;
@@ -29,14 +29,20 @@ dt = 5e-6;
 
 time = np.zeros((tres));
 collisionCount = np.zeros((nCells,1,tres));
+atomCount = np.zeros((nCells,1,tres));
 
-f = h5py.File('collideTest.h5');
+f = h5py.File('outputData.h5');
 
 dset = f.require_dataset('atomData/simuatedTime',(1,1,tres),False,False);
 dset.read_direct(time);
 
 dset = f.require_dataset('atomData/collisionCount',(nCells,1,tres),False,False);
 dset.read_direct(collisionCount);
+
+#dset = f.require_dataset('atomData/atomCount',(nCells,1,tres),False,False);
+#dset.read_direct(atomCount);
+
+f.close()
 
 totalColl = np.sum( collisionCount, 0 )[0,:];
 
@@ -45,4 +51,3 @@ collRate = np.gradient( totalColl, time[1]-time[0] ) / nAtoms;
 pl.plot( time, collRate );
 pl.show();
 
-f.close()

@@ -6,13 +6,13 @@
 //  Copyright (c) 2014 WIJ. All rights reserved.
 //
 
-#include "setUp.cuh"
 #include "vectorMath.cuh"
+#include "setUp.cuh"
 #include "math.h"
 #include "cudaHelpers.cuh"
 
 #include "declareInitialSystemParameters.cuh"
-#include "declareDeviceSystemParameters.cuh"
+#include "deviceSystemParameters.cuh"
 
 #pragma mark - Random Number Generator
 int findRNGArrayLength( void )
@@ -50,6 +50,8 @@ __global__ void initRNG( curandStatePhilox4_32_10_t *rngState, int numberOfAtoms
 __global__ void generateInitialDist(double3 *pos,
                                     double3 *vel,
                                     double3 *acc,
+                                    hbool_t *isSpinUp,
+                                    int     *atomID,
                                     int      numberOfAtoms,
 									double   Temp,
 									double   dBdz,
@@ -67,6 +69,10 @@ __global__ void generateInitialDist(double3 *pos,
 		vel[atom] = getRandomVelocity( Temp, &localrngState );
         
         acc[atom] = updateAccel( pos[atom] );
+        
+        isSpinUp[atom] = true;
+        
+        atomID[atom] = atom;
 		
 		// Copy state back to global memory
 		rngState[atom] = localrngState;
@@ -78,7 +84,7 @@ __device__ double3 getRandomVelocity( double Temp, curandStatePhilox4_32_10_t *r
 {
 	double3 vel = make_double3( 0., 0., 0. );
 	
-	double V = sqrt(2.0/3.0*d_kB*Temp/d_mRb);
+	double V = sqrt(3.0*d_kB*Temp/d_mRb);
 	
 	vel = V * getRandomPointOnUnitSphere( &rngState[0] );
 	
@@ -122,8 +128,8 @@ __device__ double3 selectAtomInDistribution( double dBdz, double Temp, curandSta
 
 __device__ double3 getGaussianPoint( double mean, double std, curandStatePhilox4_32_10_t *rngState )
 {
-    double2 r1 = curand_normal2_double ( &rngState[0] ) * std + mean;
-	double r2  = curand_normal_double  ( &rngState[0] ) * std + mean;
+    double2 r1 = curand_normal2_double ( &rngState[0] ) * std * 20. + mean;
+	double r2  = curand_normal_double  ( &rngState[0] ) * std * 20. + mean;
  
     double3 point = make_double3( r1.x, r1.y, r2 );
     
@@ -158,9 +164,92 @@ __device__ double3 updateAccel( double3 pos )
     return accel;
 }
 
+void setInitialWavefunction( zomplex *d_psiU, zomplex *d_psiD, double2 *d_oldPops2, hbool_t *d_isSpinUp, double3 *d_pos, int numberOfAtoms )
+{
+    int blockSize;
+	int minGridSize;
+	int gridSize;
+	
+	cudaOccupancyMaxPotentialBlockSize( &minGridSize,
+                                        &blockSize,
+                                        (const void *) deviceSetInitialWavefunction,
+                                        0,
+                                        numberOfAtoms );
+	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
+    
+    deviceSetInitialWavefunction<<<gridSize,blockSize>>>( d_psiU,
+                                                          d_psiD,
+                                                          d_oldPops2,
+                                                          d_isSpinUp,
+                                                          d_pos,
+                                                          numberOfAtoms );
+    
+    return;
+}
+
+__global__ void deviceSetInitialWavefunction( zomplex *psiU, zomplex *psiD, double2 *oldPops2, hbool_t *isSpinUp, double3 *pos, int numberOfAtoms )
+{
+    for ( int atom = blockIdx.x * blockDim.x + threadIdx.x;
+              atom < numberOfAtoms;
+              atom += blockDim.x * gridDim.x )
+    {
+        double3 l_pos = pos[atom];
+		double3 Bn = magneticFieldNormal( l_pos );
+		
+		zomplex l_psiU = 0.5 * make_cuDoubleComplex ( 1.+Bn.x+Bn.z, -Bn.y ) * rsqrt(1.+Bn.x);
+		zomplex l_psiD = 0.5 * make_cuDoubleComplex ( 1.+Bn.x-Bn.z, +Bn.y ) * rsqrt(1.+Bn.x);
+		
+		isSpinUp[atom] = true;
+		
+		oldPops2[atom] = getEigenStatePops( l_psiD,
+                                            l_psiU,
+                                            Bn );
+        
+        psiU[atom] = l_psiU;
+        psiD[atom] = l_psiD;
+	}
+    
+    return;
+}
+
 void initSigvrmax( double *d_sigvrmax, int numberOfCells )
 {
     double sigvrmax = sqrt(3.*h_kB*Tinit/h_mRb)*8.*h_pi*h_a*h_a;
     
     cudaSetMem( d_sigvrmax, sigvrmax, numberOfCells + 1 );
+}
+
+__device__ double3 magneticField( double3 pos )
+{
+    double3 magneticField = make_double3( 0., 0., 0. );
+    
+    magneticField.x = 0.5*d_dBdz*pos.x;
+    magneticField.y = 0.5*d_dBdz*pos.y;
+    magneticField.z =-1.0*d_dBdz*pos.z;
+    
+    return magneticField;
+}
+
+__device__ double3 magneticFieldNormal( double3 pos )
+{
+    double3 B     = magneticField( pos );
+    double  magB  = length( B );
+    double3 Bn    = B / magB;
+    
+    return Bn;
+}
+
+__device__ double2 getEigenStatePops( zomplex psiD, zomplex psiU, double3 Bn )
+{
+    double2 statePopulations = make_double2( 0., 0. );
+    
+    // Record old populations
+    statePopulations.x = 0.5 + Bn.x * ( psiD.x*psiU.x + psiD.y*psiU.y )
+                             + Bn.y * ( psiD.y*psiU.x - psiD.x*psiU.y )
+                             + Bn.z * ( psiU.x*psiU.x + psiU.y*psiU.y - 0.5 );
+    statePopulations.y = 0.5 - Bn.x * ( psiD.x*psiU.x + psiD.y*psiU.y )
+                             + Bn.y * (-psiD.y*psiU.x + psiD.x*psiU.y )
+                             + Bn.z * (-psiU.x*psiU.x - psiU.y*psiU.y + 0.5 );
+    
+    return statePopulations;
 }

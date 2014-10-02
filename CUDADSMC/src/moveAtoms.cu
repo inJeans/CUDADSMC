@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <cuda.h>
 
-#include "declareDeviceSystemParameters.cuh"
+#include "deviceSystemParameters.cuh"
 #include "moveAtoms.cuh"
 #include "vectorMath.cuh"
 #include "math.h"
@@ -22,7 +22,7 @@ __global__ void copyConstantsToDevice( double dt )
 	return;
 }
 
-__global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, int numberOfAtoms )
+__global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, int numberOfAtoms, hbool_t *isSpinUp )
 {
     for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
 		 atom < numberOfAtoms;
@@ -32,11 +32,12 @@ __global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, int numberO
         double3 l_vel = vel[atom];
         double3 l_acc = acc[atom];
 		
-        for (int i=0; i<d_loopsPerCollision; i++) {
+//        for (int i=0; i<d_loopsPerCollision; i++) {
             velocityVerletUpdate( &l_pos,
                                   &l_vel,
-                                  &l_acc );
-        }
+                                  &l_acc,
+                                  isSpinUp[atom] );
+//        }
     
         pos[atom] = l_pos;
         vel[atom] = l_vel;
@@ -47,17 +48,17 @@ __global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, int numberO
     return;
 }
 
-__device__ void velocityVerletUpdate( double3 *pos, double3 *vel, double3 *acc )
+__device__ void velocityVerletUpdate( double3 *pos, double3 *vel, double3 *acc, hbool_t isSpinUp )
 {
     vel[0] = updateVelHalfStep( vel[0], acc[0] );
     pos[0] = updatePos( pos[0], vel[0] );
-    acc[0] = updateAcc( pos[0] );
+    acc[0] = updateAcc( pos[0], isSpinUp );
     vel[0] = updateVelHalfStep( vel[0], acc[0] );
 }
 
-__device__ void symplecticEulerUpdate( double3 *pos, double3 *vel, double3 *acc )
+__device__ void symplecticEulerUpdate( double3 *pos, double3 *vel, double3 *acc, hbool_t isSpinUp )
 {
-    acc[0] = updateAcc( pos[0] );
+    acc[0] = updateAcc( pos[0], isSpinUp );
     vel[0] = updateVel( vel[0], acc[0] );
     pos[0] = updatePos( pos[0], vel[0] );
 }
@@ -77,12 +78,20 @@ __device__ double3 updatePos( double3 pos, double3 vel )
     return pos + vel * d_dt;
 }
 
-__device__ double3 updateAcc( double3 pos )
+__device__ double3 updateAcc( double3 pos, hbool_t isSpinUp )
 {
     double3 accel = make_double3( 0., 0., 0. );
     
     // The rsqrt function returns the reciprocal square root of its argument
-	double potential = -0.5*d_gs*d_muB*d_dBdz*rsqrt(pos.x*pos.x + pos.y*pos.y + 4.0*pos.z*pos.z)/d_mRb;
+    double potential = 0.;
+    
+    if (isSpinUp) {
+        potential = -0.5*d_gs*d_muB*d_dBdz*rsqrt(pos.x*pos.x + pos.y*pos.y + 4.0*pos.z*pos.z)/d_mRb;
+    }
+    else
+    {
+        potential =  0.5*d_gs*d_muB*d_dBdz*rsqrt(pos.x*pos.x + pos.y*pos.y + 4.0*pos.z*pos.z)/d_mRb;
+    }
 	
 	accel.x =       potential * pos.x;
 	accel.y =       potential * pos.y;

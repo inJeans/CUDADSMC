@@ -36,7 +36,8 @@ else                     #If building on a Linux system
 	NVCC = nvcc
 endif
 
-NVCCFLAGS = -m 64 -arch=compute_30 -code=sm_30,compute_30
+#NVCCFLAGS = -m 64 --relocatable-device-code=true -arch=compute_30 -code=sm_30,compute_30
+NVCCFLAGS = -m 64 --relocatable-device-code=false -arch=compute_30 -code=sm_30,compute_30
 
 BUILDDIR = bin/
 OBJDIR   = $(BUILDDIR)obj/
@@ -58,7 +59,7 @@ debug: $(TESTCOLLISIONS)
 profile: NVCCFLAGS += -pg
 profile: $(EXEC)
 
-$(EXEC): $(addprefix $(OBJDIR), main.o setUp.o moveAtoms.o collisions.o cudaHelpers.o hdf5Helpers.o )
+$(EXEC): $(addprefix $(OBJDIR), main.o setUp.o moveAtoms.o spinEvolution.o collisions.o cudaHelpers.o hdf5Helpers.o )
 	@echo 'Building file: $<'
 	@echo 'Invoking: NVCC Linker'
 	$(NVCC) -o $@ $(INCLUDE) $^ $(LIB) $(CUDA_LIB) -lcurand -lcublas -lhdf5 -lhdf5_hl
@@ -117,6 +118,7 @@ $(OBJDIR)moveTest.o: $(SRCDIR)moveTest.cu
 	@echo ' '
 
 run:
+	make
 	{ time ./$(BUILDDIR)CUDADSMC ; } | tee output.txt
 #	/usr/local/hdf5/bin/h5import "./src/main.cu" -c "./hdfimportconfig/h5import-main.conf" -o "mmDataMCWF.h5"
 #	/usr/local/hdf5/bin/h5import "./src/evolveSpin.cu" -c "./hdfimportconfig/h5import-evolveSpin.conf" -o "mmDataMCWF.h5"

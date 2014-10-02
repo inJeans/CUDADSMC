@@ -191,6 +191,21 @@ int main(int argc, const char * argv[])
                    filename,
                    h_collisionCount );
     
+    cudaMemcpy( h_numberOfAtomsInCell,
+               d_numberOfAtomsInCell,
+               (numberOfCells+1)*sizeof(int),
+               cudaMemcpyDeviceToHost );
+	char nAtomDatasetName[] = "/atomData/atomCount";
+    int3 nAtomDims = { numberOfCells+1, 1, 1 };
+    hdf5FileHandle hdf5handlenAtom = createHDF5Handle( nAtomDims,
+                                                       H5T_NATIVE_INT,
+                                                       nAtomDatasetName );
+	intialiseHDF5File( hdf5handlenAtom,
+                       filename );
+	writeHDF5File( hdf5handlenAtom,
+                   filename,
+                   h_numberOfAtomsInCell );
+    
     char timeDatasetName[] = "/atomData/simuatedTime";
     int3 timeDims = { 1, 1, 1 };
     hdf5FileHandle hdf5handleTime = createHDF5Handle( timeDims,
@@ -253,6 +268,7 @@ int main(int argc, const char * argv[])
         cudaMemcpy( h_pos, d_pos, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
         cudaMemcpy( h_vel, d_vel, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
         cudaMemcpy( h_collisionCount, d_collisionCount, (numberOfCells+1)*sizeof(int), cudaMemcpyDeviceToHost );
+        cudaMemcpy( h_numberOfAtomsInCell, d_numberOfAtomsInCell, (numberOfCells+1)*sizeof(int), cudaMemcpyDeviceToHost );
         
         writeHDF5File( hdf5handlePos,
                        filename,
@@ -263,11 +279,14 @@ int main(int argc, const char * argv[])
         writeHDF5File( hdf5handleCollision,
                        filename,
                        h_collisionCount );
+        writeHDF5File( hdf5handlenAtom,
+                       filename,
+                       h_numberOfAtomsInCell );
         writeHDF5File( hdf5handleTime,
                        filename,
                        &time );
         
-        printf("i = %i\n", i);
+        printf("t = %f\n", time);
     }
     
     // insert code here...
