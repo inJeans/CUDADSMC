@@ -59,7 +59,7 @@ debug: $(TESTCOLLISIONS)
 profile: NVCCFLAGS += -pg
 profile: $(EXEC)
 
-$(EXEC): $(addprefix $(OBJDIR), main.o setUp.o moveAtoms.o spinEvolution.o collisions.o cudaHelpers.o hdf5Helpers.o )
+$(EXEC): $(addprefix $(OBJDIR), main.o setUp.o moveAtoms.o spinEvolution.o collisions.o evaporation.o cudaHelpers.o hdf5Helpers.o )
 	@echo 'Building file: $<'
 	@echo 'Invoking: NVCC Linker'
 	$(NVCC) -o $@ $(INCLUDE) $^ $(LIB) $(CUDA_LIB) -lcurand -lcublas -lhdf5 -lhdf5_hl

@@ -1,5 +1,6 @@
 import h5py
 import numpy as np
+import scipy.stats as stats
 import pylab as pl
 import os
 
@@ -60,6 +61,7 @@ up = np.where( isSpinUp > 0 );
 Temp = np.zeros((N.size,))
 test = np.zeros((N.size,))
 EkS = 0.5 * mRb * np.sum(vel**2, 1) / kB * 1.e6
+speed = EkS * 2. / mRb * kB / 1.e6;
 EpS = 0.5*gs*muB*dBdz*np.sqrt(pos[:,0,:]**2 + pos[:,1,:]**2 + 4.0*pos[:,2,:]**2 ) / kB * 1.e6
 EtS = EkS + EpS
 dEtS = EtS[:,-1] - EtS[:,0]
@@ -96,5 +98,10 @@ pl.plot( time, N )
 
 pl.figure(3)
 pl.plot( time, Temp )
+
+pl.figure(4)
+pl.hist( speed[:,N.size-1], 100, (0.,0.02) )
+
+print stats.maxwell.mean(speed[:,N.size-1]).size
 
 pl.show()

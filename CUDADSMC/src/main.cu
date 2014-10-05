@@ -25,6 +25,16 @@
 #include "moveAtoms.cuh"
 #include "collisions.cuh"
 #include "spinEvolution.cuh"
+#include "evaporation.cuh"
+
+struct isAligned
+{
+    __host__ __device__
+    bool operator()(const hbool_t x)
+    {
+        return !x;
+    }
+};
 
 char filename[] = "outputData.h5";
 char groupname[] = "/atomData";
@@ -300,6 +310,16 @@ int main(int argc, const char * argv[])
                    filename,
                    &time );
     
+    char numberDatasetName[] = "/atomData/atomNumber";
+    hdf5FileHandle hdf5handleNumber = createHDF5Handle( timeDims,
+                                                      H5T_NATIVE_INT,
+                                                      numberDatasetName );
+    intialiseHDF5File( hdf5handleNumber,
+                       filename );
+    writeHDF5File( hdf5handleNumber,
+                   filename,
+                   &numberOfAtoms );
+    
 #pragma mark - Main Loop
     
     cudaOccupancyMaxPotentialBlockSize( &minGridSize,
@@ -385,6 +405,20 @@ int main(int argc, const char * argv[])
                                                            numberOfAtoms );
         }
         
+        evaporateAtoms( d_pos,
+                        d_vel,
+                        d_acc,
+                        d_psiU,
+                        d_psiD,
+                        d_oldPops2,
+                        d_isSpinUp,
+                        d_cellID,
+                        d_atomID,
+                        medianR,
+                        &numberOfAtoms );
+        
+        printf( "Number of atoms = %i, ", numberOfAtoms);
+        
         time += loopsPerCollision * dt;
     
         cudaMemcpy( h_pos, d_pos, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
@@ -415,6 +449,9 @@ int main(int argc, const char * argv[])
         writeHDF5File( hdf5handleTime,
                        filename,
                        &time );
+        writeHDF5File( hdf5handleNumber,
+                       filename,
+                       &numberOfAtoms );
         
         printf("i = %i\n", i);
     }
