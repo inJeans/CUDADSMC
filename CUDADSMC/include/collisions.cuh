@@ -21,7 +21,7 @@ __device__ int3 getCellIndices( double3 pos, double3 gridMin, double3 cellLength
 __device__ double3 getCellLength( double medianR );
 __device__ int getCellID( int3 index, int3 cellsPerDimensions );
 __device__ double3 getGridMin( double medianR );
-__global__ void cellStartandEndKernel( int *cellID, int *atomID, int2 *cellStartEnd, int numberOfAtoms );
+__global__ void cellStartandEndKernel( int *cellID, int2 *cellStartEnd, int numberOfAtoms );
 __device__ void serialCellStartandEndKernel( int *cellID, int2 *cellStartEnd, int numberOfAtoms );
 __global__ void findNumberOfAtomsInCell( int2 *cellStartEnd, int *numberOfAtomsInCell, int numberOfCells );
 __device__ void serialFindNumberOfAtomsInCell( int2 *cellStartEnd, int *numberOfAtomsInCell, int numberOfCells );
@@ -32,11 +32,9 @@ void sortArrays( double3 *d_pos,
                 zomplex *d_psiD,
                 double2 *d_oldPops2,
                 hbool_t *d_isSpinUp,
-                int *d_cellID,
-                int *d_atomID );
+                int *d_cellID );
 __global__ void collide( double3 *vel,
                          double  *sigvrmax,
-                         int     *atomID,
                          hbool_t *isSpinUp,
                          int     *prefixScanNumberOfAtomsInCell,
                          int     *collisionCount,

@@ -100,7 +100,7 @@ __device__ double2 getEigenStatePopulations( zomplex psiD, zomplex psiU, double3
 }
 
 // This kernel will perform the spin projection
-__global__ void projectSpins( zomplex *psiU, zomplex *psiD, double2 *oldPops2, double3 *pos, double3 *vel, hbool_t *isSpinUp, curandStatePhilox4_32_10_t *rngstate, int numberOfAtoms )
+__global__ void projectSpins( zomplex *psiU, zomplex *psiD, double2 *oldPops2, double3 *pos, double3 *vel, hbool_t *isSpinUp, curandStatePhilox4_32_10_t *rngstate, int numberOfAtoms, double3 *flippedPos, double3 *flippedVel )
 {
 	for ( int atom = blockIdx.x * blockDim.x + threadIdx.x;
               atom < numberOfAtoms;
@@ -125,10 +125,12 @@ __global__ void projectSpins( zomplex *psiU, zomplex *psiD, double2 *oldPops2, d
         
 		if (isSpinUp[atom]) {
             
-            double pFlip = ( newPops2.y - l_oldPops2.y ) / l_oldPops2.x;
+            double pFlip = ( newPops2.x - l_oldPops2.x ) / l_oldPops2.x;
             
             if ( curand_uniform_double (&l_rngstate) < pFlip ) {
 				isSpinUp[atom] = !isSpinUp[atom];
+                flippedPos[atom] = l_pos;
+                flippedVel[atom] = l_vel;
                 
 				double deltaE = d_gs*d_muB*d_dBdz*magB;
                 double Ek = 0.5 * d_mRb * ( l_vel.x*l_vel.x + l_vel.y*l_vel.y + l_vel.z*l_vel.z );
@@ -142,7 +144,7 @@ __global__ void projectSpins( zomplex *psiU, zomplex *psiD, double2 *oldPops2, d
             
 			if ( deltaE < Ek )
             {
-                double pFlip = ( newPops2.x - l_oldPops2.x ) / l_oldPops2.y;
+                double pFlip = ( newPops2.y - l_oldPops2.y ) / l_oldPops2.y;
                 
                 if ( curand_uniform_double (&l_rngstate) < pFlip ) {
 					isSpinUp[atom] = !isSpinUp[atom];

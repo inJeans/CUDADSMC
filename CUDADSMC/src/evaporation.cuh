@@ -20,7 +20,6 @@ void evaporateAtoms( double3 *d_pos,
                     double2 *d_oldPops2,
                     hbool_t *d_isSpinUp,
                     int *d_cellID,
-                    int *d_atomID,
                     double medianR,
                     int *numberOfAtoms );
 void checkForEvapAtoms( double3 *d_pos, hbool_t *d_isSpinUp, double medianR, int *d_evapStencil, int numberOfAtoms );

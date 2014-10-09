@@ -51,7 +51,6 @@ __global__ void generateInitialDist(double3 *pos,
                                     double3 *vel,
                                     double3 *acc,
                                     hbool_t *isSpinUp,
-                                    int     *atomID,
                                     int      numberOfAtoms,
 									double   Temp,
 									double   dBdz,
@@ -71,8 +70,6 @@ __global__ void generateInitialDist(double3 *pos,
         acc[atom] = updateAccel( pos[atom] );
         
         isSpinUp[atom] = true;
-        
-        atomID[atom] = atom;
 		
 		// Copy state back to global memory
 		rngState[atom] = localrngState;
@@ -84,21 +81,11 @@ __device__ double3 getRandomVelocity( double Temp, curandStatePhilox4_32_10_t *r
 {
 	double3 vel = make_double3( 0., 0., 0. );
 	
-	double V = sqrt(3.0*d_kB*Temp/d_mRb);
+	double V = sqrt( d_kB*Temp/d_mRb);
 	
-	vel = V * getRandomPointOnUnitSphere( &rngState[0] );
-	
+	vel = V * getGaussianPoint( 0., 1., &rngState[0] );
+    
 	return vel;
-}
-
-__device__ double3 getRandomPointOnUnitSphere( curandStatePhilox4_32_10_t *rngState )
-{
-    double2 r1 = curand_normal2_double ( &rngState[0] );
-    double  r2 = curand_normal_double  ( &rngState[0] );
-    
-    double3 pointOnSphere = make_double3( r1.x, r1.y, r2 ) * rsqrt( r1.x*r1.x + r1.y*r1.y + r2*r2 );
-    
-    return pointOnSphere;
 }
 
 __device__ double3 selectAtomInDistribution( double dBdz, double Temp, curandStatePhilox4_32_10_t *rngState )
@@ -107,7 +94,7 @@ __device__ double3 selectAtomInDistribution( double dBdz, double Temp, curandSta
     double3 r   = make_double3( 0., 0., 0. );
 
     double meanx = 0.0;
-    double stdx  = sqrt( log( 4. ) )*d_kB*Temp / ( d_gs*d_muB*dBdz );
+    double stdx  = sqrt( log( 4. ) )*d_kB*Temp / ( d_gs*d_muB*dBdz ) * 20.;
     
     bool noAtomSelected = true;
     
@@ -128,8 +115,8 @@ __device__ double3 selectAtomInDistribution( double dBdz, double Temp, curandSta
 
 __device__ double3 getGaussianPoint( double mean, double std, curandStatePhilox4_32_10_t *rngState )
 {
-    double2 r1 = curand_normal2_double ( &rngState[0] ) * std * 20. + mean;
-	double r2  = curand_normal_double  ( &rngState[0] ) * std * 20. + mean;
+    double2 r1 = curand_normal2_double ( &rngState[0] ) * std + mean;
+	double r2  = curand_normal_double  ( &rngState[0] ) * std + mean;
  
     double3 point = make_double3( r1.x, r1.y, r2 );
     

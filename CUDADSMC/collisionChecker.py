@@ -21,15 +21,16 @@ hbar = 1.05457148e-34;
 T    = 20.e-6;
 dBdz = 2.5;
 
-tres = 26;
+tres = 51;
 ntrials = 1e4;
 nAtoms = 1e7;
+alpha = nAtoms / ntrials;
 nCells = 10**3 + 1;
 dt = 5e-6;
 
 time = np.zeros((tres));
 collisionCount = np.zeros((nCells,1,tres));
-atomCount = np.zeros((nCells,1,tres));
+N = np.zeros((tres));
 
 f = h5py.File('outputData.h5');
 
@@ -39,14 +40,14 @@ dset.read_direct(time);
 dset = f.require_dataset('atomData/collisionCount',(nCells,1,tres),False,False);
 dset.read_direct(collisionCount);
 
-#dset = f.require_dataset('atomData/atomCount',(nCells,1,tres),False,False);
-#dset.read_direct(atomCount);
+dset = f.require_dataset('atomData/atomNumber',(1,1,tres),False,False);
+dset.read_direct(N);
 
 f.close()
 
 totalColl = np.sum( collisionCount, 0 )[0,:];
 
-collRate = np.gradient( totalColl, time[1]-time[0] ) / nAtoms;
+collRate = np.gradient( totalColl, time[1]-time[0] ) / ( alpha * N );
 
 pl.plot( time, collRate );
 pl.show();

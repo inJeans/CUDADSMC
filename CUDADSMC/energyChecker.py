@@ -29,7 +29,11 @@ dt = 1e-6;
 time = np.zeros((tres));
 pos = np.zeros((ntrials,3,tres));
 vel = np.zeros((ntrials,3,tres));
+N = np.zeros((tres));
 isSpinUp = np.zeros((ntrials,1,tres));
+
+fpos = np.zeros((ntrials,3,tres));
+fvel = np.zeros((ntrials,3,tres));
 
 f = h5py.File('outputData.h5');
 
@@ -45,38 +49,74 @@ dset.read_direct(vel);
 dset = f.require_dataset('atomData/isSpinUp',(ntrials,1,tres),False,False);
 dset.read_direct(isSpinUp);
 
+dset = f.require_dataset('atomData/atomNumber',(1,1,tres),False,False);
+dset.read_direct(N);
+
+dset = f.require_dataset('atomData/flippedPos',(ntrials,3,tres),False,False);
+dset.read_direct(fpos);
+
+dset = f.require_dataset('atomData/flippedVel',(ntrials,3,tres),False,False);
+dset.read_direct(fvel);
+
 f.close()
 
-N = np.sum( isSpinUp[:,0,:], 0)
 isSpinUp = 2*isSpinUp[:,0,:] - 1;
 
-Ek = np.sum( 0.5 * mRb * np.sum(vel**2, 1), 0 ) / ntrials / kB * 1.e6
-Ep = np.sum( isSpinUp*0.5*gs*muB*dBdz*np.sqrt(pos[:,0,:]**2 + pos[:,1,:]**2 + 4.0*pos[:,2,:]**2 ), 0 ) / ntrials / kB * 1.e6
-Et = Ek+Ep
+Ek = np.zeros((N.size,))
+Ep = np.zeros((N.size,))
+Et = np.zeros((N.size,))
+Temp = np.zeros((N.size,))
+
+Tx = np.zeros((N.size,))
+Ty = np.zeros((N.size,))
+Tz = np.zeros((N.size,))
+
+vx = np.zeros((N.size,))
+vy = np.zeros((N.size,))
+vz = np.zeros((N.size,))
+
+avx = np.zeros((N.size,))
+avy = np.zeros((N.size,))
+avz = np.zeros((N.size,))
+
+for i in range(0,N.size):
+    Ek[i] = np.sum( 0.5 * mRb * np.sum(vel[0:N[i],:,i]**2, 1), 0 ) / N[i] / kB * 1.e6
+    Ep[i] = np.sum( isSpinUp[0:N[i],i]*0.5*gs*muB*dBdz*np.sqrt(pos[0:N[i],0,i]**2 + pos[0:N[i],1,i]**2 + 4.0*pos[0:N[i],2,i]**2 ), 0 ) / N[i] / kB * 1.e6
+    Et[i] = Ek[i]+Ep[i]
+
+    Temp[i] = 2./3. * np.sum( 0.5 * mRb * np.sum(vel[0:N[i],:,i]**2, 1), 0) / N[i] / kB * 1.e6
+
+    Tx[i] = 2./3. * np.sum( 0.5 * mRb * vel[0:N[i],0,i]**2, 0) / N[i] / kB * 1.e6
+    Ty[i] = 2./3. * np.sum( 0.5 * mRb * vel[0:N[i],1,i]**2, 0) / N[i] / kB * 1.e6
+    Tz[i] = 2./3. * np.sum( 0.5 * mRb * vel[0:N[i],2,i]**2, 0) / N[i] / kB * 1.e6
+
+    vx[i] = 2./3. * np.sum( 0.5 * mRb * vel[0:N[i],0,i], 0) / N[i] / kB * 1.e6
+    vy[i] = 2./3. * np.sum( 0.5 * mRb * vel[0:N[i],1,i], 0) / N[i] / kB * 1.e6
+    vz[i] = 2./3. * np.sum( 0.5 * mRb * vel[0:N[i],2,i], 0) / N[i] / kB * 1.e6
+
+    avx[i] = np.sum( pos[0:N[i],0,i], 0) / N[i] * 1.e6
+    avy[i] = np.sum( pos[0:N[i],1,i], 0) / N[i] * 1.e6
+    avz[i] = np.sum( pos[0:N[i],2,i], 0) / N[i] * 1.e6
+
+    fr = np.sqrt( fpos[:,0,i]**2 + fpos[:,1,i]**2 + fpos[:,2,i]**2 )
+    fp = np.where( fr > 0. )
+
+    up = np.where( isSpinUp[0:N[i],i] > 0 )
+    dn = np.where( isSpinUp[0:N[i],i] < 0 )
+
+    pl.clf()
+    pl.plot( pos[up,0,i], pos[up,1,i], 'b.' )
+    pl.plot( fpos[fp,0,i], fpos[fp,1,i], 'r.' )
+    pl.axis([-0.0008, 0.0008, -0.0008, 0.0008])
+    pl.title( 't = ' + str(time[i]) + ' s')
+    pl.pause( 1 )
 
 dE = max( abs(Et - Et[0]) / Et[0] * 100 )
 
-up = np.where( isSpinUp > 0 );
-
-Temp = np.zeros((N.size,))
-test = np.zeros((N.size,))
-EkS = 0.5 * mRb * np.sum(vel**2, 1) / kB * 1.e6
-speed = EkS * 2. / mRb * kB / 1.e6;
-EpS = 0.5*gs*muB*dBdz*np.sqrt(pos[:,0,:]**2 + pos[:,1,:]**2 + 4.0*pos[:,2,:]**2 ) / kB * 1.e6
-EtS = EkS + EpS
-dEtS = EtS[:,-1] - EtS[:,0]
-
-for i in range(0,N.size):
-    now = np.where( up[1] == i );
-    Temp[i] = 2./3. * np.sum( 0.5 * mRb * np.sum(vel[up[0][now],:,up[1][now]]**2, 1), 0) / N[i] / kB * 1.e6
-#    test[i] = np.sum( isSpinUp[up[0][now], i], 0) / N[i]
-#    EkS[0:N[i],i] = 0.5 * mRb * np.sum(vel[up[0][now],:,up[1][now]]**2, 1) / kB * 1.e6
-#    EpS[0:N[i],i] = 0.5*gs*muB*dBdz*np.sqrt(pos[up[0][now],0,up[1][now]]**2 + pos[up[0][now],1,up[1][now]]**2 + 4.0*pos[up[0][now],2,up[1][now]]**2 ) / kB * 1.e6
-
 pl.clf()
-pl.plot(time,Ek)
-pl.plot(time,Ep)
-pl.plot(time,Et)
+pl.plot(time,Ek, '-o')
+pl.plot(time,Ep, '-o')
+pl.plot(time,Et, '-o')
 pl.xlabel('time (s)')
 pl.ylabel('energy (uK)')
 pl.title( r'$(\Delta E)_{max}$ = %.3g' % dE + r',  $\Delta t$ = %.3g' % dt )
@@ -95,13 +135,72 @@ else:
 
 pl.figure(2)
 pl.plot( time, N )
+pl.xlabel('time (s)')
+pl.ylabel('Atom Number')
 
 pl.figure(3)
 pl.plot( time, Temp )
+pl.xlabel('time (s)')
+pl.ylabel('Temperature (uK)')
 
 pl.figure(4)
-pl.hist( speed[:,N.size-1], 100, (0.,0.02) )
+pl.plot( time, Tx, time, Ty, time, Tz )
+pl.xlabel('time (s)')
+pl.ylabel('Directional Temperature (uK)')
 
-print stats.maxwell.mean(speed[:,N.size-1]).size
+#pl.figure(4)
+#pl.plot( time, vx, time, vy, time, vz )
+#pl.xlabel('time (s)')
+#pl.ylabel('Average velocity in each direction (uK)')
+#
+#pl.figure(5)
+#pl.plot( time, avx, time, avy, time, avz )
+#pl.xlabel('time (s)')
+#pl.ylabel('Average postion in each direction (um)')
+
+#si = np.sqrt( vel[:,0,0]**2 + vel[:,1,0]**2, vel[:,2,0]**2 )
+#sf = np.sqrt( vel[:,0,N.size-1]**2 + vel[:,1,N.size-1]**2, vel[:,2,N.size-1]**2 )
+#
+#vxi = vel[:,0,0]
+#vxf = vel[:,0,N.size-1]
+#vyi = vel[:,1,0]
+#vyf = vel[:,1,N.size-1]
+#vzi = vel[:,2,0]
+#vzf = vel[:,2,N.size-1]
+#
+#ni, binsi, patches = pl.hist(si, 100 )
+#ni = np.append( [0], ni, axis=0);
+#nf, binsf, patches = pl.hist(sf, 100 )
+#nf = np.append( [0], nf, axis=0);
+#
+#nvxi, binsvxi, patches = pl.hist(vxi, 100 )
+#nvxi = np.append( [0], nvxi, axis=0);
+#nvxf, binsvxf, patches = pl.hist(vxf, 100 )
+#nvxf = np.append( [0], nvxf, axis=0);
+#nvyi, binsvyi, patches = pl.hist(vyi, 100 )
+#nvyi = np.append( [0], nvyi, axis=0);
+#nvyf, binsvyf, patches = pl.hist(vyf, 100 )
+#nvyf = np.append( [0], nvyf, axis=0);
+#nvzi, binsvzi, patches = pl.hist(vzi, 100 )
+#nvzi = np.append( [0], nvzi, axis=0);
+#nvzf, binsvzf, patches = pl.hist(vzf, 100 )
+#nvzf = np.append( [0], nvzf, axis=0);
+#
+#print np.mean(si)
+#print np.mean(sf)
+#
+#pl.figure(2)
+#pl.plot(binsi, ni, binsf, nf)
+#pl.xlabel(r'$s$')
+#
+#pl.figure(4)
+#pl.plot(binsvxi, nvxi, binsvxf, nvxf)
+#pl.xlabel(r'$v_x$')
+#pl.figure(5)
+#pl.plot(binsvyi, nvyi, binsvyf, nvyf)
+#pl.xlabel(r'$v_y$')
+#pl.figure(6)
+#pl.plot(binsvzi, nvzi, binsvzf, nvzf)
+#pl.xlabel(r'$v_z$')
 
 pl.show()

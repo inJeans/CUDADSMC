@@ -24,7 +24,6 @@ void evaporateAtoms( double3 *d_pos,
                      double2 *d_oldPops2,
                      hbool_t *d_isSpinUp,
                      int *d_cellID,
-                     int *d_atomID,
                      double medianR,
                      int *numberOfAtoms )
 {
@@ -43,7 +42,6 @@ void evaporateAtoms( double3 *d_pos,
     compactArrayd2( d_oldPops2,  d_evapStencil, numberOfAtoms[0], remainingAtoms );
     compactArrayB ( d_isSpinUp,  d_evapStencil, numberOfAtoms[0], remainingAtoms );
     compactArrayI ( d_cellID,  d_evapStencil, numberOfAtoms[0], remainingAtoms );
-    compactArrayI ( d_atomID,  d_evapStencil, numberOfAtoms[0], remainingAtoms );
     
     numberOfAtoms[0] = remainingAtoms;
     

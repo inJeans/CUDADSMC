@@ -62,6 +62,9 @@ int main(int argc, const char * argv[])
     double3 *d_vel;
     double3 *d_acc;
     
+    double3 *d_flippedPos;
+    double3 *d_flippedVel;
+    
     zomplex *d_psiU;
     zomplex *d_psiD;
     
@@ -74,7 +77,6 @@ int main(int argc, const char * argv[])
     
     int2 *d_cellStartEnd;
     
-    int *d_atomID;
     int *d_cellID;
     int *d_numberOfAtomsInCell;
     int *d_prefixScanNumberOfAtomsInCell;
@@ -86,6 +88,9 @@ int main(int argc, const char * argv[])
     cudaCalloc( (void **)&d_vel, numberOfAtoms, sizeof(double3) );
     cudaCalloc( (void **)&d_acc, numberOfAtoms, sizeof(double3) );
     
+    cudaCalloc( (void **)&d_flippedPos, numberOfAtoms, sizeof(double3) );
+    cudaCalloc( (void **)&d_flippedVel, numberOfAtoms, sizeof(double3) );
+    
     cudaCalloc( (void **)&d_psiU, numberOfAtoms, sizeof(zomplex) );
     cudaCalloc( (void **)&d_psiD, numberOfAtoms, sizeof(zomplex) );
     
@@ -95,7 +100,6 @@ int main(int argc, const char * argv[])
     
     cudaCalloc( (void **)&d_cellStartEnd, numberOfCells+1, sizeof(int2) );
     
-    cudaCalloc( (void **)&d_atomID, numberOfAtoms, sizeof(int) );
     cudaCalloc( (void **)&d_cellID, numberOfAtoms, sizeof(int) );
     cudaCalloc( (void **)&d_numberOfAtomsInCell, numberOfCells+1, sizeof(int) );
     cudaCalloc( (void **)&d_prefixScanNumberOfAtomsInCell, numberOfCells+1, sizeof(int) );
@@ -105,6 +109,9 @@ int main(int argc, const char * argv[])
     
     double3 *h_pos = (double3*) calloc( numberOfAtoms, sizeof(double3) );
     double3 *h_vel = (double3*) calloc( numberOfAtoms, sizeof(double3) );
+    
+    double3 *h_flippedPos = (double3*) calloc( numberOfAtoms, sizeof(double3) );
+    double3 *h_flippedVel = (double3*) calloc( numberOfAtoms, sizeof(double3) );
     
     zomplex *h_psiU = (zomplex*) calloc( numberOfAtoms, sizeof(zomplex) );
     zomplex *h_psiD = (zomplex*) calloc( numberOfAtoms, sizeof(zomplex) );
@@ -145,10 +152,10 @@ int main(int argc, const char * argv[])
 	int gridSize;
 	
 	cudaOccupancyMaxPotentialBlockSize( &minGridSize,
-                                       &blockSize,
-                                       (const void *) initRNG,
-                                       0,
-                                       sizeOfRNG );
+                                        &blockSize,
+                                        (const void *) initRNG,
+                                        0,
+                                        sizeOfRNG );
 	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
 	printf("initRNG:             gridSize = %i, blockSize = %i\n", gridSize, blockSize);
 	initRNG<<<gridSize,blockSize>>>( d_rngStates, sizeOfRNG );
@@ -164,7 +171,6 @@ int main(int argc, const char * argv[])
                                                  d_vel,
                                                  d_acc,
                                                  d_isSpinUp,
-                                                 d_atomID,
                                                  numberOfAtoms,
                                                  Tinit,
                                                  dBdz,
@@ -188,8 +194,7 @@ int main(int argc, const char * argv[])
                 d_psiD,
                 d_oldPops2,
                 d_isSpinUp,
-                d_cellID,
-                d_atomID );
+                d_cellID );
     
 #pragma mark - Write Initial State
     
@@ -224,6 +229,34 @@ int main(int argc, const char * argv[])
 	writeHDF5File( hdf5handleVel,
                    filename,
                    h_vel );
+    
+    cudaMemcpy( h_flippedPos,
+                d_flippedPos,
+                numberOfAtoms*sizeof(double3),
+                cudaMemcpyDeviceToHost );
+    char fPosDatasetName[] = "/atomData/flippedPos";
+    hdf5FileHandle hdf5handlefPos = createHDF5Handle( atomDims,
+                                                      H5T_NATIVE_DOUBLE,
+                                                      fPosDatasetName );
+    intialiseHDF5File( hdf5handlefPos,
+                       filename );
+    writeHDF5File( hdf5handlefPos,
+                   filename,
+                   h_flippedPos );
+    
+    cudaMemcpy( h_flippedVel,
+                d_flippedVel,
+                numberOfAtoms*sizeof(double3),
+                cudaMemcpyDeviceToHost );
+    char fVelDatasetName[] = "/atomData/flippedVel";
+    hdf5FileHandle hdf5handlefVel = createHDF5Handle( atomDims,
+                                                      H5T_NATIVE_DOUBLE,
+                                                      fVelDatasetName );
+    intialiseHDF5File( hdf5handlefVel,
+                       filename );
+    writeHDF5File( hdf5handlefVel,
+                   filename,
+                   h_flippedVel );
     
     cudaMemcpy( h_psiU,
                 d_psiU,
@@ -342,14 +375,12 @@ int main(int argc, const char * argv[])
                     d_psiD,
                     d_oldPops2,
                     d_isSpinUp,
-                    d_cellID,
-                    d_atomID );
+                    d_cellID );
 		
 		deviceMemset<<<numberOfCells+1,1>>>( d_cellStartEnd,
 											 make_int2( -1, -1 ),
 											 numberOfCells + 1 );
 		cellStartandEndKernel<<<gridSize,blockSize>>>( d_cellID,
-                                                       d_atomID, 
                                                        d_cellStartEnd,
                                                        numberOfAtoms );
         findNumberOfAtomsInCell<<<numberOfCells+1,1>>>( d_cellStartEnd,
@@ -361,7 +392,6 @@ int main(int argc, const char * argv[])
         
         collide<<<numberOfCells,64>>>( d_vel,
                                        d_sigvrmax,
-                                       d_atomID,
                                        d_isSpinUp,
                                        d_prefixScanNumberOfAtomsInCell,
                                        d_collisionCount,
@@ -392,7 +422,9 @@ int main(int argc, const char * argv[])
                                                   d_vel,
                                                   d_isSpinUp,
                                                   d_rngStates,
-                                                  numberOfAtoms );
+                                                  numberOfAtoms,
+                                                  d_flippedPos,
+                                                  d_flippedVel );
             
             exponentialDecay<<<gridSize,blockSize>>>( d_psiU,
                                                       d_psiD,
@@ -413,7 +445,6 @@ int main(int argc, const char * argv[])
                         d_oldPops2,
                         d_isSpinUp,
                         d_cellID,
-                        d_atomID,
                         medianR,
                         &numberOfAtoms );
         
@@ -453,6 +484,16 @@ int main(int argc, const char * argv[])
                        filename,
                        &numberOfAtoms );
         
+        cudaMemcpy( h_flippedPos, d_flippedPos, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
+        cudaMemcpy( h_flippedVel, d_flippedVel, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
+        
+        writeHDF5File( hdf5handlefPos,
+                       filename,
+                       h_flippedPos );
+        writeHDF5File( hdf5handlefVel,
+                       filename,
+                       h_flippedVel );
+        
         printf("i = %i\n", i);
     }
     
@@ -467,6 +508,9 @@ int main(int argc, const char * argv[])
 	free( h_cellID );
     free( h_isSpinUp );
     
+    free( h_flippedPos );
+    free( h_flippedVel );
+    
     cudaFree( d_pos );
     cudaFree( d_vel );
     cudaFree( d_acc );
@@ -480,6 +524,9 @@ int main(int argc, const char * argv[])
     cudaFree( d_prefixScanNumberOfAtomsInCell );
     cudaFree( d_rngStates );
     cudaFree( d_isSpinUp );
+    
+    cudaFree( d_flippedPos );
+    cudaFree( d_flippedVel );
     
     cudaDeviceReset();
     
