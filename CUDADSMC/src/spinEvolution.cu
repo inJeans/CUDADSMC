@@ -27,7 +27,7 @@ __global__ void unitaryEvolution( zomplex *psiU, zomplex *psiD, double2 *oldPops
               atom += blockDim.x * gridDim.x )
     {
         d_dt = 1.0e-6;
-        d_loopsPerCollision = 0.005 / d_dt;
+//        d_loopsPerCollision = 0.0007 / d_dt;
         
 		// Make a local copy of the position for increased
 		// efficiency
@@ -119,13 +119,15 @@ __global__ void projectSpins( zomplex *psiU, zomplex *psiD, double2 *oldPops2, d
         double3 Bn = getMagneticFieldNormal( l_pos );
 		
         double2 newPops2 = getEigenStatePopulations( l_psiD, l_psiU, Bn );
-        
+//        if (atom==0) {
+//            printf("x = (%g, %g, %g), Bn = (%g, %g, %g)\n", l_pos.x, l_pos.y, l_pos.z, Bn.x, Bn.y, Bn.z );
+//        }
         // Copy rng state to local memory for efficiency
 		curandStatePhilox4_32_10_t l_rngstate = rngstate[atom];
         
 		if (isSpinUp[atom]) {
             
-            double pFlip = ( newPops2.x - l_oldPops2.x ) / l_oldPops2.x;
+            double pFlip = ( newPops2.y - l_oldPops2.y ) / l_oldPops2.x;
             
             if ( curand_uniform_double (&l_rngstate) < pFlip ) {
 				isSpinUp[atom] = !isSpinUp[atom];
@@ -136,6 +138,7 @@ __global__ void projectSpins( zomplex *psiU, zomplex *psiD, double2 *oldPops2, d
                 double Ek = 0.5 * d_mRb * ( l_vel.x*l_vel.x + l_vel.y*l_vel.y + l_vel.z*l_vel.z );
                 
 				l_vel = sqrt( Ek + 2.*deltaE ) * l_vel / length( l_vel );
+//                printf( " I flipped? Pflip = %g\n", pFlip );
 			}
 		}
 		else {
@@ -144,7 +147,7 @@ __global__ void projectSpins( zomplex *psiU, zomplex *psiD, double2 *oldPops2, d
             
 			if ( deltaE < Ek )
             {
-                double pFlip = ( newPops2.y - l_oldPops2.y ) / l_oldPops2.y;
+                double pFlip = ( newPops2.x - l_oldPops2.x ) / l_oldPops2.y;
                 
                 if ( curand_uniform_double (&l_rngstate) < pFlip ) {
 					isSpinUp[atom] = !isSpinUp[atom];
@@ -168,7 +171,7 @@ __global__ void exponentialDecay( zomplex *psiU, zomplex *psiD, double3 *pos, hb
               atom += blockDim.x * gridDim.x )
     {
         d_dt = 1.0e-6;
-        d_loopsPerCollision = 0.005 / d_dt;
+//        d_loopsPerCollision = 0.0007 / d_dt;
         
 		double3 l_pos = pos[atom];
 		

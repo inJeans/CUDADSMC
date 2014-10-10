@@ -21,7 +21,7 @@ hbar = 1.05457148e-34;
 T    = 20.e-6;
 dBdz = 2.5;
 
-tres = 26;
+tres = 51;
 ntrials = 1e4;
 dt = 1e-6;
 
@@ -52,7 +52,7 @@ dn = psiD[:,0,:] + 1j*psiD[:,1,:];
 
 norm = np.sum( up.conjugate()*up + dn.conjugate()*dn, 0 ).real / ntrials
 dnorm = (norm - 1.) * 100.
-dn = max(dnorm)
+mdn = max(dnorm)
 
 Pz = np.sum( isSpinUp, 0 ) / ntrials;
 
@@ -61,12 +61,12 @@ pl.figure(1)
 pl.plot(time,norm - 1.)
 pl.xlabel('time (s)')
 pl.ylabel(r'$\Delta \Psi$')
-pl.title( r'$|\Delta \Psi|_{max}$ = %.3g' % dn + r',  $\Delta t$ = %.3g' % dt )
+pl.title( r'$|\Delta \Psi|_{max}$ = %.3g' % mdn + r',  $\Delta t$ = %.3g' % dt )
 
-if dn < 1.e-3:
-    print bcolors.OKGREEN + "Wavefunction integrator passed, dE = %%%.3g, dt = %.3g" % (dn,dt) + bcolors.ENDC
+if mdn < 1.e-3:
+    print bcolors.OKGREEN + "Wavefunction integrator passed, dE = %%%.3g, dt = %.3g" % (mdn,dt) + bcolors.ENDC
 else:
-    print bcolors.FAIL + "Wavefunction integrator failed, dE = %%%.3g, dt = %.3g" % (dn,dt) + bcolors.ENDC
+    print bcolors.FAIL + "Wavefunction integrator failed, dE = %%%.3g, dt = %.3g" % (mdn,dt) + bcolors.ENDC
 
 #pl.draw()
 

@@ -60,6 +60,7 @@ dset.read_direct(fvel);
 
 f.close()
 
+num = np.sum( isSpinUp, 0 )
 isSpinUp = 2*isSpinUp[:,0,:] - 1;
 
 Ek = np.zeros((N.size,))
@@ -98,18 +99,18 @@ for i in range(0,N.size):
     avy[i] = np.sum( pos[0:N[i],1,i], 0) / N[i] * 1.e6
     avz[i] = np.sum( pos[0:N[i],2,i], 0) / N[i] * 1.e6
 
-    fr = np.sqrt( fpos[:,0,i]**2 + fpos[:,1,i]**2 + fpos[:,2,i]**2 )
-    fp = np.where( fr > 0. )
-
-    up = np.where( isSpinUp[0:N[i],i] > 0 )
-    dn = np.where( isSpinUp[0:N[i],i] < 0 )
-
-    pl.clf()
-    pl.plot( pos[up,0,i], pos[up,1,i], 'b.' )
-    pl.plot( fpos[fp,0,i], fpos[fp,1,i], 'r.' )
-    pl.axis([-0.0008, 0.0008, -0.0008, 0.0008])
-    pl.title( 't = ' + str(time[i]) + ' s')
-    pl.pause( 1 )
+#    fr = np.sqrt( fpos[:,0,i]**2 + fpos[:,1,i]**2 + fpos[:,2,i]**2 )
+#    fp = np.where( fr > 0. )
+#
+#    up = np.where( isSpinUp[0:N[i],i] > 0 )
+#    dn = np.where( isSpinUp[0:N[i],i] < 0 )
+#
+#    pl.clf()
+#    pl.plot( pos[up,0,i], pos[up,1,i], 'b.' )
+#    pl.plot( fpos[fp,0,i], fpos[fp,1,i], 'r.' )
+#    pl.axis([-0.0008, 0.0008, -0.0008, 0.0008])
+#    pl.title( 't = ' + str(time[i]) + ' s')
+#    pl.pause( 1 )
 
 dE = max( abs(Et - Et[0]) / Et[0] * 100 )
 
@@ -147,6 +148,51 @@ pl.figure(4)
 pl.plot( time, Tx, time, Ty, time, Tz )
 pl.xlabel('time (s)')
 pl.ylabel('Directional Temperature (uK)')
+
+Eki = 0.5 * mRb * np.sum(vel[0:N[0],:,0]**2, 1) / kB * 1.e6
+Epi = isSpinUp[0:N[0],0]*0.5*gs*muB*dBdz*np.sqrt(pos[0:N[0],0,0]**2 + pos[0:N[0],1,0]**2 + 4.0*pos[0:N[0],2,0]**2 ) / kB * 1.e6
+Eti = Eki + Epi
+
+nki, binski, patches = pl.hist(Eki,100)
+nki = np.append([0], nki , axis=0)
+npi, binspi, patches = pl.hist(Epi,100)
+npi = np.append([0], npi , axis=0)
+nti, binsti, patches = pl.hist(Eti,100)
+nti = np.append([0], nti , axis=0)
+
+Ekf = 0.5 * mRb * np.sum(vel[0:N[-1],:,-1]**2, 1) / kB * 1.e6
+Epf = isSpinUp[0:N[-1],-1]*0.5*gs*muB*dBdz*np.sqrt(pos[0:N[-1],0,-1]**2 + pos[0:N[-1],1,-1]**2 + 4.0*pos[0:N[-1],2,-1]**2 ) / kB * 1.e6
+Etf = Ekf + Epf
+
+nkf, binskf, patches = pl.hist(Ekf,100)
+nkf = np.append([0], nkf , axis=0)
+npf, binspf, patches = pl.hist(Epf,100)
+npf = np.append([0], npf , axis=0)
+ntf, binstf, patches = pl.hist(Etf,100)
+ntf = np.append([0], ntf , axis=0)
+
+pl.figure(6)
+pl.plot( binski, nki, binskf, nkf )
+pl.xlabel(r'$E_k$ $(\mu K)$')
+
+pl.figure(7)
+pl.plot( binspi, npi, binspf, npf )
+pl.xlabel(r'$E_p$ $(\mu K)$')
+
+pl.figure(8)
+pl.plot( binsti, nti, binstf, ntf )
+pl.xlabel(r'$E_T$ $(\mu K)$')
+
+#pl.figure(5)
+#pl.plot( time, num[0,:], '-o' );
+#pl.xlabel( 'time (s) ' )
+#pl.ylabel( 'Number' )
+#
+#pl.figure(6)
+#pl.plot( time, pos[0,0,:], time, pos[0,1,:], time, pos[0,2,:] );
+#pl.xlabel( 'time   ' )
+#pl.ylabel( 'pos' )
+
 
 #pl.figure(4)
 #pl.plot( time, vx, time, vy, time, vz )

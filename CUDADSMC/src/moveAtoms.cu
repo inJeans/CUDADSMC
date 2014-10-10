@@ -17,7 +17,7 @@
 __global__ void copyConstantsToDevice( double dt )
 {
 	d_dt = dt;
-	d_loopsPerCollision = 0.01 / d_dt;
+	d_loopsPerCollision = 0.0007 / d_dt;
 	
 	return;
 }

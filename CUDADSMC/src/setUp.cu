@@ -64,9 +64,9 @@ __global__ void generateInitialDist(double3 *pos,
 		curandStatePhilox4_32_10_t localrngState = rngState[atom];
 		
         pos[atom] = selectAtomInDistribution( dBdz, Temp, &localrngState );
-		
+//        pos[atom] = make_double3( 1.e-6, 0.,-500.e-6 );
 		vel[atom] = getRandomVelocity( Temp, &localrngState );
-        
+//        vel[atom] = make_double3( 0., 0., 0. );
         acc[atom] = updateAccel( pos[atom] );
         
         isSpinUp[atom] = true;
@@ -185,12 +185,16 @@ __global__ void deviceSetInitialWavefunction( zomplex *psiU, zomplex *psiD, doub
 		
 		zomplex l_psiU = 0.5 * make_cuDoubleComplex ( 1.+Bn.x+Bn.z, -Bn.y ) * rsqrt(1.+Bn.x);
 		zomplex l_psiD = 0.5 * make_cuDoubleComplex ( 1.+Bn.x-Bn.z, +Bn.y ) * rsqrt(1.+Bn.x);
-		
+        
 		isSpinUp[atom] = true;
 		
 		oldPops2[atom] = getEigenStatePops( l_psiD,
                                             l_psiU,
                                             Bn );
+        
+//        if (atom==0) {
+//            printf("x = (%g, %g, %g), Bn = (%g, %g, %g)\n", l_pos.x, l_pos.y, l_pos.z, Bn.x, Bn.y, Bn.z );
+//        }
         
         psiU[atom] = l_psiU;
         psiD[atom] = l_psiD;

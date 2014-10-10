@@ -19,7 +19,7 @@ int    numberOfCells = cellsPerDimension.x*cellsPerDimension.y*cellsPerDimension
 double dt = 5.0e-6;
 
 int numberOfPrints = 50;
-int loopsPerCollision = 0.005 / dt;
+int loopsPerCollision = 0.0007 / dt;
 
 #pragma mark Physics Constants
 

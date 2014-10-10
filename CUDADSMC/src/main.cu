@@ -366,6 +366,8 @@ int main(int argc, const char * argv[])
     
     for (int i=0; i<numberOfPrints; i++)
     {
+#pragma mark Collide Atoms
+        
         medianR = indexAtoms( d_pos,
                               d_cellID );
         sortArrays( d_pos,
@@ -399,6 +401,8 @@ int main(int argc, const char * argv[])
                                        numberOfCells,
                                        d_rngStates,
                                        d_cellID );
+        
+#pragma mark Evolve System
         
         for (int j=0; j<loopsPerCollision; j++) {
             
@@ -436,6 +440,8 @@ int main(int argc, const char * argv[])
                                                            d_psiD,
                                                            numberOfAtoms );
         }
+        
+#pragma mark Evaoprate Atoms
         
         evaporateAtoms( d_pos,
                         d_vel,
