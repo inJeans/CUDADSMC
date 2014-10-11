@@ -370,6 +370,7 @@ int main(int argc, const char * argv[])
         
         medianR = indexAtoms( d_pos,
                               d_cellID );
+        
         sortArrays( d_pos,
                     d_vel,
                     d_acc,
@@ -392,7 +393,7 @@ int main(int argc, const char * argv[])
                                 th_numberOfAtomsInCell + numberOfCells + 1,
                                 th_prefixScanNumberOfAtomsInCell );
         
-        collide<<<numberOfCells,64>>>( d_vel,
+        collide<<<numberOfCells,1>>>( d_vel,
                                        d_sigvrmax,
                                        d_isSpinUp,
                                        d_prefixScanNumberOfAtomsInCell,
@@ -406,12 +407,12 @@ int main(int argc, const char * argv[])
         
         for (int j=0; j<loopsPerCollision; j++) {
             
-            unitaryEvolution<<<gridSize,blockSize>>>( d_psiU,
-                                                      d_psiD,
-                                                      d_oldPops2,
-                                                      d_pos,
-                                                      d_vel,
-                                                      numberOfAtoms );
+//            unitaryEvolution<<<gridSize,blockSize>>>( d_psiU,
+//                                                      d_psiD,
+//                                                      d_oldPops2,
+//                                                      d_pos,
+//                                                      d_vel,
+//                                                      numberOfAtoms );
             
             moveAtoms<<<gridSize,blockSize>>>( d_pos,
                                                d_vel,
@@ -419,40 +420,40 @@ int main(int argc, const char * argv[])
                                                numberOfAtoms,
                                                d_isSpinUp );
             
-            projectSpins<<<gridSize,blockSize>>>( d_psiU,
-                                                  d_psiD,
-                                                  d_oldPops2,
-                                                  d_pos,
-                                                  d_vel,
-                                                  d_isSpinUp,
-                                                  d_rngStates,
-                                                  numberOfAtoms,
-                                                  d_flippedPos,
-                                                  d_flippedVel );
-            
-            exponentialDecay<<<gridSize,blockSize>>>( d_psiU,
-                                                      d_psiD,
-                                                      d_pos,
-                                                      d_isSpinUp,
-                                                      numberOfAtoms );
-            
-            normaliseWavefunction<<<gridSize,blockSize>>>( d_psiU,
-                                                           d_psiD,
-                                                           numberOfAtoms );
+//            projectSpins<<<gridSize,blockSize>>>( d_psiU,
+//                                                  d_psiD,
+//                                                  d_oldPops2,
+//                                                  d_pos,
+//                                                  d_vel,
+//                                                  d_isSpinUp,
+//                                                  d_rngStates,
+//                                                  numberOfAtoms,
+//                                                  d_flippedPos,
+//                                                  d_flippedVel );
+//            
+//            exponentialDecay<<<gridSize,blockSize>>>( d_psiU,
+//                                                      d_psiD,
+//                                                      d_pos,
+//                                                      d_isSpinUp,
+//                                                      numberOfAtoms );
+//            
+//            normaliseWavefunction<<<gridSize,blockSize>>>( d_psiU,
+//                                                           d_psiD,
+//                                                           numberOfAtoms );
         }
         
 #pragma mark Evaoprate Atoms
-        
-        evaporateAtoms( d_pos,
-                        d_vel,
-                        d_acc,
-                        d_psiU,
-                        d_psiD,
-                        d_oldPops2,
-                        d_isSpinUp,
-                        d_cellID,
-                        medianR,
-                        &numberOfAtoms );
+//        
+//        evaporateAtoms( d_pos,
+//                        d_vel,
+//                        d_acc,
+//                        d_psiU,
+//                        d_psiD,
+//                        d_oldPops2,
+//                        d_isSpinUp,
+//                        d_cellID,
+//                        medianR,
+//                        &numberOfAtoms );
         
         printf( "Number of atoms = %i, ", numberOfAtoms);
         
