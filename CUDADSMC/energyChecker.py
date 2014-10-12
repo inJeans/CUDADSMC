@@ -23,7 +23,7 @@ T    = 20.e-6;
 dBdz = 2.5;
 
 tres = 51;
-ntrials = 1e4;
+ntrials = 1e5;
 dt = 1e-6;
 
 time = np.zeros((tres));
@@ -81,11 +81,14 @@ avy = np.zeros((N.size,))
 avz = np.zeros((N.size,))
 
 for i in range(0,N.size):
-    Ek[i] = np.sum( 0.5 * mRb * np.sum(vel[0:N[i],:,i]**2, 1), 0 ) / N[i] / kB * 1.e6
-    Ep[i] = np.sum( isSpinUp[0:N[i],i]*0.5*gs*muB*dBdz*np.sqrt(pos[0:N[i],0,i]**2 + pos[0:N[i],1,i]**2 + 4.0*pos[0:N[i],2,i]**2 ), 0 ) / N[i] / kB * 1.e6
+    kinetic = 0.5 * mRb * np.sum(vel[0:N[i],:,i]**2, 1)
+    n = np.where( np.isfinite(kinetic) )
+    Ek[i] = np.sum( kinetic[n], 0 ) / N[i] / kB * 1.e6
+    potential = isSpinUp[0:N[i],i]*0.5*gs*muB*dBdz*np.sqrt(pos[0:N[i],0,i]**2 + pos[0:N[i],1,i]**2 + 4.0*pos[0:N[i],2,i]**2 )
+    Ep[i] = np.sum( potential[n], 0 ) / N[i] / kB * 1.e6
     Et[i] = Ek[i]+Ep[i]
 
-    Temp[i] = 2./3. * np.sum( 0.5 * mRb * np.sum(vel[0:N[i],:,i]**2, 1), 0) / N[i] / kB * 1.e6
+    Temp[i] = 2./3. * np.sum( kinetic[n], 0) / N[i] / kB * 1.e6
 
     Tx[i] = 2./3. * np.sum( 0.5 * mRb * vel[0:N[i],0,i]**2, 0) / N[i] / kB * 1.e6
     Ty[i] = 2./3. * np.sum( 0.5 * mRb * vel[0:N[i],1,i]**2, 0) / N[i] / kB * 1.e6
@@ -149,8 +152,12 @@ pl.plot( time, Tx, time, Ty, time, Tz )
 pl.xlabel('time (s)')
 pl.ylabel('Directional Temperature (uK)')
 
+pl.figure(5)
+
 Eki = 0.5 * mRb * np.sum(vel[0:N[0],:,0]**2, 1) / kB * 1.e6
+Eki = Eki[np.isfinite(Eki)]
 Epi = isSpinUp[0:N[0],0]*0.5*gs*muB*dBdz*np.sqrt(pos[0:N[0],0,0]**2 + pos[0:N[0],1,0]**2 + 4.0*pos[0:N[0],2,0]**2 ) / kB * 1.e6
+Epi = Epi[np.isfinite(Epi)]
 Eti = Eki + Epi
 
 nki, binski, patches = pl.hist(Eki,100)
@@ -161,7 +168,9 @@ nti, binsti, patches = pl.hist(Eti,100)
 nti = np.append([0], nti , axis=0)
 
 Ekf = 0.5 * mRb * np.sum(vel[0:N[-1],:,-1]**2, 1) / kB * 1.e6
+Ekf = Ekf[np.isfinite(Ekf)]
 Epf = isSpinUp[0:N[-1],-1]*0.5*gs*muB*dBdz*np.sqrt(pos[0:N[-1],0,-1]**2 + pos[0:N[-1],1,-1]**2 + 4.0*pos[0:N[-1],2,-1]**2 ) / kB * 1.e6
+Epf = Epf[np.isfinite(Epf)]
 Etf = Ekf + Epf
 
 nkf, binskf, patches = pl.hist(Ekf,100)
@@ -171,82 +180,29 @@ npf = np.append([0], npf , axis=0)
 ntf, binstf, patches = pl.hist(Etf,100)
 ntf = np.append([0], ntf , axis=0)
 
+Ekfl = 0.5 * mRb * np.sum(fvel[:,:,-1]**2, 1) / kB * 1.e6
+Ekfl = Ekfl[np.where( Ekfl > 0. )]
+Epfl = 0.5*gs*muB*dBdz*np.sqrt(fpos[:,0,-1]**2 + fpos[:,1,-1]**2 + 4.0*fpos[:,2,-1]**2 ) / kB * 1.e6
+Epfl = Epfl[np.where( Epfl > 0. )]
+Etfl = Ekfl + Epfl
+
+nkfl, binskfl, patches = pl.hist(Ekfl,100)
+nkfl = np.append([0], nkfl , axis=0)
+npfl, binspfl, patches = pl.hist(Epfl,100)
+npfl = np.append([0], npfl , axis=0)
+ntfl, binstfl, patches = pl.hist(Etfl,100)
+ntfl = np.append([0], ntfl , axis=0)
+
 pl.figure(6)
-pl.plot( binski, nki, binskf, nkf )
+pl.plot( binski, nki, binskf, nkf, binskfl, nkfl )
 pl.xlabel(r'$E_k$ $(\mu K)$')
 
 pl.figure(7)
-pl.plot( binspi, npi, binspf, npf )
+pl.plot( binspi, npi, binspf, npf, binspfl, npfl )
 pl.xlabel(r'$E_p$ $(\mu K)$')
 
 pl.figure(8)
-pl.plot( binsti, nti, binstf, ntf )
+pl.plot( binsti, nti, binstf, ntf, binstfl, ntfl )
 pl.xlabel(r'$E_T$ $(\mu K)$')
-
-#pl.figure(5)
-#pl.plot( time, num[0,:], '-o' );
-#pl.xlabel( 'time (s) ' )
-#pl.ylabel( 'Number' )
-#
-#pl.figure(6)
-#pl.plot( time, pos[0,0,:], time, pos[0,1,:], time, pos[0,2,:] );
-#pl.xlabel( 'time   ' )
-#pl.ylabel( 'pos' )
-
-
-#pl.figure(4)
-#pl.plot( time, vx, time, vy, time, vz )
-#pl.xlabel('time (s)')
-#pl.ylabel('Average velocity in each direction (uK)')
-#
-#pl.figure(5)
-#pl.plot( time, avx, time, avy, time, avz )
-#pl.xlabel('time (s)')
-#pl.ylabel('Average postion in each direction (um)')
-
-#si = np.sqrt( vel[:,0,0]**2 + vel[:,1,0]**2, vel[:,2,0]**2 )
-#sf = np.sqrt( vel[:,0,N.size-1]**2 + vel[:,1,N.size-1]**2, vel[:,2,N.size-1]**2 )
-#
-#vxi = vel[:,0,0]
-#vxf = vel[:,0,N.size-1]
-#vyi = vel[:,1,0]
-#vyf = vel[:,1,N.size-1]
-#vzi = vel[:,2,0]
-#vzf = vel[:,2,N.size-1]
-#
-#ni, binsi, patches = pl.hist(si, 100 )
-#ni = np.append( [0], ni, axis=0);
-#nf, binsf, patches = pl.hist(sf, 100 )
-#nf = np.append( [0], nf, axis=0);
-#
-#nvxi, binsvxi, patches = pl.hist(vxi, 100 )
-#nvxi = np.append( [0], nvxi, axis=0);
-#nvxf, binsvxf, patches = pl.hist(vxf, 100 )
-#nvxf = np.append( [0], nvxf, axis=0);
-#nvyi, binsvyi, patches = pl.hist(vyi, 100 )
-#nvyi = np.append( [0], nvyi, axis=0);
-#nvyf, binsvyf, patches = pl.hist(vyf, 100 )
-#nvyf = np.append( [0], nvyf, axis=0);
-#nvzi, binsvzi, patches = pl.hist(vzi, 100 )
-#nvzi = np.append( [0], nvzi, axis=0);
-#nvzf, binsvzf, patches = pl.hist(vzf, 100 )
-#nvzf = np.append( [0], nvzf, axis=0);
-#
-#print np.mean(si)
-#print np.mean(sf)
-#
-#pl.figure(2)
-#pl.plot(binsi, ni, binsf, nf)
-#pl.xlabel(r'$s$')
-#
-#pl.figure(4)
-#pl.plot(binsvxi, nvxi, binsvxf, nvxf)
-#pl.xlabel(r'$v_x$')
-#pl.figure(5)
-#pl.plot(binsvyi, nvyi, binsvyf, nvyf)
-#pl.xlabel(r'$v_y$')
-#pl.figure(6)
-#pl.plot(binsvzi, nvzi, binsvzf, nvzf)
-#pl.xlabel(r'$v_z$')
 
 pl.show()

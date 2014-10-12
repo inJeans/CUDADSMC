@@ -52,8 +52,6 @@ __global__ void unitaryEvolution( zomplex *psiU, zomplex *psiD, double2 *oldPops
 		zomplex l_psiU = psiU[atom];
 		zomplex l_psiD = psiD[atom];
 		
-		oldPops2[atom] = getEigenStatePopulations( l_psiD, l_psiU, Bn );
-		
 		// Write out the update values of the wavefunction
         // to global memory
 		psiU[atom] = U11*l_psiU + U12*l_psiD;
@@ -157,6 +155,8 @@ __global__ void projectSpins( zomplex *psiU, zomplex *psiD, double2 *oldPops2, d
 			}
 		}
 		
+        oldPops2[atom] = newPops2;
+        
 		// Copy state back to global memory
 		rngstate[atom] = l_rngstate;
         vel[atom] = l_vel;

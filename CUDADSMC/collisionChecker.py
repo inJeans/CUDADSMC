@@ -22,7 +22,7 @@ T    = 20.e-6;
 dBdz = 2.5;
 
 tres = 51;
-ntrials = 1e3;
+ntrials = 1e5;
 nAtoms = 1e7;
 alpha = nAtoms / ntrials;
 nCells = 10**3 + 1;
@@ -51,7 +51,6 @@ collRate = np.gradient( totalColl, time[1]-time[0] ) / ( alpha * N );
 
 print np.mean(collRate)
 
-pl.plot( time, totalColl / ntrials );
 pl.plot( time, collRate );
 pl.show();
 

@@ -368,51 +368,51 @@ int main(int argc, const char * argv[])
     {
 #pragma mark Collide Atoms
         
-        medianR = indexAtoms( d_pos,
-                              d_cellID );
-        
-        sortArrays( d_pos,
-                    d_vel,
-                    d_acc,
-                    d_psiU,
-                    d_psiD,
-                    d_oldPops2,
-                    d_isSpinUp,
-                    d_cellID );
-		
-		deviceMemset<<<numberOfCells+1,1>>>( d_cellStartEnd,
-											 make_int2( -1, -1 ),
-											 numberOfCells + 1 );
-		cellStartandEndKernel<<<gridSize,blockSize>>>( d_cellID,
-                                                       d_cellStartEnd,
-                                                       numberOfAtoms );
-        findNumberOfAtomsInCell<<<numberOfCells+1,1>>>( d_cellStartEnd,
-                                                        d_numberOfAtomsInCell,
-                                                        numberOfCells );
-        thrust::exclusive_scan( th_numberOfAtomsInCell,
-                                th_numberOfAtomsInCell + numberOfCells + 1,
-                                th_prefixScanNumberOfAtomsInCell );
-        
-        collide<<<numberOfCells,1>>>( d_vel,
-                                       d_sigvrmax,
-                                       d_isSpinUp,
-                                       d_prefixScanNumberOfAtomsInCell,
-                                       d_collisionCount,
-                                       medianR,
-                                       numberOfCells,
-                                       d_rngStates,
-                                       d_cellID );
+//        medianR = indexAtoms( d_pos,
+//                              d_cellID );
+//        
+//        sortArrays( d_pos,
+//                    d_vel,
+//                    d_acc,
+//                    d_psiU,
+//                    d_psiD,
+//                    d_oldPops2,
+//                    d_isSpinUp,
+//                    d_cellID );
+//		
+//		deviceMemset<<<numberOfCells+1,1>>>( d_cellStartEnd,
+//											 make_int2( -1, -1 ),
+//											 numberOfCells + 1 );
+//		cellStartandEndKernel<<<gridSize,blockSize>>>( d_cellID,
+//                                                       d_cellStartEnd,
+//                                                       numberOfAtoms );
+//        findNumberOfAtomsInCell<<<numberOfCells+1,1>>>( d_cellStartEnd,
+//                                                        d_numberOfAtomsInCell,
+//                                                        numberOfCells );
+//        thrust::exclusive_scan( th_numberOfAtomsInCell,
+//                                th_numberOfAtomsInCell + numberOfCells + 1,
+//                                th_prefixScanNumberOfAtomsInCell );
+//        
+//        collide<<<numberOfCells,1>>>( d_vel,
+//                                       d_sigvrmax,
+//                                       d_isSpinUp,
+//                                       d_prefixScanNumberOfAtomsInCell,
+//                                       d_collisionCount,
+//                                       medianR,
+//                                       numberOfCells,
+//                                       d_rngStates,
+//                                       d_cellID );
         
 #pragma mark Evolve System
         
         for (int j=0; j<loopsPerCollision; j++) {
             
-//            unitaryEvolution<<<gridSize,blockSize>>>( d_psiU,
-//                                                      d_psiD,
-//                                                      d_oldPops2,
-//                                                      d_pos,
-//                                                      d_vel,
-//                                                      numberOfAtoms );
+            unitaryEvolution<<<gridSize,blockSize>>>( d_psiU,
+                                                      d_psiD,
+                                                      d_oldPops2,
+                                                      d_pos,
+                                                      d_vel,
+                                                      numberOfAtoms );
             
             moveAtoms<<<gridSize,blockSize>>>( d_pos,
                                                d_vel,
@@ -420,40 +420,40 @@ int main(int argc, const char * argv[])
                                                numberOfAtoms,
                                                d_isSpinUp );
             
-//            projectSpins<<<gridSize,blockSize>>>( d_psiU,
-//                                                  d_psiD,
-//                                                  d_oldPops2,
-//                                                  d_pos,
-//                                                  d_vel,
-//                                                  d_isSpinUp,
-//                                                  d_rngStates,
-//                                                  numberOfAtoms,
-//                                                  d_flippedPos,
-//                                                  d_flippedVel );
-//            
-//            exponentialDecay<<<gridSize,blockSize>>>( d_psiU,
-//                                                      d_psiD,
-//                                                      d_pos,
-//                                                      d_isSpinUp,
-//                                                      numberOfAtoms );
-//            
-//            normaliseWavefunction<<<gridSize,blockSize>>>( d_psiU,
-//                                                           d_psiD,
-//                                                           numberOfAtoms );
+            exponentialDecay<<<gridSize,blockSize>>>( d_psiU,
+                                                      d_psiD,
+                                                      d_pos,
+                                                      d_isSpinUp,
+                                                      numberOfAtoms );
+
+            normaliseWavefunction<<<gridSize,blockSize>>>( d_psiU,
+                                                           d_psiD,
+                                                           numberOfAtoms );
         }
         
+        projectSpins<<<gridSize,blockSize>>>( d_psiU,
+                                             d_psiD,
+                                             d_oldPops2,
+                                             d_pos,
+                                             d_vel,
+                                             d_isSpinUp,
+                                             d_rngStates,
+                                             numberOfAtoms,
+                                             d_flippedPos,
+                                             d_flippedVel );
+        
 #pragma mark Evaoprate Atoms
-//        
-//        evaporateAtoms( d_pos,
-//                        d_vel,
-//                        d_acc,
-//                        d_psiU,
-//                        d_psiD,
-//                        d_oldPops2,
-//                        d_isSpinUp,
-//                        d_cellID,
-//                        medianR,
-//                        &numberOfAtoms );
+        
+        evaporateAtoms( d_pos,
+                        d_vel,
+                        d_acc,
+                        d_psiU,
+                        d_psiD,
+                        d_oldPops2,
+                        d_isSpinUp,
+                        d_cellID,
+                        medianR,
+                        &numberOfAtoms );
         
         printf( "Number of atoms = %i, ", numberOfAtoms);
         
