@@ -420,27 +420,27 @@ int main(int argc, const char * argv[])
                                                numberOfAtoms,
                                                d_isSpinUp );
             
-            exponentialDecay<<<gridSize,blockSize>>>( d_psiU,
-                                                      d_psiD,
-                                                      d_pos,
-                                                      d_isSpinUp,
-                                                      numberOfAtoms );
+            projectSpins<<<gridSize,blockSize>>>( d_psiU,
+                                                  d_psiD,
+                                                  d_oldPops2,
+                                                  d_pos,
+                                                  d_vel,
+                                                  d_isSpinUp,
+                                                  d_rngStates,
+                                                  numberOfAtoms,
+                                                  d_flippedPos,
+                                                  d_flippedVel );
+            
+//            exponentialDecay<<<gridSize,blockSize>>>( d_psiU,
+//                                                      d_psiD,
+//                                                      d_pos,
+//                                                      d_isSpinUp,
+//                                                      numberOfAtoms );
 
             normaliseWavefunction<<<gridSize,blockSize>>>( d_psiU,
                                                            d_psiD,
                                                            numberOfAtoms );
         }
-        
-        projectSpins<<<gridSize,blockSize>>>( d_psiU,
-                                             d_psiD,
-                                             d_oldPops2,
-                                             d_pos,
-                                             d_vel,
-                                             d_isSpinUp,
-                                             d_rngStates,
-                                             numberOfAtoms,
-                                             d_flippedPos,
-                                             d_flippedVel );
         
 #pragma mark Evaoprate Atoms
         

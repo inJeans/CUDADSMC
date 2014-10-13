@@ -22,7 +22,7 @@ __device__ int3   d_cellsPerDimension = { 10, 10, 10 };
 __device__ int    d_numberOfCells = 10*10*10;
 __device__ double d_meshWidth = 2.5;
 __device__ double3 d_maxGridWidth = { 0.01, 0.01, 0.01 };
-__device__ double d_alpha = 1.0*1.e7 / 1.e5;
+__device__ double d_alpha = 1.0*1.e7 / 1.e4;
 __device__ double d_dt;
 __device__ double d_dBdz = 2.5;
 __device__ double d_wavelength = 6.06012e-8;

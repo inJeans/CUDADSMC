@@ -22,7 +22,7 @@ T    = 20.e-6;
 dBdz = 2.5;
 
 tres = 51;
-ntrials = 1e5;
+ntrials = 1e4   ;
 nAtoms = 1e7;
 alpha = nAtoms / ntrials;
 nCells = 10**3 + 1;

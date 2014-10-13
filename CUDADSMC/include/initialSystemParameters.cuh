@@ -13,7 +13,7 @@
 
 #pragma mark -
 
-int    numberOfAtoms = 1e5;
+int    numberOfAtoms = 1e4;
 int3   cellsPerDimension = { 10, 10, 10 };
 int    numberOfCells = cellsPerDimension.x*cellsPerDimension.y*cellsPerDimension.z;
 double dt = 5.0e-6;

@@ -23,7 +23,7 @@ T    = 20.e-6;
 dBdz = 2.5;
 
 tres = 51;
-ntrials = 1e5;
+ntrials = 1e4;
 dt = 1e-6;
 
 time = np.zeros((tres));
@@ -159,6 +159,8 @@ Eki = Eki[np.isfinite(Eki)]
 Epi = isSpinUp[0:N[0],0]*0.5*gs*muB*dBdz*np.sqrt(pos[0:N[0],0,0]**2 + pos[0:N[0],1,0]**2 + 4.0*pos[0:N[0],2,0]**2 ) / kB * 1.e6
 Epi = Epi[np.isfinite(Epi)]
 Eti = Eki + Epi
+Li  = np.cross( vel[0:N[0],:,0], pos[0:N[0],:,0])
+Li  = Li[np.isfinite(Li)]
 
 nki, binski, patches = pl.hist(Eki,100)
 nki = np.append([0], nki , axis=0)
@@ -166,12 +168,16 @@ npi, binspi, patches = pl.hist(Epi,100)
 npi = np.append([0], npi , axis=0)
 nti, binsti, patches = pl.hist(Eti,100)
 nti = np.append([0], nti , axis=0)
+nli, binsli, patches = pl.hist(Li,100)
+nli = np.append([0], nli , axis=0)
 
 Ekf = 0.5 * mRb * np.sum(vel[0:N[-1],:,-1]**2, 1) / kB * 1.e6
 Ekf = Ekf[np.isfinite(Ekf)]
 Epf = isSpinUp[0:N[-1],-1]*0.5*gs*muB*dBdz*np.sqrt(pos[0:N[-1],0,-1]**2 + pos[0:N[-1],1,-1]**2 + 4.0*pos[0:N[-1],2,-1]**2 ) / kB * 1.e6
 Epf = Epf[np.isfinite(Epf)]
 Etf = Ekf + Epf
+Lf  = np.cross( vel[0:N[-1],:,-1], pos[0:N[-1],:,-1])
+Lf  = Lf[np.isfinite(Lf)]
 
 nkf, binskf, patches = pl.hist(Ekf,100)
 nkf = np.append([0], nkf , axis=0)
@@ -179,12 +185,16 @@ npf, binspf, patches = pl.hist(Epf,100)
 npf = np.append([0], npf , axis=0)
 ntf, binstf, patches = pl.hist(Etf,100)
 ntf = np.append([0], ntf , axis=0)
+nlf, binslf, patches = pl.hist(Lf,100)
+nlf = np.append([0], nlf , axis=0)
 
 Ekfl = 0.5 * mRb * np.sum(fvel[:,:,-1]**2, 1) / kB * 1.e6
 Ekfl = Ekfl[np.where( Ekfl > 0. )]
 Epfl = 0.5*gs*muB*dBdz*np.sqrt(fpos[:,0,-1]**2 + fpos[:,1,-1]**2 + 4.0*fpos[:,2,-1]**2 ) / kB * 1.e6
 Epfl = Epfl[np.where( Epfl > 0. )]
 Etfl = Ekfl + Epfl
+Lfl  = np.cross( fvel[:,:,-1], fpos[:,:,-1])
+Lfl  = Lfl[ Lfl > 0.]
 
 nkfl, binskfl, patches = pl.hist(Ekfl,100)
 nkfl = np.append([0], nkfl , axis=0)
@@ -192,6 +202,8 @@ npfl, binspfl, patches = pl.hist(Epfl,100)
 npfl = np.append([0], npfl , axis=0)
 ntfl, binstfl, patches = pl.hist(Etfl,100)
 ntfl = np.append([0], ntfl , axis=0)
+nlfl, binslfl, patches = pl.hist(Lfl,100)
+nlfl = np.append([0], nlfl , axis=0)
 
 pl.figure(6)
 pl.plot( binski, nki, binskf, nkf, binskfl, nkfl )
@@ -204,5 +216,9 @@ pl.xlabel(r'$E_p$ $(\mu K)$')
 pl.figure(8)
 pl.plot( binsti, nti, binstf, ntf, binstfl, ntfl )
 pl.xlabel(r'$E_T$ $(\mu K)$')
+
+pl.figure(9)
+pl.plot( binsli, nli, binslf, nlf, binslfl, nlfl )
+pl.xlabel(r'$L$')
 
 pl.show()

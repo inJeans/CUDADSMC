@@ -51,6 +51,8 @@ __global__ void unitaryEvolution( zomplex *psiU, zomplex *psiD, double2 *oldPops
 		// Get local copies of the wavefunction for efficiency
 		zomplex l_psiU = psiU[atom];
 		zomplex l_psiD = psiD[atom];
+        
+        oldPops2[atom] = getEigenStatePopulations( l_psiD, l_psiU, Bn );
 		
 		// Write out the update values of the wavefunction
         // to global memory
@@ -117,9 +119,7 @@ __global__ void projectSpins( zomplex *psiU, zomplex *psiD, double2 *oldPops2, d
         double3 Bn = getMagneticFieldNormal( l_pos );
 		
         double2 newPops2 = getEigenStatePopulations( l_psiD, l_psiU, Bn );
-//        if (atom==0) {
-//            printf("x = (%g, %g, %g), Bn = (%g, %g, %g)\n", l_pos.x, l_pos.y, l_pos.z, Bn.x, Bn.y, Bn.z );
-//        }
+        
         // Copy rng state to local memory for efficiency
 		curandStatePhilox4_32_10_t l_rngstate = rngstate[atom];
         
@@ -155,7 +155,7 @@ __global__ void projectSpins( zomplex *psiU, zomplex *psiD, double2 *oldPops2, d
 			}
 		}
 		
-        oldPops2[atom] = newPops2;
+//        oldPops2[atom] = newPops2;
         
 		// Copy state back to global memory
 		rngstate[atom] = l_rngstate;
