@@ -22,7 +22,7 @@ __global__ void copyConstantsToDevice( double dt )
 	return;
 }
 
-__global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, int numberOfAtoms, hbool_t *isSpinUp, double medianR )
+__global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, int numberOfAtoms, double medianR )
 {
     for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
 		 atom < numberOfAtoms;
@@ -36,7 +36,6 @@ __global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, int numberO
             velocityVerletUpdate( &l_pos,
                                   &l_vel,
                                   &l_acc,
-                                  isSpinUp[atom],
                                   medianR );
 //        }
     
@@ -49,27 +48,47 @@ __global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, int numberO
     return;
 }
 
-__device__ void velocityVerletUpdate( double3 *pos, double3 *vel, double3 *acc, hbool_t isSpinUp, double medianR )
+__device__ void velocityVerletUpdate( double3 *pos, double3 *vel, double3 *acc, double medianR )
 {
-    vel[0] = updateVelHalfStep( vel[0], acc[0] );
+    vel[0] = updateVelHalfStep( pos[0], vel[0], acc[0] );
     pos[0] = updatePos( pos[0], vel[0], medianR );
-    acc[0] = updateAcc( pos[0], isSpinUp );
-    vel[0] = updateVelHalfStep( vel[0], acc[0] );
+    acc[0] = updateAcc( pos[0] );
+    vel[0] = updateVelHalfStep( pos[0], vel[0], acc[0] );
+    
+    double3 gridMin =-1.0*d_maxGridWidth;
+    double3 gridMax = d_maxGridWidth;
+    
+    if ( pos[0].x < gridMin.x || pos[0].x > gridMax.x )
+    {
+        vel[0].x = -vel[0].x;
+    }
+    
+    if ( pos[0].y < gridMin.y || pos[0].y > gridMax.y  )
+    {
+        vel[0].y = -vel[0].y;
+    }
+    
+    if ( pos[0].z < gridMin.z || pos[0].z > gridMax.z )
+    {
+        vel[0].z = -vel[0].z;
+    }
+    
+    return;
 }
 
-__device__ void symplecticEulerUpdate( double3 *pos, double3 *vel, double3 *acc, hbool_t isSpinUp, double medianR )
+__device__ void symplecticEulerUpdate( double3 *pos, double3 *vel, double3 *acc, double medianR )
 {
-    acc[0] = updateAcc( pos[0], isSpinUp );
-    vel[0] = updateVel( vel[0], acc[0] );
+    acc[0] = updateAcc( pos[0] );
+    vel[0] = updateVel( pos[0], vel[0], acc[0] );
     pos[0] = updatePos( pos[0], vel[0], medianR );
 }
 
-__device__ double3 updateVel( double3 vel, double3 acc )
+__device__ double3 updateVel( double3 pos, double3 vel, double3 acc )
 {
     return vel + acc * d_dt;
 }
 
-__device__ double3 updateVelHalfStep( double3 vel, double3 acc )
+__device__ double3 updateVelHalfStep( double3 pos, double3 vel, double3 acc )
 {
     return vel + 0.5 * acc * d_dt;
 }
@@ -78,28 +97,10 @@ __device__ double3 updatePos( double3 pos, double3 vel, double medianR )
 {
     double3 newPos = pos + vel * d_dt;
     
-    double gridMin =-0.0001;
-    double gridMax = 0.0001;
-    
-    if ( newPos.x < gridMin || newPos.x > gridMax )
-    {
-        newPos.x = -newPos.x;
-    }
-    
-    if ( newPos.y < gridMin || newPos.y > gridMax  )
-    {
-        newPos.y = -newPos.y;
-    }
-    
-    if ( newPos.z < gridMin || newPos.z > gridMax )
-    {
-        newPos.z = -newPos.z;
-    }
-    
     return newPos;
 }
 
-__device__ double3 updateAcc( double3 pos, hbool_t isSpinUp )
+__device__ double3 updateAcc( double3 pos )
 {
     double3 accel = make_double3( 0., 0., 0. );
     

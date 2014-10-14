@@ -133,7 +133,6 @@ int main(int argc, const char * argv[])
                                                  d_acc,
                                                  numberOfAtoms,
                                                  Tinit,
-                                                 dBdz,
                                                  d_rngStates );
     
     initSigvrmax( d_sigvrmax, numberOfCells );
@@ -251,10 +250,6 @@ int main(int argc, const char * argv[])
         sortArrays( d_pos,
                     d_vel,
                     d_acc,
-                    d_psiU,
-                    d_psiD,
-                    d_oldPops2,
-                    d_isSpinUp,
                     d_cellID );
 		
 		deviceMemset<<<numberOfCells+1,1>>>( d_cellStartEnd,
@@ -271,67 +266,24 @@ int main(int argc, const char * argv[])
                                 th_prefixScanNumberOfAtomsInCell );
         
         collide<<<numberOfCells,1>>>( d_vel,
-                                       d_sigvrmax,
-                                       d_isSpinUp,
-                                       d_prefixScanNumberOfAtomsInCell,
-                                       d_collisionCount,
-                                       medianR,
-                                       numberOfCells,
-                                       d_rngStates,
-                                       d_cellID );
+                                      d_sigvrmax,
+                                      d_prefixScanNumberOfAtomsInCell,
+                                      d_collisionCount,
+                                      medianR,
+                                      numberOfCells,
+                                      d_rngStates,
+                                      d_cellID );
         
 #pragma mark Evolve System
         
         for (int j=0; j<loopsPerCollision; j++) {
             
-//            unitaryEvolution<<<gridSize,blockSize>>>( d_psiU,
-//                                                      d_psiD,
-//                                                      d_oldPops2,
-//                                                      d_pos,
-//                                                      d_vel,
-//                                                      numberOfAtoms );
-            
             moveAtoms<<<gridSize,blockSize>>>( d_pos,
                                                d_vel,
                                                d_acc,
                                                numberOfAtoms,
-                                               d_isSpinUp,
                                                medianR );
-            
-//            projectSpins<<<gridSize,blockSize>>>( d_psiU,
-//                                                  d_psiD,
-//                                                  d_oldPops2,
-//                                                  d_pos,
-//                                                  d_vel,
-//                                                  d_isSpinUp,
-//                                                  d_rngStates,
-//                                                  numberOfAtoms,
-//                                                  d_flippedPos,
-//                                                  d_flippedVel );
-            
-//            exponentialDecay<<<gridSize,blockSize>>>( d_psiU,
-//                                                      d_psiD,
-//                                                      d_pos,
-//                                                      d_isSpinUp,
-//                                                      numberOfAtoms );
-//
-//            normaliseWavefunction<<<gridSize,blockSize>>>( d_psiU,
-//                                                           d_psiD,
-//                                                           numberOfAtoms );
         }
-        
-//#pragma mark Evaoprate Atoms
-//        
-//        evaporateAtoms( d_pos,
-//                        d_vel,
-//                        d_acc,
-//                        d_psiU,
-//                        d_psiD,
-//                        d_oldPops2,
-//                        d_isSpinUp,
-//                        d_cellID,
-//                        medianR,
-//                        &numberOfAtoms );
         
         printf( "Number of atoms = %i, ", numberOfAtoms);
         
@@ -339,9 +291,7 @@ int main(int argc, const char * argv[])
     
         cudaMemcpy( h_pos, d_pos, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
         cudaMemcpy( h_vel, d_vel, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
-        cudaMemcpy( h_psiU, d_psiU, numberOfAtoms*sizeof(zomplex), cudaMemcpyDeviceToHost );
-        cudaMemcpy( h_psiD, d_psiD, numberOfAtoms*sizeof(zomplex), cudaMemcpyDeviceToHost );
-        cudaMemcpy( h_isSpinUp, d_isSpinUp, numberOfAtoms*sizeof(hbool_t), cudaMemcpyDeviceToHost );
+        cudaMemcpy( h_numberOfAtomsInCell, d_numberOfAtomsInCell, (numberOfCells+1)*sizeof(int), cudaMemcpyDeviceToHost );
         cudaMemcpy( h_collisionCount, d_collisionCount, (numberOfCells+1)*sizeof(int), cudaMemcpyDeviceToHost );
     
         writeHDF5File( hdf5handlePos,
@@ -350,34 +300,18 @@ int main(int argc, const char * argv[])
         writeHDF5File( hdf5handleVel,
                        filename,
                        h_vel );
-        writeHDF5File( hdf5handlePsiU,
-                       filename,
-                       h_psiU );
-        writeHDF5File( hdf5handlePsiD,
-                       filename,
-                       h_psiD );
-        writeHDF5File( hdf5handleIsSpinUp,
-                       filename,
-                       h_isSpinUp );
         writeHDF5File( hdf5handleCollision,
                        filename,
                        h_collisionCount );
+        writeHDF5File( hdf5handlenAtom,
+                       filename,
+                       h_numberOfAtomsInCell );
         writeHDF5File( hdf5handleTime,
                        filename,
                        &time );
         writeHDF5File( hdf5handleNumber,
                        filename,
                        &numberOfAtoms );
-        
-        cudaMemcpy( h_flippedPos, d_flippedPos, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
-        cudaMemcpy( h_flippedVel, d_flippedVel, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
-        
-        writeHDF5File( hdf5handlefPos,
-                       filename,
-                       h_flippedPos );
-        writeHDF5File( hdf5handlefVel,
-                       filename,
-                       h_flippedVel );
         
         printf("i = %i\n", i);
     }
@@ -387,31 +321,18 @@ int main(int argc, const char * argv[])
     
     free( h_pos );
     free( h_vel );
-    free( h_psiU );
-    free( h_psiD );
     free( h_numberOfAtomsInCell );
 	free( h_cellID );
-    free( h_isSpinUp );
-    
-    free( h_flippedPos );
-    free( h_flippedVel );
     
     cudaFree( d_pos );
     cudaFree( d_vel );
     cudaFree( d_acc );
-    cudaFree( d_psiU );
-    cudaFree( d_psiD );
-    cudaFree( d_oldPops2 );
     cudaFree( d_sigvrmax );
     cudaFree( d_cellStartEnd );
     cudaFree( d_cellID );
     cudaFree( d_numberOfAtomsInCell );
     cudaFree( d_prefixScanNumberOfAtomsInCell );
     cudaFree( d_rngStates );
-    cudaFree( d_isSpinUp );
-    
-    cudaFree( d_flippedPos );
-    cudaFree( d_flippedVel );
     
     cudaDeviceReset();
     

@@ -23,17 +23,13 @@ T    = 20.e-6;
 dBdz = 2.5;
 
 tres = 51;
-ntrials = 1e4;
+ntrials = 1e6;
 dt = 1e-6;
 
 time = np.zeros((tres));
 pos = np.zeros((ntrials,3,tres));
 vel = np.zeros((ntrials,3,tres));
 N = np.zeros((tres));
-isSpinUp = np.zeros((ntrials,1,tres));
-
-fpos = np.zeros((ntrials,3,tres));
-fvel = np.zeros((ntrials,3,tres));
 
 f = h5py.File('outputData.h5');
 
@@ -46,22 +42,10 @@ dset.read_direct(pos);
 dset = f.require_dataset('atomData/velocities',(ntrials,3,tres),False,False);
 dset.read_direct(vel);
 
-dset = f.require_dataset('atomData/isSpinUp',(ntrials,1,tres),False,False);
-dset.read_direct(isSpinUp);
-
 dset = f.require_dataset('atomData/atomNumber',(1,1,tres),False,False);
 dset.read_direct(N);
 
-dset = f.require_dataset('atomData/flippedPos',(ntrials,3,tres),False,False);
-dset.read_direct(fpos);
-
-dset = f.require_dataset('atomData/flippedVel',(ntrials,3,tres),False,False);
-dset.read_direct(fvel);
-
 f.close()
-
-num = np.sum( isSpinUp, 0 )
-isSpinUp = 2*isSpinUp[:,0,:] - 1;
 
 Ek = np.zeros((N.size,))
 Ep = np.zeros((N.size,))
@@ -84,9 +68,9 @@ for i in range(0,N.size):
     kinetic = 0.5 * mRb * np.sum(vel[0:N[i],:,i]**2, 1)
     n = np.where( np.isfinite(kinetic) )
     Ek[i] = np.sum( kinetic[n], 0 ) / N[i] / kB * 1.e6
-    potential = isSpinUp[0:N[i],i]*0.5*gs*muB*dBdz*np.sqrt(pos[0:N[i],0,i]**2 + pos[0:N[i],1,i]**2 + 4.0*pos[0:N[i],2,i]**2 )
-    Ep[i] = np.sum( potential[n], 0 ) / N[i] / kB * 1.e6
-    Et[i] = Ek[i]+Ep[i]
+    radius = np.sqrt(pos[0:N[i],0,i]**2 + pos[0:N[i],1,i]**2 + pos[0:N[i],2,i]**2 )
+    Ep[i] = np.sum( radius[n], 0 ) / N[i]
+    Et[i] = Ek[i]
 
     Temp[i] = 2./3. * np.sum( kinetic[n], 0) / N[i] / kB * 1.e6
 
@@ -156,9 +140,9 @@ pl.figure(5)
 
 Eki = 0.5 * mRb * np.sum(vel[0:N[0],:,0]**2, 1) / kB * 1.e6
 Eki = Eki[np.isfinite(Eki)]
-Epi = isSpinUp[0:N[0],0]*0.5*gs*muB*dBdz*np.sqrt(pos[0:N[0],0,0]**2 + pos[0:N[0],1,0]**2 + 4.0*pos[0:N[0],2,0]**2 ) / kB * 1.e6
+Epi = np.sqrt(pos[0:N[0],0,0]**2 + pos[0:N[0],1,0]**2 + pos[0:N[0],2,0]**2 )
 Epi = Epi[np.isfinite(Epi)]
-Eti = Eki + Epi
+Eti = Eki
 Li  = np.cross( vel[0:N[0],:,0], pos[0:N[0],:,0])
 Li  = Li[np.isfinite(Li)]
 
@@ -173,9 +157,9 @@ nli = np.append([0], nli , axis=0)
 
 Ekf = 0.5 * mRb * np.sum(vel[0:N[-1],:,-1]**2, 1) / kB * 1.e6
 Ekf = Ekf[np.isfinite(Ekf)]
-Epf = isSpinUp[0:N[-1],-1]*0.5*gs*muB*dBdz*np.sqrt(pos[0:N[-1],0,-1]**2 + pos[0:N[-1],1,-1]**2 + 4.0*pos[0:N[-1],2,-1]**2 ) / kB * 1.e6
+Epf = np.sqrt(pos[0:N[-1],0,-1]**2 + pos[0:N[-1],1,-1]**2 + pos[0:N[-1],2,-1]**2 )
 Epf = Epf[np.isfinite(Epf)]
-Etf = Ekf + Epf
+Etf = Ekf
 Lf  = np.cross( vel[0:N[-1],:,-1], pos[0:N[-1],:,-1])
 Lf  = Lf[np.isfinite(Lf)]
 
@@ -203,5 +187,39 @@ pl.xlabel(r'$E_T$ $(\mu K)$')
 pl.figure(9)
 pl.plot( binsli, nli, binslf, nlf )
 pl.xlabel(r'$L$')
+
+pl.figure(10)
+
+xi = pos[0:N[0],0,0]
+yi = pos[0:N[0],1,0]
+zi = pos[0:N[0],2,0]
+
+nxi, binsxi, patches = pl.hist(xi,100)
+nxi = np.append([0], nxi , axis=0)
+nyi, binsyi, patches = pl.hist(yi,100)
+nyi = np.append([0], nyi , axis=0)
+nzi, binszi, patches = pl.hist(zi,100)
+nzi = np.append([0], nzi , axis=0)
+
+xf = pos[0:N[-1],0,-1]
+yf = pos[0:N[-1],1,-1]
+zf = pos[0:N[-1],2,-1]
+
+nxf, binsxf, patches = pl.hist(xf,100)
+nxf = np.append([0], nxf , axis=0)
+nyf, binsyf, patches = pl.hist(yf,100)
+nyf = np.append([0], nyf , axis=0)
+nzf, binszf, patches = pl.hist(zf,100)
+nzf = np.append([0], nzf , axis=0)
+
+pl.figure(11)
+pl.plot( binsxi, nxi, binsxf, nxf )
+pl.xlabel(r'$x$')
+pl.figure(12)
+pl.plot( binsyi, nyi, binsyf, nyf )
+pl.xlabel(r'$y$')
+pl.figure(13)
+pl.plot( binszi, nzi, binszf, nzf )
+pl.xlabel(r'$z$')
 
 pl.show()

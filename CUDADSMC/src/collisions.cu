@@ -127,19 +127,7 @@ __global__ void findAtomIndex( double3 *pos, int *cellID, double medianR, int nu
 
 __device__ double3 getCellLength( double medianR )
 {
-    double3 cellLength = 2.0 * 0.0001/ d_cellsPerDimension;
-    
-    double3 maxLength = d_maxGridWidth / d_cellsPerDimension;
-    
-    if (cellLength.x > maxLength.x) {
-        cellLength.x = maxLength.x;
-    }
-    if (cellLength.y > maxLength.y) {
-        cellLength.y = maxLength.y;
-    }
-    if (cellLength.z > maxLength.z) {
-        cellLength.z = maxLength.z;
-    }
+    double3 cellLength = 2.0 * d_maxGridWidth / d_cellsPerDimension;
     
     return cellLength;
 }
@@ -171,7 +159,7 @@ __device__ int getCellID( int3 index, int3 cellsPerDimension )
 
 __device__ double3 getGridMin( double medianR )
 {
-    double3 gridMin = -0.0001 * make_double3( 1., 1., 1. );
+    double3 gridMin = -1.0 * d_maxGridWidth;
     
     return  gridMin;
 }
@@ -264,22 +252,11 @@ __device__ void serialFindNumberOfAtomsInCell( int2 *cellStartEnd, int *numberOf
 void sortArrays( double3 *d_pos,
                  double3 *d_vel,
                  double3 *d_acc,
-                 zomplex *d_psiU,
-                 zomplex *d_psiD,
-                 double2 *d_oldPops2,
-                 hbool_t *d_isSpinUp,
                  int *d_cellID )
 {
     thrust::device_ptr<double3> th_pos = thrust::device_pointer_cast( d_pos );
     thrust::device_ptr<double3> th_vel = thrust::device_pointer_cast( d_vel );
     thrust::device_ptr<double3> th_acc = thrust::device_pointer_cast( d_acc );
-    
-    thrust::device_ptr<zomplex> th_psiU = thrust::device_pointer_cast( d_psiU );
-    thrust::device_ptr<zomplex> th_psiD = thrust::device_pointer_cast( d_psiD );
-    
-    thrust::device_ptr<double2> th_oldPops2 = thrust::device_pointer_cast( d_oldPops2 );
-    
-    thrust::device_ptr<hbool_t> th_isSpinUp = thrust::device_pointer_cast( d_isSpinUp );
     
     thrust::device_ptr<int> th_cellID = thrust::device_pointer_cast( d_cellID );
     
@@ -315,48 +292,6 @@ void sortArrays( double3 *d_pos,
     
     cudaFree( d_sorted );
     
-    zomplex *d_sortedz;
-    cudaCalloc( (void **)&d_sortedz, numberOfAtoms, sizeof(zomplex) );
-    thrust::device_ptr<zomplex> th_sortedz = thrust::device_pointer_cast( d_sortedz );
-    
-    thrust::gather( th_indices.begin(),
-                    th_indices.end(),
-                    th_psiU,
-                    th_sortedz );
-    th_psiU = th_sortedz;
-    
-    thrust::gather( th_indices.begin(),
-                    th_indices.end(),
-                    th_psiD,
-                    th_sortedz );
-    th_psiD = th_sortedz;
-    
-    cudaFree( d_sortedz );
-    
-    double2 *d_sorted2;
-    cudaCalloc( (void **)&d_sorted2, numberOfAtoms, sizeof(double2) );
-    thrust::device_ptr<double2> th_sorted2 = thrust::device_pointer_cast( d_sorted2 );
-    
-    thrust::gather( th_indices.begin(),
-                    th_indices.end(),
-                    th_oldPops2,
-                    th_sorted2 );
-    th_oldPops2 = th_sorted2;
-    
-    cudaFree( d_sorted2 );
-    
-    hbool_t *d_sortedb;
-    cudaCalloc( (void **)&d_sortedb, numberOfAtoms, sizeof(hbool_t) );
-    thrust::device_ptr<hbool_t> th_sortedb = thrust::device_pointer_cast( d_sortedb );
-    
-    thrust::gather( th_indices.begin(),
-                    th_indices.end(),
-                    th_isSpinUp,
-                    th_sortedb );
-    th_isSpinUp = th_sortedb;
-    
-    cudaFree( d_sortedb );
-    
     return;
 }
 
@@ -364,7 +299,6 @@ void sortArrays( double3 *d_pos,
 
 __global__ void collide( double3 *vel,
                          double  *sigvrmax,
-                         hbool_t *isSpinUp,
                          int     *prefixScanNumberOfAtomsInCell,
                          int     *collisionCount,
                          double   medianR,
@@ -385,27 +319,23 @@ __global__ void collide( double3 *vel,
             d_loopsPerCollision = 0.005 / d_dt;
             
             double cellVolume = cellLength.x * cellLength.y * cellLength.z;
-            double Mc = ceil( 0.5 * (numberOfAtomsInCell - 1) * numberOfAtomsInCell );
+            double Mc = 0.5 * (numberOfAtomsInCell - 1) * numberOfAtomsInCell;
             double lambda = ceil( Mc * d_alpha * d_loopsPerCollision * d_dt * sigvrmax[cell] / cellVolume ) / Mc;
             int Ncol = Mc*lambda;
-            //    int2 collidingAtoms, g_collidingAtoms;
-            //
+            
             double3 velcm, newVel, pointOnSphere;
             
             double crossSection = 8.*d_pi*d_a*d_a;
             double magVrel;
             double ProbCol;
-//            printf("cell[%i]]: Nc = %i, Mc = %g.0, lambda = %g, Ncol = %i\n", cell, numberOfAtomsInCell, Mc, lambda, Ncol );
+            
             for ( int l_collision = 0;
-                 l_collision < Ncol;
-                 l_collision++ )
+                  l_collision < Ncol;
+                  l_collision++ )
             {
-                //            printf("cell[%i]: %i\n", cell, l_collision);
                 curandStatePhilox4_32_10_t l_rngState = rngState[cell];
                 
                 int2 collidingAtoms = {0,0};
-                
-                //            printf("cell[%i]]: Nc = %i, Mc = %i\n", cell, numberOfAtomsInCell, Ncol );
                 
                 if (numberOfAtomsInCell == 2) {
                     collidingAtoms.x = prefixScanNumberOfAtomsInCell[cell] + 0;
@@ -424,8 +354,6 @@ __global__ void collide( double3 *vel,
                 
                 ProbCol = d_alpha * d_loopsPerCollision * d_dt / cellVolume * magVrel * crossSection / lambda;
                 
-                //        printf("cell[%i]]: Nc = %i, Mc = %i, ProbCol = %g, E[col] = %g\n", cell, numberOfAtomsInCell, Ncol, ProbCol, Ncol*ProbCol );
-                
                 // Collide with the collision probability.
                 if ( ProbCol > curand_uniform_double ( &l_rngState ) ) {
                     // Find centre of mass velocities.
@@ -437,17 +365,16 @@ __global__ void collide( double3 *vel,
                     
                     vel[collidingAtoms.x] = velcm - 0.5 * newVel;
                     vel[collidingAtoms.y] = velcm + 0.5 * newVel;
-                    
-                    //            atomicAdd( &collisionCount[cell], d_alpha );
-                    collisionCount[cell] += d_alpha;
+//                    collisionCount[cell] += d_alpha;
+                    collisionCount[cell]++;
                 }
                 
                 rngState[cell] = l_rngState;
                 
             }
         }
-        
     }
+
     return;
 }
 
@@ -479,65 +406,4 @@ __device__ double3 getRandomPointOnSphere( curandStatePhilox4_32_10_t *rngState 
     double3 pointOnSphere = make_double3( r1.x, r1.y, r2 ) * rsqrt( r1.x*r1.x + r1.y*r1.y + r2*r2 );
     
     return pointOnSphere;
-}
-
-__global__ void shmemTest( double3 *vel,
-                          double3 *vout,
-                          int     *prefixScanNumberOfAtomsInCell,
-                          curandStatePhilox4_32_10_t *rngState )
-{
-    int cell   = blockIdx.x;
-    int numberOfAtomsInCell = prefixScanNumberOfAtomsInCell[cell+1] - prefixScanNumberOfAtomsInCell[cell];
-    int g_atom = 0;
-    
-    __shared__ double3 sh_vel[MAXATOMS];
-    __syncthreads();
-    
-    if (numberOfAtomsInCell > MAXATOMS) {
-        numberOfAtomsInCell = MAXATOMS;
-    }
-    
-    for ( int l_atom = threadIdx.x;
-         l_atom < numberOfAtomsInCell;
-         l_atom += blockDim.x )
-    {
-        g_atom = prefixScanNumberOfAtomsInCell[cell] + l_atom;
-        
-        sh_vel[l_atom] = vel[g_atom];
-    }
-    __syncthreads();
-    
-    for ( int l_collision = threadIdx.x;
-                 l_collision < 100;
-                l_collision += blockDim.x )
-    {
-        int g_collisionId =  l_collision%64 + cell*blockDim.x;
-        curandStatePhilox4_32_10_t l_rngState = rngState[g_collisionId];
-        
-        int2 collidingAtoms = {0,0};
-        
-        if (numberOfAtomsInCell < 2) {
-            return;
-        }
-        else if (numberOfAtomsInCell == 2) {
-            collidingAtoms.x = 0;
-            collidingAtoms.y = 1;
-        }
-        else {
-            collidingAtoms = chooseCollidingAtoms( numberOfAtomsInCell, &l_rngState );
-        }
-        
-        int2 g_collidingAtoms = prefixScanNumberOfAtomsInCell[cell] + collidingAtoms;
-        
-        if (vel[g_collidingAtoms.x].x != sh_vel[collidingAtoms.x].x) {
-            printf("g_vel[%i] = {%g, %g, %g}, sh_vel[%i] = {%g, %g, %g}, cell%i\n", g_collidingAtoms.x, vel[g_collidingAtoms.x].x, vel[g_collidingAtoms.x].y, vel[g_collidingAtoms.x].z, collidingAtoms.x, sh_vel[collidingAtoms.x].x, sh_vel[collidingAtoms.x].y, sh_vel[collidingAtoms.x].z, cell);
-        }
-        rngState[g_collisionId] = l_rngState;
-        
-    }
-    
-    
-    __syncthreads();
-    
-    return;
 }

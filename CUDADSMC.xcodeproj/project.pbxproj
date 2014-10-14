@@ -30,8 +30,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		1D18DEDA19DF8F80000F4224 /* evaporation.cu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = evaporation.cu; path = src/evaporation.cu; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
-		1D18DEDB19DF8F80000F4224 /* evaporation.cuh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = evaporation.cuh; path = src/evaporation.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		1D94869C198B069400324396 /* setUp.cu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = setUp.cu; path = src/setUp.cu; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		1D94869D198B099300324396 /* libcublas.5.5.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libcublas.5.5.dylib; path = "../../../../../Developer/NVIDIA/CUDA-5.5/lib/libcublas.5.5.dylib"; sourceTree = "<group>"; };
 		1D94869F198B09AB00324396 /* libcurand.5.5.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libcurand.5.5.dylib; path = "../../../../../Developer/NVIDIA/CUDA-5.5/lib/libcurand.5.5.dylib"; sourceTree = "<group>"; };
@@ -45,24 +43,17 @@
 		1DD39FB4198B5041007645E2 /* initialSystemParameters.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = initialSystemParameters.cuh; path = include/initialSystemParameters.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		1DD5281F19B715840058546E /* energyComparison.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = energyComparison.py; sourceTree = "<group>"; };
 		1DE20FC119AFEB9C00B7E8EA /* energyChecker.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = energyChecker.py; sourceTree = "<group>"; };
-		1DF72A081995B3D500E6659A /* statTests.cu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = statTests.cu; path = src/statTests.cu; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
-		1DF72A091995B6FE00E6659A /* statTests.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = statTests.cuh; path = include/statTests.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		443C4637198A00C50079A2C8 /* CUDADSMC */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = CUDADSMC; sourceTree = BUILT_PRODUCTS_DIR; };
 		443C463C198A00C50079A2C8 /* CUDADSMC.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = CUDADSMC.1; sourceTree = "<group>"; };
 		443C4643198A01170079A2C8 /* moveAtoms.cu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = moveAtoms.cu; path = src/moveAtoms.cu; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		443C4645198B04E60079A2C8 /* main.cu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = main.cu; path = src/main.cu; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
-		443C464719930AC60079A2C8 /* moveTest.cu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = moveTest.cu; path = src/moveTest.cu; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		44570C9F19A3075A003541D9 /* collisions.cu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = collisions.cu; path = src/collisions.cu; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		44570CA019A30781003541D9 /* collisions.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = collisions.cuh; path = include/collisions.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		44570CA119A310CD003541D9 /* declareInitialSystemParameters.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = declareInitialSystemParameters.cuh; path = include/declareInitialSystemParameters.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		4498B4611999C2D400305A43 /* moveAtoms.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = moveAtoms.cuh; path = include/moveAtoms.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		4498B4631999C57000305A43 /* vectorMath.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = vectorMath.cuh; path = include/vectorMath.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		449EFDC019BD2736000E8B37 /* collisionChecker.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = collisionChecker.py; sourceTree = "<group>"; };
-		44B75D6D19C15D41000FA0E7 /* spinEvolution.cu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = spinEvolution.cu; path = src/spinEvolution.cu; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
-		44B75D6E19C15D76000FA0E7 /* spinEvolution.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = spinEvolution.cuh; path = include/spinEvolution.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		44B75D6F19C42FC7000FA0E7 /* deviceSystemParameters.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = deviceSystemParameters.cuh; path = include/deviceSystemParameters.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
-		44B75D7019C7B685000FA0E7 /* wavefunctionChecker.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = wavefunctionChecker.py; sourceTree = "<group>"; };
-		44D2737C19B82A17003DC8A8 /* collideTest.cu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = collideTest.cu; path = src/collideTest.cu; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		44D2EA1819AEF78B00441BB7 /* declareDeviceSystemParameters.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = declareDeviceSystemParameters.cuh; path = include/declareDeviceSystemParameters.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 /* End PBXFileReference section */
 
@@ -90,12 +81,9 @@
 				1DD39FB1198B4BD5007645E2 /* setUp.cuh */,
 				4498B4611999C2D400305A43 /* moveAtoms.cuh */,
 				44570CA019A30781003541D9 /* collisions.cuh */,
-				44B75D6E19C15D76000FA0E7 /* spinEvolution.cuh */,
-				1D18DEDB19DF8F80000F4224 /* evaporation.cuh */,
 				4498B4631999C57000305A43 /* vectorMath.cuh */,
 				1D9486A4198B0F8A00324396 /* cudaHelpers.cuh */,
 				1DC74A22199D7DD200C41388 /* hdf5Helpers.cuh */,
-				1DF72A091995B6FE00E6659A /* statTests.cuh */,
 			);
 			name = include;
 			sourceTree = "<group>";
@@ -125,7 +113,6 @@
 				449EFDC019BD2736000E8B37 /* collisionChecker.py */,
 				1DE20FC119AFEB9C00B7E8EA /* energyChecker.py */,
 				1DD5281F19B715840058546E /* energyComparison.py */,
-				44B75D7019C7B685000FA0E7 /* wavefunctionChecker.py */,
 				1D9486A6198B10A800324396 /* Makefile */,
 				443C4644198A01280079A2C8 /* src */,
 				1D9486A5198B0F9B00324396 /* include */,
@@ -141,13 +128,8 @@
 				1D94869C198B069400324396 /* setUp.cu */,
 				443C4643198A01170079A2C8 /* moveAtoms.cu */,
 				44570C9F19A3075A003541D9 /* collisions.cu */,
-				44B75D6D19C15D41000FA0E7 /* spinEvolution.cu */,
-				1D18DEDA19DF8F80000F4224 /* evaporation.cu */,
 				1D9486A3198B0CAB00324396 /* cudaHelpers.cu */,
 				1DC74A21199D7DAB00C41388 /* hdf5Helpers.cu */,
-				443C464719930AC60079A2C8 /* moveTest.cu */,
-				44D2737C19B82A17003DC8A8 /* collideTest.cu */,
-				1DF72A081995B3D500E6659A /* statTests.cu */,
 			);
 			name = src;
 			sourceTree = "<group>";
