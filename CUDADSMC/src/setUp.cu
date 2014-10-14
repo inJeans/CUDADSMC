@@ -64,9 +64,9 @@ __global__ void generateInitialDist(double3 *pos,
 		curandStatePhilox4_32_10_t localrngState = rngState[atom];
 		
         pos[atom] = selectAtomInDistribution( dBdz, Temp, &localrngState );
-//        pos[atom] = make_double3( 1.e-6, 0.,-500.e-6 );
+        
 		vel[atom] = getRandomVelocity( Temp, &localrngState );
-//        vel[atom] = make_double3( 0., 0., 0. );
+        
         acc[atom] = updateAccel( pos[atom] );
         
         isSpinUp[atom] = true;
@@ -90,25 +90,14 @@ __device__ double3 getRandomVelocity( double Temp, curandStatePhilox4_32_10_t *r
 
 __device__ double3 selectAtomInDistribution( double dBdz, double Temp, curandStatePhilox4_32_10_t *rngState )
 {
-    double3 pos = make_double3( 0., 0., 0. );
     double3 r   = make_double3( 0., 0., 0. );
 
-    double meanx = 0.0;
-    double stdx  = sqrt( log( 4. ) )*d_kB*Temp / ( d_gs*d_muB*dBdz ) * 20.;
+    double max = 0.0001;
     
-    bool noAtomSelected = true;
+    double2 r1 = ( curand_uniform2_double ( &rngState[0] ) * 2. - 1. ) * max;
+    double  r2 = ( curand_uniform_double  ( &rngState[0] ) * 2. - 1. ) * max;
     
-    while (noAtomSelected) {
-        
-        r = getGaussianPoint( meanx, stdx, &rngState[0] );
-        
-        if ( pointIsInDistribution( r, dBdz, Temp, &rngState[0] ) ) {
-            
-            pos = r;
-            
-            noAtomSelected = false;
-        }
-    }
+    double3 pos = make_double3( r1.x, r1.y, r2 );
     
     return pos;
 }
@@ -116,7 +105,7 @@ __device__ double3 selectAtomInDistribution( double dBdz, double Temp, curandSta
 __device__ double3 getGaussianPoint( double mean, double std, curandStatePhilox4_32_10_t *rngState )
 {
     double2 r1 = curand_normal2_double ( &rngState[0] ) * std + mean;
-	double r2  = curand_normal_double  ( &rngState[0] ) * std + mean;
+	double  r2 = curand_normal_double  ( &rngState[0] ) * std + mean;
  
     double3 point = make_double3( r1.x, r1.y, r2 );
     
