@@ -18,7 +18,7 @@
 
 #pragma mark - Indexing
 
-double indexAtoms( double3 *d_pos, int *d_cellID )
+double indexAtoms( double3 *d_pos, int *d_cellID, int3 cellsPerDimension )
 {
     double *d_radius;
     cudaCalloc( (void **)&d_radius, numberOfAtoms, sizeof(double) );
@@ -52,7 +52,7 @@ double indexAtoms( double3 *d_pos, int *d_cellID )
 	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
 	printf("findAtomIndex:       gridSize = %i, blockSize = %i\n", gridSize, blockSize);
     
-    findAtomIndex<<<gridSize,blockSize>>>( d_pos, d_cellID, medianR, numberOfAtoms );
+    findAtomIndex<<<gridSize,blockSize>>>( d_pos, d_cellID, medianR, numberOfAtoms, cellsPerDimension );
     
     cudaFree( d_radius );
     
@@ -104,7 +104,7 @@ __global__ void getMedian( double *v, double *median, int N)
     return;
 }
 
-__global__ void findAtomIndex( double3 *pos, int *cellID, double medianR, int numberOfAtoms )
+__global__ void findAtomIndex( double3 *pos, int *cellID, double medianR, int numberOfAtoms, int3 cellsPerDimension )
 {
     for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
 		 atom < numberOfAtoms;
@@ -113,21 +113,22 @@ __global__ void findAtomIndex( double3 *pos, int *cellID, double medianR, int nu
         double3 l_pos = pos[atom];
         
         double3 gridMin    = getGridMin( medianR );
-        double3 cellLength = getCellLength( medianR );
+        double3 cellLength = getCellLength( medianR,
+                                            cellsPerDimension );
     
         int3 cellIndices = getCellIndices( l_pos,
                                            gridMin,
                                            cellLength );
 		
-        cellID[atom] = getCellID( cellIndices, d_cellsPerDimension );
+        cellID[atom] = getCellID( cellIndices, cellsPerDimension );
     }
     
     return;
 }
 
-__device__ double3 getCellLength( double medianR )
+__device__ double3 getCellLength( double medianR, int3 cellsPerDimension )
 {
-    double3 cellLength = 2.0 * d_maxGridWidth / d_cellsPerDimension;
+    double3 cellLength = 2.0 * d_maxGridWidth / cellsPerDimension;
     
     return cellLength;
 }
@@ -302,6 +303,8 @@ __global__ void collide( double3 *vel,
                          int     *prefixScanNumberOfAtomsInCell,
                          int     *collisionCount,
                          double   medianR,
+                         double   alpha,
+                         int3     cellsPerDimension,
                          int      numberOfCells,
                          curandStatePhilox4_32_10_t *rngState,
                          int *cellID )
@@ -313,14 +316,15 @@ __global__ void collide( double3 *vel,
         int numberOfAtomsInCell = prefixScanNumberOfAtomsInCell[cell+1] - prefixScanNumberOfAtomsInCell[cell];
         
         if (numberOfAtomsInCell > 2) {
-            double3 cellLength = getCellLength( medianR );
+            double3 cellLength = getCellLength( medianR,
+                                                cellsPerDimension );
             
             d_dt = 1.0e-6;
             d_loopsPerCollision = 0.005 / d_dt;
             
             double cellVolume = cellLength.x * cellLength.y * cellLength.z;
             double Mc = 0.5 * (numberOfAtomsInCell - 1) * numberOfAtomsInCell;
-            double lambda = ceil( Mc * d_alpha * d_loopsPerCollision * d_dt * sigvrmax[cell] / cellVolume ) / Mc;
+            double lambda = ceil( Mc * alpha * d_loopsPerCollision * d_dt * sigvrmax[cell] / cellVolume ) / Mc;
             int Ncol = Mc*lambda;
             
             double3 velcm, newVel, pointOnSphere;
@@ -352,7 +356,7 @@ __global__ void collide( double3 *vel,
                     sigvrmax[cell] = magVrel * crossSection;
                 }
                 
-                ProbCol = d_alpha * d_loopsPerCollision * d_dt / cellVolume * magVrel * crossSection / lambda;
+                ProbCol = alpha * d_loopsPerCollision * d_dt / cellVolume * magVrel * crossSection / lambda;
                 
                 // Collide with the collision probability.
                 if ( ProbCol > curand_uniform_double ( &l_rngState ) ) {

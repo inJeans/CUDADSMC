@@ -15,7 +15,7 @@
 #include "deviceSystemParameters.cuh"
 
 #pragma mark - Random Number Generator
-int findRNGArrayLength( void )
+int findRNGArrayLength( int numberOfCells )
 {
     int sizeOfRNG = 0;
     

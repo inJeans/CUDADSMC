@@ -13,9 +13,10 @@
 
 #pragma mark -
 
+int    numberOfCells;
+int3   cellsPerDimension;
+double alpha;
 int    numberOfAtoms = 1e3;
-int3   cellsPerDimension = { 10, 10, 10 };
-int    numberOfCells = cellsPerDimension.x*cellsPerDimension.y*cellsPerDimension.z;
 double dt = 5.0e-6;
 
 int numberOfPrints = 50;

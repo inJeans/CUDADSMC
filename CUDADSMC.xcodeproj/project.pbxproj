@@ -30,6 +30,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1D6D1EAA19EE44C0002266A6 /* homogeneousGasCollisions.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = homogeneousGasCollisions.py; sourceTree = "<group>"; };
 		1D94869C198B069400324396 /* setUp.cu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = setUp.cu; path = src/setUp.cu; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		1D94869D198B099300324396 /* libcublas.5.5.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libcublas.5.5.dylib; path = "../../../../../Developer/NVIDIA/CUDA-5.5/lib/libcublas.5.5.dylib"; sourceTree = "<group>"; };
 		1D94869F198B09AB00324396 /* libcurand.5.5.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libcurand.5.5.dylib; path = "../../../../../Developer/NVIDIA/CUDA-5.5/lib/libcurand.5.5.dylib"; sourceTree = "<group>"; };
@@ -111,6 +112,7 @@
 			isa = PBXGroup;
 			children = (
 				449EFDC019BD2736000E8B37 /* collisionChecker.py */,
+				1D6D1EAA19EE44C0002266A6 /* homogeneousGasCollisions.py */,
 				1DE20FC119AFEB9C00B7E8EA /* energyChecker.py */,
 				1DD5281F19B715840058546E /* energyComparison.py */,
 				1D9486A6198B10A800324396 /* Makefile */,

@@ -30,6 +30,22 @@ char groupname[] = "/atomData";
 
 int main(int argc, const char * argv[])
 {
+#pragma mark - Read commandline arguments
+    if ( argc == 3 )
+    {
+        int Nc = atoi(argv[1]);
+        cellsPerDimension = make_int3( Nc, Nc, Nc );
+        numberOfCells = Nc*Nc*Nc;
+        
+        numberOfAtoms = atoi(argv[2]);
+        alpha = 1e10 / numberOfAtoms;
+    }
+    else if( argc > 3 )
+    {
+        printf("Too many arguments supplied.\n");
+        return 0;
+    }
+    
 #pragma mark - Set up CUDA device
 	// Flush device (useful for profiling)
     cudaDeviceReset();
@@ -42,7 +58,7 @@ int main(int argc, const char * argv[])
     
 #pragma mark - Memory Allocation
     
-    int sizeOfRNG = findRNGArrayLength( );
+    int sizeOfRNG = findRNGArrayLength( numberOfCells );
 	
 	curandStatePhilox4_32_10_t *d_rngStates;
 	cudaMalloc( (void **)&d_rngStates, sizeOfRNG*sizeof(curandStatePhilox4_32_10_t) );
@@ -87,22 +103,8 @@ int main(int argc, const char * argv[])
     thrust::device_ptr<int> th_prefixScanNumberOfAtomsInCell = thrust::device_pointer_cast( d_prefixScanNumberOfAtomsInCell );
     
 #pragma mark - Set up atom system
-    
-    if( argc == 2 )
-	{
-		dt = atof(argv[1]);
-		printf("dt = %g\n", dt);
-	}
-	else if( argc > 2 )
-	{
-		printf("Too many arguments supplied.\n");
-		return 0;
-	}
-	else
-	{
-		dt = 1.0e-6;
-	}
 	
+    dt = 1.e-6;
     loopsPerCollision = 0.005 / dt;
     
 	copyConstantsToDevice<<<1,1>>>( dt );
@@ -138,7 +140,8 @@ int main(int argc, const char * argv[])
     initSigvrmax( d_sigvrmax, numberOfCells );
     
     medianR = indexAtoms( d_pos,
-                          d_cellID );
+                          d_cellID,
+                          cellsPerDimension );
     sortArrays( d_pos,
                 d_vel,
                 d_acc,
@@ -245,7 +248,8 @@ int main(int argc, const char * argv[])
 #pragma mark Collide Atoms
         
         medianR = indexAtoms( d_pos,
-                              d_cellID );
+                              d_cellID,
+                              cellsPerDimension );
         
         sortArrays( d_pos,
                     d_vel,
@@ -270,6 +274,8 @@ int main(int argc, const char * argv[])
                                       d_prefixScanNumberOfAtomsInCell,
                                       d_collisionCount,
                                       medianR,
+                                      alpha,
+                                      cellsPerDimension,
                                       numberOfCells,
                                       d_rngStates,
                                       d_cellID );

@@ -12,14 +12,14 @@
 #include "vectorMath.cuh"
 #include "hdf5.h"
 
-double  indexAtoms( double3 *d_pos, int *d_cellID );
+double indexAtoms( double3 *d_pos, int *d_cellID, int3 cellsPerDimension );
 __global__ void calculateRadius( double3 *pos, double *radius, int numberOfAtoms );
 double findMedian( double *v, int N );
 __global__ void getMedian( double *v, double *median, int numberOfAtoms);
-__global__ void findAtomIndex( double3 *pos, int *cellID, double medianR, int numberOfAtoms );
+__global__ void findAtomIndex( double3 *pos, int *cellID, double medianR, int numberOfAtoms, int3 cellsPerDimension );
 __device__ int3 getCellIndices( double3 pos, double3 gridMin, double3 cellLength );
-__device__ double3 getCellLength( double medianR );
-__device__ int getCellID( int3 index, int3 cellsPerDimensions );
+__device__ double3 getCellLength( double medianR, int3 cellsPerDimension );
+__device__ int getCellID( int3 index, int3 cellsPerDimension );
 __device__ double3 getGridMin( double medianR );
 __global__ void cellStartandEndKernel( int *cellID, int2 *cellStartEnd, int numberOfAtoms );
 __device__ void serialCellStartandEndKernel( int *cellID, int2 *cellStartEnd, int numberOfAtoms );
@@ -34,6 +34,8 @@ __global__ void collide( double3 *vel,
                          int     *prefixScanNumberOfAtomsInCell,
                          int     *collisionCount,
                          double   medianR,
+                         double   alpha,
+                         int3     cellsPerDimension,
                          int      numberOfCells,
                          curandStatePhilox4_32_10_t *rngState,
                          int *cellID );
