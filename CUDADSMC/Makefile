@@ -25,6 +25,8 @@ ifeq ($(UNAME_S),Darwin) #If building on an OSX system
 	CUDA_INC = -I/Developer/NVIDIA/CUDA-6.5/include
 	CUDA_LIB = -L/Developer/NVIDIA/CUDA-6.5/lib
 	NVCC     = $(CUDA_PATH)/bin/nvcc -ccbin $(CLANG)
+	INCLUDE = -I /usr/local/hdf5/include
+	LIB = -L /usr/local/hdf5/lib
 else                     #If building on a Linux system
 	CUDA_INC = -I/usr/local/cuda-5.5/include
 	UNAME_P := $(shell uname -p)
@@ -34,6 +36,8 @@ else                     #If building on a Linux system
 		CUDA_LIB = -L/usr/local/cuda-5.5/lib
 	endif
 	NVCC = nvcc
+	INCLUDE = -I /usr/local/hdf5/1.8.5/include
+	LIB = -L /usr/local/hdf5/1.8.5/lib
 endif
 
 #NVCCFLAGS = -m 64 --relocatable-device-code=true -arch=compute_30 -code=sm_30,compute_30
@@ -47,8 +51,7 @@ EXEC = $(BUILDDIR)CUDADSMC
 TESTMOTION = $(BUILDDIR)testMotion
 TESTCOLLISIONS = $(BUILDDIR)testCollisions
 
-INCLUDE = -I include/ -I /usr/local/hdf5/include
-LIB     = -L /usr/local/hdf5/lib
+INCLUDE += -I include/
 
 all: $(EXEC)
 
