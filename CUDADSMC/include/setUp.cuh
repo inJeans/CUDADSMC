@@ -16,8 +16,18 @@
 
 int findRNGArrayLength( int numberOfCells );
 
+void h_initRNG( curandStatePhilox4_32_10_t *rngState,
+                int numberOfAtoms );
+
 __global__ void initRNG( curandStatePhilox4_32_10_t *rngState,
                          int numberOfAtoms );
+
+void h_generateInitialDist( double3 *pos,
+                            double3 *vel,
+                            double3 *acc,
+                            int      numberOfAtoms,
+                            double   Temp,
+                            curandStatePhilox4_32_10_t *rngState );
 
 __global__ void generateInitialDist(double3 *pos,
                                     double3 *vel,

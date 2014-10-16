@@ -9,8 +9,6 @@
 #ifndef CUDADSMC_initialSystemParameters_cuh
 #define CUDADSMC_initialSystemParameters_cuh
 
-#define NUM_THREADS 128
-
 #pragma mark -
 
 int3   cellsPerDimension = {5, 5, 5};

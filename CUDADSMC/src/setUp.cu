@@ -29,6 +29,36 @@ int findRNGArrayLength( int numberOfCells )
     
     return sizeOfRNG;
 }
+void h_initRNG( curandStatePhilox4_32_10_t *d_rngStates, int sizeOfRNG )
+{
+    int blockSize;
+    int gridSize;
+    
+#ifdef CUDA65
+    int minGridSize;
+    
+    cudaOccupancyMaxPotentialBlockSize( &minGridSize,
+                                        &blockSize,
+                                        (const void *) initRNG,
+                                        0,
+                                        sizeOfRNG );
+    gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
+#else
+    int device;
+    cudaGetDevice ( &device );
+    int numSMs;
+    cudaDeviceGetAttribute( &numSMs,
+                            cudaDevAttrMultiProcessorCount,
+                            device);
+    
+    gridSize = 256*numSMs;
+    blockSize = NUM_THREADS;
+#endif
+    
+    initRNG<<<gridSize,blockSize>>>( d_rngStates, sizeOfRNG );
+    
+    return;
+}
 
 __global__ void initRNG( curandStatePhilox4_32_10_t *rngState, int numberOfAtoms )
 {
@@ -45,6 +75,47 @@ __global__ void initRNG( curandStatePhilox4_32_10_t *rngState, int numberOfAtoms
 }
 
 #pragma mark - Initial Distribution
+
+void h_generateInitialDist( double3 *d_pos,
+                            double3 *d_vel,
+                            double3 *d_acc,
+                            int      numberOfAtoms,
+                            double   Temp,
+                            curandStatePhilox4_32_10_t *d_rngStates )
+{
+    int blockSize;
+    int gridSize;
+    
+#ifdef CUDA65
+    int minGridSize;
+    
+    cudaOccupancyMaxPotentialBlockSize( &minGridSize,
+                                        &blockSize,
+                                        (const void *) generateInitialDist,
+                                        0,
+                                        sizeOfRNG );
+    gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
+#else
+    int device;
+    cudaGetDevice ( &device );
+    int numSMs;
+    cudaDeviceGetAttribute( &numSMs,
+                            cudaDevAttrMultiProcessorCount,
+                            device);
+    
+    gridSize = 256*numSMs;
+    blockSize = NUM_THREADS;
+#endif
+    
+    generateInitialDist<<<gridSize,blockSize>>>( d_pos,
+                                                 d_vel,
+                                                 d_acc,
+                                                 numberOfAtoms,
+                                                 Tinit,
+                                                 d_rngStates );
+    
+    return;
+}
 
 // Kernel to generate the initial distribution
 __global__ void generateInitialDist(double3 *pos,

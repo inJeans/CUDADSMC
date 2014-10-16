@@ -109,33 +109,14 @@ int main(int argc, const char * argv[])
     
 	copyConstantsToDevice<<<1,1>>>( dt );
 	
-	int blockSize;
-	int minGridSize;
-	
-	int gridSize;
-	
-	cudaOccupancyMaxPotentialBlockSize( &minGridSize,
-                                        &blockSize,
-                                        (const void *) initRNG,
-                                        0,
-                                        sizeOfRNG );
-	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
-	printf("initRNG:             gridSize = %i, blockSize = %i\n", gridSize, blockSize);
-	initRNG<<<gridSize,blockSize>>>( d_rngStates, sizeOfRNG );
+    h_initRNG( d_rngStates, numberOfAtoms );
     
-    cudaOccupancyMaxPotentialBlockSize( &minGridSize,
-                                        &blockSize,
-                                        (const void *) generateInitialDist,
-                                        0,
-                                        numberOfAtoms );
-	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
-    printf("generateInitialDist: gridSize = %i, blockSize = %i\n", gridSize, blockSize);
-    generateInitialDist<<<gridSize,blockSize>>>( d_pos,
-                                                 d_vel,
-                                                 d_acc,
-                                                 numberOfAtoms,
-                                                 Tinit,
-                                                 d_rngStates );
+    h_generateInitialDist( d_pos,
+                           d_vel,
+                           d_acc,
+                           numberOfAtoms,
+                           Tinit,
+                           d_rngStates );
     
     initSigvrmax( d_sigvrmax, numberOfCells );
     
@@ -233,15 +214,27 @@ int main(int argc, const char * argv[])
                    &numberOfAtoms );
     
 #pragma mark - Main Loop
+    int blockSize;
+    int gridSize;
+    
+#ifdef CUDA65
+    int minGridSize;
     
     cudaOccupancyMaxPotentialBlockSize( &minGridSize,
                                         &blockSize,
                                         (const void *) moveAtoms,
                                         0,
-                                        numberOfAtoms );
-	
-	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
-    printf("moveAtoms:           gridSize = %i, blockSize = %i\n", gridSize, blockSize);
+                                        sizeOfRNG );
+    gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
+#else
+    int device;
+    cudaGetDevice ( &device );
+    cudaDeviceGetAttribute( &numSMs,
+                            cudaDevAttrMultiProcessorCount,
+                            device);
+    gridSize = 256*numSMs;
+    blockSize = NUM_THREADS;
+#endif
     
     for (int i=0; i<numberOfPrints; i++)
     {

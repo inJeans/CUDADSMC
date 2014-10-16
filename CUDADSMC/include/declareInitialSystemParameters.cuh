@@ -11,6 +11,7 @@
 
 #define MAXATOMS 55
 #define MAXSUBCELLS 64
+#define NUM_THREADS 512
 
 #pragma mark -
 

@@ -23,40 +23,57 @@ double indexAtoms( double3 *d_pos, int *d_cellID, int3 cellsPerDimension )
     double *d_radius;
     cudaCalloc( (void **)&d_radius, numberOfAtoms, sizeof(double) );
     
-    int blockSize;
-	int minGridSize;
-	int gridSize;
-	
-	cudaOccupancyMaxPotentialBlockSize( &minGridSize,
-                                        &blockSize,
-                                        (const void *) calculateRadius,
-                                        0,
-                                        numberOfAtoms );
-	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
-	printf("calculateRadius:     gridSize = %i, blockSize = %i\n", gridSize, blockSize);
-    
-	calculateRadius<<<gridSize,blockSize>>>( d_pos,
-                                             d_radius,
-                                             numberOfAtoms );
+	h_calculateRadius( d_pos,
+                       d_radius,
+                       numberOfAtoms );
     
     double medianR = findMedian( d_radius,
                                  numberOfAtoms );
     
     printf("The median radius is %f\n", medianR );
     
-    cudaOccupancyMaxPotentialBlockSize( &minGridSize,
-                                        &blockSize,
-                                        (const void *) findAtomIndex,
-                                        0,
-                                        numberOfAtoms );
-	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
-	printf("findAtomIndex:       gridSize = %i, blockSize = %i\n", gridSize, blockSize);
-    
-    findAtomIndex<<<gridSize,blockSize>>>( d_pos, d_cellID, medianR, numberOfAtoms, cellsPerDimension );
+    h_findAtomIndex( d_pos,
+                     d_cellID,
+                     medianR,
+                     numberOfAtoms,
+                     cellsPerDimension );
     
     cudaFree( d_radius );
     
     return medianR;
+}
+
+void h_calculateRadius( double3 *d_pos, double *d_radius, int numberOfAtoms )
+{
+    int blockSize;
+    int gridSize;
+    
+#ifdef CUDA65
+    int minGridSize;
+    
+    cudaOccupancyMaxPotentialBlockSize( &minGridSize,
+                                        &blockSize,
+                                        (const void *) calculateRadius,
+                                        0,
+                                        sizeOfRNG );
+    gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
+#else
+    int device;
+    cudaGetDevice ( &device );
+    int numSMs;
+    cudaDeviceGetAttribute( &numSMs,
+                            cudaDevAttrMultiProcessorCount,
+                            device);
+    
+    gridSize = 256*numSMs;
+    blockSize = NUM_THREADS;
+#endif
+    
+    calculateRadius<<<gridSize,blockSize>>>( d_pos,
+                                             d_radius,
+                                             numberOfAtoms );
+    
+    return;
 }
 
 __global__ void calculateRadius( double3 *pos, double *radius, int numberOfAtoms )
@@ -100,6 +117,41 @@ __global__ void getMedian( double *v, double *median, int N)
     else {
         median[0] = v[(N-1)/2];
     }
+    
+    return;
+}
+
+void h_findAtomIndex( double3 *d_pos, int *d_cellID, double medianR, int numberOfAtoms, int3 cellsPerDimension )
+{
+    int blockSize;
+    int gridSize;
+    
+#ifdef CUDA65
+    int minGridSize;
+    
+    cudaOccupancyMaxPotentialBlockSize( &minGridSize,
+                                        &blockSize,
+                                        (const void *) calculateRadius,
+                                        0,
+                                        sizeOfRNG );
+    gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
+#else
+    int device;
+    cudaGetDevice ( &device );
+    int numSMs;
+    cudaDeviceGetAttribute( &numSMs,
+                            cudaDevAttrMultiProcessorCount,
+                            device);
+    
+    gridSize = 256*numSMs;
+    blockSize = NUM_THREADS;
+#endif
+    
+    findAtomIndex<<<gridSize,blockSize>>>( d_pos,
+                                           d_cellID,
+                                           medianR,
+                                           numberOfAtoms,
+                                           cellsPerDimension );
     
     return;
 }
