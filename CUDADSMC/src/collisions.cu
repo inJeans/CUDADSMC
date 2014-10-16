@@ -393,13 +393,10 @@ __global__ void collide( double3 *vel,
                 
                 int2 collidingAtoms = {0,0};
                 
-                if (numberOfAtomsInCell == 2) {
-                    collidingAtoms.x = prefixScanNumberOfAtomsInCell[cell] + 0;
-                    collidingAtoms.y = prefixScanNumberOfAtomsInCell[cell] + 1;
-                }
-                else {
-                    collidingAtoms = prefixScanNumberOfAtomsInCell[cell] + chooseCollidingAtoms( numberOfAtomsInCell, &l_rngState );
-                }
+                collidingAtoms = chooseCollidingAtoms( numberOfAtomsInCell,
+                                                       prefixScanNumberOfAtomsInCell,
+                                                       &l_rngState,
+                                                       cell );
                 
                 magVrel = calculateRelativeVelocity( vel, collidingAtoms );
                 
@@ -434,13 +431,21 @@ __global__ void collide( double3 *vel,
     return;
 }
 
-__device__ int2 chooseCollidingAtoms( int numberOfAtomsInCell, curandStatePhilox4_32_10_t *rngState )
+__device__ int2 chooseCollidingAtoms( int numberOfAtomsInCell, int *prefixScanNumberOfAtomsInCell, curandStatePhilox4_32_10_t *rngState, int cell )
 {
     int2 collidingAtoms = { 0, 0 };
     
-    // Randomly choose particles in this cell to collide.
-    while (collidingAtoms.x == collidingAtoms.y) {
-        collidingAtoms = double2Toint2_rd( curand_uniform2_double ( &rngState[0] ) * (numberOfAtomsInCell-1) );
+    if (numberOfAtomsInCell == 2) {
+        collidingAtoms.x = prefixScanNumberOfAtomsInCell[cell] + 0;
+        collidingAtoms.y = prefixScanNumberOfAtomsInCell[cell] + 1;
+    }
+    else {
+        // Randomly choose particles in this cell to collide.
+        while (collidingAtoms.x == collidingAtoms.y) {
+            collidingAtoms = double2Toint2_rd( curand_uniform2_double ( &rngState[0] ) * (numberOfAtomsInCell-1) );
+        }
+        
+        collidingAtoms = prefixScanNumberOfAtomsInCell[cell] + collidingAtoms;
     }
     
     return collidingAtoms;
