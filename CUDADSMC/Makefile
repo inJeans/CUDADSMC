@@ -57,7 +57,7 @@ all: $(EXEC)
 
 debug: NVCCFLAGS += -g -G
 debug: clean
-debug: $(TESTCOLLISIONS)
+debug: $(EXEC)
 
 profile: NVCCFLAGS += -pg
 profile: $(EXEC)

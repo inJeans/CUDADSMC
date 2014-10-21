@@ -367,7 +367,7 @@ __global__ void collide( double3 *vel,
     {
         int numberOfAtomsInCell = prefixScanNumberOfAtomsInCell[cell+1] - prefixScanNumberOfAtomsInCell[cell];
         
-        if (numberOfAtomsInCell > 2) {
+        if (numberOfAtomsInCell > 0) {
             double3 cellLength = getCellLength( medianR,
                                                 cellsPerDimension );
             
@@ -378,6 +378,10 @@ __global__ void collide( double3 *vel,
             double Mc = 0.5 * (numberOfAtomsInCell - 1) * numberOfAtomsInCell;
             double lambda = ceil( Mc * alpha * d_loopsPerCollision * d_dt * sigvrmax[cell] / cellVolume ) / Mc;
             int Ncol = Mc*lambda;
+            
+            if (numberOfAtomsInCell ==1) {
+                Ncol = 1;
+            }
             
             double3 velcm, newVel, pointOnSphere;
             
@@ -395,6 +399,7 @@ __global__ void collide( double3 *vel,
                 
                 collidingAtoms = chooseCollidingAtoms( numberOfAtomsInCell,
                                                        prefixScanNumberOfAtomsInCell,
+                                                       cellsPerDimension,
                                                        &l_rngState,
                                                        cell );
                 
@@ -431,10 +436,62 @@ __global__ void collide( double3 *vel,
     return;
 }
 
-__device__ int2 chooseCollidingAtoms( int numberOfAtomsInCell, int *prefixScanNumberOfAtomsInCell, curandStatePhilox4_32_10_t *rngState, int cell )
+__device__ int2 chooseCollidingAtoms( int numberOfAtomsInCell, int *prefixScanNumberOfAtomsInCell, int3 cellsPerDimension, curandStatePhilox4_32_10_t *rngState, int cell )
 {
     int2 collidingAtoms = { 0, 0 };
     
+    if (numberOfAtomsInCell == 1) {
+        
+        collidingAtoms.x = prefixScanNumberOfAtomsInCell[cell] + 0;
+        
+        int3 cellIndices = extractCellIndices( cell, cellsPerDimension );
+        
+        int3 newCellIndices = make_int3( 0, 0, 0 );
+        int  newCell = 0;
+        int  newCellPopulation = 0;
+        
+        while (newCellPopulation == 0) {
+            newCellIndices.x = cellIndices.x + 2 * ( round(curand_uniform_double( &rngState[0] )) - 0.5 );
+            newCellIndices.y = cellIndices.y + 2 * ( round(curand_uniform_double( &rngState[0] )) - 0.5 );
+            newCellIndices.z = cellIndices.z + 2 * ( round(curand_uniform_double( &rngState[0] )) - 0.5 );
+            
+            if (newCellIndices.x < 0) {
+                newCellIndices.x = 0;
+            }
+            
+            if (newCellIndices.y < 0) {
+                newCellIndices.y = 0;
+            }
+            
+            if (newCellIndices.z < 0) {
+                newCellIndices.z = 0;
+            }
+            
+            if (newCellIndices.x > cellsPerDimension.x-1) {
+                newCellIndices.x = cellsPerDimension.x-1;
+            }
+            
+            if (newCellIndices.y > cellsPerDimension.z-1) {
+                newCellIndices.y = cellsPerDimension.z-1;
+            }
+            
+            if (newCellIndices.z > cellsPerDimension.z-1) {
+                newCellIndices.z = cellsPerDimension.z-1;
+            }
+            
+            newCell = getCellID( newCellIndices, cellsPerDimension );
+            
+            newCellPopulation = prefixScanNumberOfAtomsInCell[newCell+1] - prefixScanNumberOfAtomsInCell[newCell];
+            
+//            printf("currentCell = {%i,%i,%i}, newCell = {%i,%i,%i}\n", cellIndices.x, cellIndices.y, cellIndices.z, newCellIndices.x, newCellIndices.y, newCellIndices.z);
+        }
+        
+        // Randomly choose particles in this cell to collide.
+        collidingAtoms.y = prefixScanNumberOfAtomsInCell[newCell] + (int)floor( curand_uniform_double ( &rngState[0] ) * (newCellPopulation-1) );
+//        collidingAtoms.y = collidingAtoms.x;
+        
+        printf("CollidingAtoms = {%i,%i}, newCell = {%i,%i,%i}, newCell = %i\n", collidingAtoms.x, collidingAtoms.y, newCellIndices.x, newCellIndices.y, newCellIndices.z, newCell );
+    }
     if (numberOfAtomsInCell == 2) {
         collidingAtoms.x = prefixScanNumberOfAtomsInCell[cell] + 0;
         collidingAtoms.y = prefixScanNumberOfAtomsInCell[cell] + 1;
@@ -447,8 +504,18 @@ __device__ int2 chooseCollidingAtoms( int numberOfAtomsInCell, int *prefixScanNu
         
         collidingAtoms = prefixScanNumberOfAtomsInCell[cell] + collidingAtoms;
     }
-    
     return collidingAtoms;
+}
+
+__device__ int3 extractCellIndices( int cell, int3 cellsPerDimension )
+{
+    int3 cellIndices = make_int3( 0, 0, 0 );
+    
+    cellIndices.z = cell / (cellsPerDimension.x*cellsPerDimension.y);
+    cellIndices.y = (cell - cellIndices.z*cellsPerDimension.x*cellsPerDimension.y) / cellsPerDimension.x;
+    cellIndices.x = cell - cellIndices.z*cellsPerDimension.x*cellsPerDimension.y - cellIndices.y*cellsPerDimension.x;
+    
+    return cellIndices;
 }
 
 __device__ double calculateRelativeVelocity( double3 *vel, int2 collidingAtoms )

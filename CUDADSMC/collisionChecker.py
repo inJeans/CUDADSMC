@@ -23,10 +23,8 @@ T    = 20.e-6;
 dBdz = 2.5;
 
 tres = 51;
-ntrials = 1e3;
 nAtoms = 1e10;
-alpha = nAtoms / ntrials;
-nCells = 5**3 + 1;
+nCells = 10**3 + 1;
 dt = 5e-6;
 
 vtherm = np.sqrt( 8.*kB*T / (pi*mRb) );

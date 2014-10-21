@@ -41,7 +41,8 @@ __global__ void collide( double3 *vel,
                          int      numberOfCells,
                          curandStatePhilox4_32_10_t *rngState,
                          int *cellID );
-__device__ int2 chooseCollidingAtoms( int numberOfAtomsInCell, int *prefixScanNumberOfAtomsInCell, curandStatePhilox4_32_10_t *rngState, int cell );
+__device__ int2 chooseCollidingAtoms( int numberOfAtomsInCell, int *prefixScanNumberOfAtomsInCell, int3 cellsPerDimension, curandStatePhilox4_32_10_t *rngState, int cell );
+__device__ int3 extractCellIndices( int cell, int3 cellsPerDimension );
 __device__ double calculateRelativeVelocity( double3 *vel, int2 collidingAtoms );
 __device__ double3 getRandomPointOnSphere( curandStatePhilox4_32_10_t *rngState );
 
