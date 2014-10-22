@@ -19,12 +19,12 @@ int findRNGArrayLength( int numberOfCells )
 {
     int sizeOfRNG = 0;
     
-    if (numberOfAtoms > 64*numberOfCells) {
+    if (numberOfAtoms > numberOfCells) {
 		sizeOfRNG = numberOfAtoms;
 	}
 	else
 	{
-		sizeOfRNG = 64*numberOfCells;
+		sizeOfRNG = numberOfCells;
 	}
     
     return sizeOfRNG;

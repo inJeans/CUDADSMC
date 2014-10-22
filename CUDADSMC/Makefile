@@ -56,7 +56,7 @@ INCLUDE += -I include/
 all: $(EXEC)
 
 debug: NVCCFLAGS += -g -G
-debug: clean
+#debug: clean
 debug: $(EXEC)
 
 profile: NVCCFLAGS += -pg

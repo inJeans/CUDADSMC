@@ -14,7 +14,7 @@
 		<string>https://github.com/inJeans/CUDADSMC.git</string>
 	</dict>
 	<key>IDESourceControlProjectPath</key>
-	<string>CUDADSMC.xcodeproj/project.xcworkspace</string>
+	<string>CUDADSMC.xcodeproj</string>
 	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
 	<dict>
 		<key>D090475778580FCB2CADFE30922D4EFDDDC8689F</key>
