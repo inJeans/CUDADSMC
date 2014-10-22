@@ -206,11 +206,11 @@ nlfl, binslfl, patches = pl.hist(Lfl,100)
 nlfl = np.append([0], nlfl , axis=0)
 
 pl.figure(6)
-pl.plot( binski, nki, binskf, nkf, binskfl, nkfl )
+pl.plot( binski/(T*1.e6), nki, binskf/(T*1.e6), nkf, binskfl/(T*1.e6), nkfl )
 pl.xlabel(r'$E_k$ $(\mu K)$')
 
 pl.figure(7)
-pl.plot( binspi, npi, binspf, npf, binspfl, npfl )
+pl.plot( binspi/(T*1.e6), npi, binspf/(T*1.e6), npf, binspfl/(T*1.e6), npfl )
 pl.xlabel(r'$E_p$ $(\mu K)$')
 
 pl.figure(8)
