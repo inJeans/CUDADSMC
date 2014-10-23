@@ -19,7 +19,7 @@ __constant__ double d_kB   = 1.3806503e-23;	// Boltzmann's Constant
 __constant__ double d_hbar = 1.05457148e-34;	// hbar
 
 __device__ double d_meshWidth = 2.5;
-__device__ double3 d_maxGridWidth = { 0.001, 0.001, 0.001 };
+__device__ double3 d_maxGridWidth = { 0.002, 0.002, 0.002 };
 __device__ double d_dt;
 __device__ double d_dBdz = 2.5;
 __device__ double d_wavelength = 6.06012e-8;

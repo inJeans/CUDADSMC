@@ -280,8 +280,7 @@ int main(int argc, const char * argv[])
             moveAtoms<<<gridSize,blockSize>>>( d_pos,
                                                d_vel,
                                                d_acc,
-                                               numberOfAtoms,
-                                               medianR );
+                                               numberOfAtoms );
         }
         
         printf( "Number of atoms = %i, ", numberOfAtoms);

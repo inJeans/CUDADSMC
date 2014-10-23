@@ -14,7 +14,7 @@
 int3   cellsPerDimension = {5, 5, 5};
 int    numberOfCells = cellsPerDimension.x*cellsPerDimension.y*cellsPerDimension.z;
 int    numberOfAtoms = 1e3;
-double alpha = 1e10 / numberOfAtoms;
+double alpha = 1e8 / numberOfAtoms;
 double dt = 1.0e-6;
 
 int numberOfPrints = 50;

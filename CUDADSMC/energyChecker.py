@@ -23,7 +23,7 @@ T    = 20.e-6;
 dBdz = 2.5;
 
 tres = 51;
-ntrials = 1e6;
+ntrials = 1e3;
 dt = 1e-6;
 
 time = np.zeros((tres));

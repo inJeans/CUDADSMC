@@ -39,7 +39,8 @@ __global__ void generateInitialDist(double3 *pos,
 __device__ double3 getRandomVelocity( double Temp,
                                       curandStatePhilox4_32_10_t *rngState );
 
-__device__ double3 selectAtomInBox( curandStatePhilox4_32_10_t *rngState );
+__device__ double3 selectAtomInThermalDistribution( double Temp,
+                                                    curandStatePhilox4_32_10_t *rngState );
 
 __device__ double3 getGaussianPoint( double mean,
                                      double std,

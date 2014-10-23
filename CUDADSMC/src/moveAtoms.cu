@@ -22,7 +22,7 @@ __global__ void copyConstantsToDevice( double dt )
 	return;
 }
 
-__global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, int numberOfAtoms, double medianR )
+__global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, int numberOfAtoms )
 {
     for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
 		 atom < numberOfAtoms;
@@ -35,8 +35,7 @@ __global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, int numberO
 //        for (int i=0; i<d_loopsPerCollision; i++) {
             velocityVerletUpdate( &l_pos,
                                   &l_vel,
-                                  &l_acc,
-                                  medianR );
+                                  &l_acc );
 //        }
     
         pos[atom] = l_pos;
@@ -48,39 +47,21 @@ __global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, int numberO
     return;
 }
 
-__device__ void velocityVerletUpdate( double3 *pos, double3 *vel, double3 *acc, double medianR )
+__device__ void velocityVerletUpdate( double3 *pos, double3 *vel, double3 *acc )
 {
     vel[0] = updateVelHalfStep( pos[0], vel[0], acc[0] );
-    pos[0] = updatePos( pos[0], vel[0], medianR );
+    pos[0] = updatePos( pos[0], vel[0] );
     acc[0] = updateAcc( pos[0] );
     vel[0] = updateVelHalfStep( pos[0], vel[0], acc[0] );
-    
-    double3 gridMin =-1.0*d_maxGridWidth;
-    double3 gridMax = d_maxGridWidth;
-    
-    if ( pos[0].x < gridMin.x || pos[0].x > gridMax.x )
-    {
-        vel[0].x = -vel[0].x;
-    }
-    
-    if ( pos[0].y < gridMin.y || pos[0].y > gridMax.y  )
-    {
-        vel[0].y = -vel[0].y;
-    }
-    
-    if ( pos[0].z < gridMin.z || pos[0].z > gridMax.z )
-    {
-        vel[0].z = -vel[0].z;
-    }
     
     return;
 }
 
-__device__ void symplecticEulerUpdate( double3 *pos, double3 *vel, double3 *acc, double medianR )
+__device__ void symplecticEulerUpdate( double3 *pos, double3 *vel, double3 *acc )
 {
     acc[0] = updateAcc( pos[0] );
     vel[0] = updateVel( pos[0], vel[0], acc[0] );
-    pos[0] = updatePos( pos[0], vel[0], medianR );
+    pos[0] = updatePos( pos[0], vel[0] );
 }
 
 __device__ double3 updateVel( double3 pos, double3 vel, double3 acc )
@@ -93,7 +74,7 @@ __device__ double3 updateVelHalfStep( double3 pos, double3 vel, double3 acc )
     return vel + 0.5 * acc * d_dt;
 }
 
-__device__ double3 updatePos( double3 pos, double3 vel, double medianR )
+__device__ double3 updatePos( double3 pos, double3 vel )
 {
     double3 newPos = pos + vel * d_dt;
     
@@ -103,6 +84,12 @@ __device__ double3 updatePos( double3 pos, double3 vel, double medianR )
 __device__ double3 updateAcc( double3 pos )
 {
     double3 accel = make_double3( 0., 0., 0. );
+    
+    double potential = d_gs * d_muB * d_dBdz * rsqrt( pos.x*pos.x + pos.y*pos.y + 4.*pos.z*pos.z ) / d_mRb;
+    
+    accel.x =-0.5 * potential * pos.x;
+    accel.y =-0.5 * potential * pos.y;
+    accel.z =-2.0 * potential * pos.z;
     
     return accel;
 }
