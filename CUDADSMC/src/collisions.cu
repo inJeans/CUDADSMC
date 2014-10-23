@@ -440,21 +440,18 @@ __device__ int2 chooseCollidingAtoms( int numberOfAtomsInCell, int *prefixScanNu
 {
     int2 collidingAtoms = { 0, 0 };
     
-    int3 newCellIndices = make_int3( 0, 0, 0 );
-    int  newCell = 0;
-    int  newCellPopulation = 0;
-    
     if (numberOfAtomsInCell == 1) {
         
         collidingAtoms.x = prefixScanNumberOfAtomsInCell[cell] + 0;
         
         int3 cellIndices = extractCellIndices( cell, cellsPerDimension );
         
-//        int3 newCellIndices = make_int3( 0, 0, 0 );
-//        int  newCell = 0;
-//        int  newCellPopulation = 0;
+        int3 newCellIndices = make_int3( 0, 0, 0 );
+        int  newCell = 0;
+        int  newCellPopulation = 0;
         
-        while (newCellPopulation == 0) {
+        int numberOfTries = 0;
+        while (newCellPopulation == 0 && numberOfTries < 15) {
             newCellIndices.x = cellIndices.x + 2 * ( round(curand_uniform_double( &rngState[0] )) - 0.5 );
             newCellIndices.y = cellIndices.y + 2 * ( round(curand_uniform_double( &rngState[0] )) - 0.5 );
             newCellIndices.z = cellIndices.z + 2 * ( round(curand_uniform_double( &rngState[0] )) - 0.5 );
@@ -486,13 +483,12 @@ __device__ int2 chooseCollidingAtoms( int numberOfAtomsInCell, int *prefixScanNu
             newCell = getCellID( newCellIndices, cellsPerDimension );
             
             newCellPopulation = prefixScanNumberOfAtomsInCell[newCell+1] - prefixScanNumberOfAtomsInCell[newCell];
-//            newCellPopulation = 1;
+            numberOfTries++;
             
         }
         
         // Randomly choose particles in this cell to collide.
         collidingAtoms.y = prefixScanNumberOfAtomsInCell[newCell] + (int)floor( curand_uniform_double ( &rngState[0] ) * (newCellPopulation-1) );
-//        collidingAtoms.y = 200;
         
     }
     else if (numberOfAtomsInCell == 2) {
@@ -507,10 +503,6 @@ __device__ int2 chooseCollidingAtoms( int numberOfAtomsInCell, int *prefixScanNu
         
         collidingAtoms = prefixScanNumberOfAtomsInCell[cell] + collidingAtoms;
     }
-    
-//    if (collidingAtoms.x > 499 || collidingAtoms.y > 499 || collidingAtoms.x < 0 || collidingAtoms.y < 0) {
-//        printf("collidingAtoms = {%i,%i}, newCell = %i - {%i,%i,%i}, cell = %i, numberOfAtomsInCell = %i, newCellPop = %i, collidingAtoms.y = %i + %i = %i\n", collidingAtoms.x, collidingAtoms.y, newCell, newCellIndices.x, newCellIndices.y, newCellIndices.z, cell, numberOfAtomsInCell, newCellPopulation, prefixScanNumberOfAtomsInCell[newCell], (int)floor( curand_uniform_double ( &rngState[0] ) * (newCellPopulation-1) ), prefixScanNumberOfAtomsInCell[newCell] + (int)floor( curand_uniform_double ( &rngState[0] ) * (newCellPopulation-1) ));
-//    }
     
     return collidingAtoms;
 }
