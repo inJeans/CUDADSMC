@@ -180,7 +180,8 @@ __global__ void findAtomIndex( double3 *pos, int *cellID, double medianR, int nu
 
 __device__ double3 getCellLength( double medianR, int3 cellsPerDimension )
 {
-    double3 cellLength = 2.0 * d_maxGridWidth / cellsPerDimension;
+//    double3 cellLength = 2.0 * d_maxGridWidth / cellsPerDimension;
+    double3 cellLength = 2.0 * d_meshWidth * medianR / cellsPerDimension;
     
     return cellLength;
 }
@@ -212,7 +213,8 @@ __device__ int getCellID( int3 index, int3 cellsPerDimension )
 
 __device__ double3 getGridMin( double medianR )
 {
-    double3 gridMin = -1.0 * d_maxGridWidth;
+//    double3 gridMin = -1.0 * d_maxGridWidth;
+    double3 gridMin = -1.0 * d_meshWidth * medianR * make_double3( 1.0, 1.0, 1.0 );
     
     return  gridMin;
 }

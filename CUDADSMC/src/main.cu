@@ -38,7 +38,7 @@ int main(int argc, const char * argv[])
         numberOfCells = Nc*Nc*Nc;
         
         numberOfAtoms = atoi(argv[2]);
-        alpha = 1e10 / numberOfAtoms;
+        alpha = 1e6 / numberOfAtoms;
     }
     else if( argc > 3 )
     {
@@ -330,6 +330,7 @@ int main(int argc, const char * argv[])
     cudaFree( d_cellID );
     cudaFree( d_numberOfAtomsInCell );
     cudaFree( d_prefixScanNumberOfAtomsInCell );
+    cudaFree( d_collisionCount );
     cudaFree( d_rngStates );
     
     cudaDeviceReset();

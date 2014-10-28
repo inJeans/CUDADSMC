@@ -31,7 +31,7 @@ vtherm = np.sqrt( 8.*kB*T / (pi*mRb) );
 sigma = 8. * pi * a**2;
 V = (2*0.001)**3
 n0 = nAtoms / V
-collisionRate = n0 * vtherm * sigma / np.sqrt(2.)
+collisionRate = collisionRate = sigma * nAtoms * ( gs*muB*dBdz ) ** 3 / ( 128. * np.sqrt( mRb*pi**3*(kB*T)**5 ) )
 
 print "Analytic collision rate = ", collisionRate
 
@@ -39,7 +39,7 @@ tau   = np.zeros((13,10));
 sigma = np.zeros((13,10));
 
 for i in range(1,14):
-    for j in range(1,11):
+    for j in range(10,50):
         
         nCells = j**3 + 1;
         
@@ -68,8 +68,8 @@ for i in range(1,14):
         
         collRate = np.gradient( totalColl, time[1]-time[0] ) / N ;
 
-        tau[i,j]   = np.mean(collRate[10:-1])
-        sigma[i,j] = np.std (collRate[10:-1])
+        tau[i,j-10]   = np.mean(collRate[10:-1])
+        sigma[i,j-10] = np.std (collRate[10:-1])
 
 np.save( 'tau.npy', tau );
 np.save( 'sigma.npy', sigma );
