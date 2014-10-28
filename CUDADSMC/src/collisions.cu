@@ -369,7 +369,7 @@ __global__ void collide( double3 *vel,
     {
         int numberOfAtomsInCell = prefixScanNumberOfAtomsInCell[cell+1] - prefixScanNumberOfAtomsInCell[cell];
         
-        if (numberOfAtomsInCell > 0) {
+        if (numberOfAtomsInCell > 1) {
             double3 cellLength = getCellLength( medianR,
                                                 cellsPerDimension );
             
@@ -391,12 +391,12 @@ __global__ void collide( double3 *vel,
             double magVrel;
             double ProbCol;
             
+            curandStatePhilox4_32_10_t l_rngState = rngState[cell];
+            
             for ( int l_collision = 0;
                   l_collision < Ncol;
                   l_collision++ )
             {
-                curandStatePhilox4_32_10_t l_rngState = rngState[cell];
-                
                 int2 collidingAtoms = {0,0};
                 
                 collidingAtoms = chooseCollidingAtoms( numberOfAtomsInCell,
@@ -428,10 +428,9 @@ __global__ void collide( double3 *vel,
 //                    collisionCount[cell] += d_alpha;
                     collisionCount[cell]++;
                 }
-                
-                rngState[cell] = l_rngState;
-                
             }
+            
+            rngState[cell] = l_rngState;
         }
     }
 
@@ -454,9 +453,9 @@ __device__ int2 chooseCollidingAtoms( int numberOfAtomsInCell, int *prefixScanNu
         
         int numberOfTries = 0;
         while (newCellPopulation == 0 && numberOfTries < 15) {
-            newCellIndices.x = cellIndices.x + 2 * ( round(curand_uniform_double( &rngState[0] )) - 0.5 );
-            newCellIndices.y = cellIndices.y + 2 * ( round(curand_uniform_double( &rngState[0] )) - 0.5 );
-            newCellIndices.z = cellIndices.z + 2 * ( round(curand_uniform_double( &rngState[0] )) - 0.5 );
+            newCellIndices.x = cellIndices.x + 2 * ( round(curand_uniform_double( rngState )) - 0.5 );
+            newCellIndices.y = cellIndices.y + 2 * ( round(curand_uniform_double( rngState )) - 0.5 );
+            newCellIndices.z = cellIndices.z + 2 * ( round(curand_uniform_double( rngState )) - 0.5 );
             
             if (newCellIndices.x < 0) {
                 newCellIndices.x = 0;
@@ -490,7 +489,7 @@ __device__ int2 chooseCollidingAtoms( int numberOfAtomsInCell, int *prefixScanNu
         }
         
         // Randomly choose particles in this cell to collide.
-        collidingAtoms.y = prefixScanNumberOfAtomsInCell[newCell] + (int)floor( curand_uniform_double ( &rngState[0] ) * (newCellPopulation-1) );
+        collidingAtoms.y = prefixScanNumberOfAtomsInCell[newCell] + (int)floor( curand_uniform_double ( rngState ) * (newCellPopulation-1) );
         
     }
     else if (numberOfAtomsInCell == 2) {
@@ -500,7 +499,7 @@ __device__ int2 chooseCollidingAtoms( int numberOfAtomsInCell, int *prefixScanNu
     else {
         // Randomly choose particles in this cell to collide.
         while (collidingAtoms.x == collidingAtoms.y) {
-            collidingAtoms = double2Toint2_rd( curand_uniform2_double ( &rngState[0] ) * (numberOfAtomsInCell-1) );
+            collidingAtoms = double2Toint2_rd( curand_uniform2_double ( rngState ) * (numberOfAtomsInCell-1) );
         }
         
         collidingAtoms = prefixScanNumberOfAtomsInCell[cell] + collidingAtoms;
@@ -530,8 +529,8 @@ __device__ double calculateRelativeVelocity( double3 *vel, int2 collidingAtoms )
 
 __device__ double3 getRandomPointOnSphere( curandStatePhilox4_32_10_t *rngState )
 {
-    double2 r1 = curand_normal2_double ( &rngState[0] );
-    double  r2 = curand_normal_double  ( &rngState[0] );
+    double2 r1 = curand_normal2_double ( rngState );
+    double  r2 = curand_normal_double  ( rngState );
     
     double3 pointOnSphere = make_double3( r1.x, r1.y, r2 ) * rsqrt( r1.x*r1.x + r1.y*r1.y + r2*r2 );
     
