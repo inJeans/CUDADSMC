@@ -16,10 +16,10 @@
 
 int findRNGArrayLength( int numberOfCells, int numberOfAtoms );
 
-void h_initRNG( curandStatePhilox4_32_10_t *rngState,
+void h_initRNG( curandState_t *rngState,
                 int numberOfAtoms );
 
-__global__ void initRNG( curandStatePhilox4_32_10_t *rngState,
+__global__ void initRNG( curandState_t *rngState,
                          int numberOfAtoms );
 
 void h_generateInitialDist( double3 *pos,
@@ -27,24 +27,24 @@ void h_generateInitialDist( double3 *pos,
                             double3 *acc,
                             int      numberOfAtoms,
                             double   Temp,
-                            curandStatePhilox4_32_10_t *rngState );
+                            curandState_t *rngState );
 
 __global__ void generateInitialDist(double3 *pos,
                                     double3 *vel,
                                     double3 *acc,
                                     int      numberOfAtoms,
 									double   Temp,
-									curandStatePhilox4_32_10_t *rngState);
+									curandState_t *rngState);
 
 __device__ double3 getRandomVelocity( double Temp,
-                                      curandStatePhilox4_32_10_t *rngState );
+                                      curandState_t *rngState );
 
 __device__ double3 selectAtomInThermalDistribution( double Temp,
-                                                    curandStatePhilox4_32_10_t *rngState );
+                                                    curandState_t *rngState );
 
 __device__ double3 getGaussianPoint( double mean,
                                      double std,
-                                     curandStatePhilox4_32_10_t *rngState );
+                                     curandState_t *rngState );
 
 __device__ double3 updateAccel( double3 pos );
 

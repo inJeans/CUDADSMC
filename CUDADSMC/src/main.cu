@@ -60,8 +60,8 @@ int main(int argc, const char * argv[])
     
     int sizeOfRNG = findRNGArrayLength( numberOfCells, numberOfAtoms );
     printf("%i\n", sizeOfRNG);
-	curandStatePhilox4_32_10_t *d_rngStates;
-	cudaMalloc( (void **)&d_rngStates, sizeOfRNG*sizeof(curandStatePhilox4_32_10_t) );
+	curandState_t *d_rngStates;
+	cudaMalloc( (void **)&d_rngStates, sizeOfRNG*sizeof(curandState_t) );
     
     double3 *d_pos;
     double3 *d_vel;

@@ -39,16 +39,16 @@ __global__ void collide( double3 *vel,
                          double   alpha,
                          int3     cellsPerDimension,
                          int      numberOfCells,
-                         curandStatePhilox4_32_10_t *rngState,
+                         curandState_t *rngState,
                          int *cellID );
-__device__ int2 chooseCollidingAtoms( int numberOfAtomsInCell, int *prefixScanNumberOfAtomsInCell, int3 cellsPerDimension, curandStatePhilox4_32_10_t *rngState, int cell );
+__device__ int2 chooseCollidingAtoms( int numberOfAtomsInCell, int *prefixScanNumberOfAtomsInCell, int3 cellsPerDimension, curandState_t *rngState, int cell );
 __device__ int3 extractCellIndices( int cell, int3 cellsPerDimension );
 __device__ double calculateRelativeVelocity( double3 *vel, int2 collidingAtoms );
-__device__ double3 getRandomPointOnSphere( curandStatePhilox4_32_10_t *rngState );
+__device__ double3 getRandomPointOnSphere( curandState_t *rngState );
 
 __global__ void shmemTest( double3 *vel,
                           double3 *vout,
                           int     *prefixScanNumberOfAtomsInCell,
-                          curandStatePhilox4_32_10_t *rngState );
+                          curandState_t *rngState );
 
 #endif
