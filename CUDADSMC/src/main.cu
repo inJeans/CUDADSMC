@@ -45,7 +45,9 @@ int main(int argc, const char * argv[])
         printf("Too many arguments supplied.\n");
         return 0;
     }
-    
+   
+    printf("Nt = %i, Nc = %i\n", numberOfAtoms, numberOfCells );
+ 
 #pragma mark - Set up CUDA device
 	// Flush device (useful for profiling)
     cudaDeviceReset();
