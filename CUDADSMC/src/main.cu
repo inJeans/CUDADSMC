@@ -333,6 +333,7 @@ int main(int argc, const char * argv[])
     cudaFree( d_cellID );
     cudaFree( d_numberOfAtomsInCell );
     cudaFree( d_prefixScanNumberOfAtomsInCell );
+    cudaFree* d_collisionCount );
     cudaFree( d_rngStates );
     
     cudaDeviceReset();
