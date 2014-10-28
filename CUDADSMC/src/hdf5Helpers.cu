@@ -64,12 +64,6 @@ void createHDF5File( char *filename, char *groupname )
 void intialiseHDF5File( hdf5FileHandle &hdf5handle, char *filename )
 {
 	herr_t status;
-	
-//	/* Create a new file. If file exists its contents will be overwritten */
-//	hid_t file = H5Fcreate (filename,
-//							H5F_ACC_TRUNC,
-//							H5P_DEFAULT,
-//							H5P_DEFAULT);
     
     hid_t file = H5Fopen (filename,
 						  H5F_ACC_RDWR,
