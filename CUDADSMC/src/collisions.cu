@@ -505,7 +505,7 @@ __device__ int2 chooseCollidingAtoms( int numberOfAtomsInCell, int *prefixScanNu
 {
     int2 collidingAtoms = { 0, 0 };
     
-    if (numberOfAtomsInCell == 1) {
+    if (numberOfAtomsInCell == 0) {
         
         collidingAtoms.x = prefixScanNumberOfAtomsInCell[cell] + 0;
         
