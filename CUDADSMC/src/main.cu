@@ -58,8 +58,8 @@ int main(int argc, const char * argv[])
     
 #pragma mark - Memory Allocation
     
-    int sizeOfRNG = findRNGArrayLength( numberOfCells );
-	
+    int sizeOfRNG = findRNGArrayLength( numberOfCells, numberOfAtoms );
+    printf("%i\n", sizeOfRNG);
 	curandStatePhilox4_32_10_t *d_rngStates;
 	cudaMalloc( (void **)&d_rngStates, sizeOfRNG*sizeof(curandStatePhilox4_32_10_t) );
     

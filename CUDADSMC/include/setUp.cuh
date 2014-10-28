@@ -14,7 +14,7 @@
 #include <curand_kernel.h>
 #include <hdf5.h>
 
-int findRNGArrayLength( int numberOfCells );
+int findRNGArrayLength( int numberOfCells, int numberOfAtoms );
 
 void h_initRNG( curandStatePhilox4_32_10_t *rngState,
                 int numberOfAtoms );
