@@ -399,11 +399,75 @@ __global__ void collide( double3 *vel,
             {
                 int2 collidingAtoms = {0,0};
                 
-                collidingAtoms = chooseCollidingAtoms( numberOfAtomsInCell,
-                                                       prefixScanNumberOfAtomsInCell,
-                                                       cellsPerDimension,
-                                                       &l_rngState,
-                                                       cell );
+//                collidingAtoms = chooseCollidingAtoms( numberOfAtomsInCell,
+//                                                       prefixScanNumberOfAtomsInCell,
+//                                                       cellsPerDimension,
+//                                                       &l_rngState,
+//                                                       cell );
+                
+                if (numberOfAtomsInCell == 1) {
+                    
+                    collidingAtoms.x = prefixScanNumberOfAtomsInCell[cell] + 0;
+                    
+                    int3 cellIndices = extractCellIndices( cell, cellsPerDimension );
+                    
+                    int3 newCellIndices = make_int3( 0, 0, 0 );
+                    int  newCell = 0;
+                    int  newCellPopulation = 0;
+                    
+                    int numberOfTries = 0;
+                    while (newCellPopulation == 0 && numberOfTries < 15) {
+                        newCellIndices.x = cellIndices.x + 2 * ( round(curand_uniform_double( &l_rngState )) - 0.5 );
+                        newCellIndices.y = cellIndices.y + 2 * ( round(curand_uniform_double( &l_rngState )) - 0.5 );
+                        newCellIndices.z = cellIndices.z + 2 * ( round(curand_uniform_double( &l_rngState )) - 0.5 );
+                        
+                        if (newCellIndices.x < 0) {
+                            newCellIndices.x = 0;
+                        }
+                        
+                        if (newCellIndices.y < 0) {
+                            newCellIndices.y = 0;
+                        }
+                        
+                        if (newCellIndices.z < 0) {
+                            newCellIndices.z = 0;
+                        }
+                        
+                        if (newCellIndices.x > cellsPerDimension.x-1) {
+                            newCellIndices.x = cellsPerDimension.x-1;
+                        }
+                        
+                        if (newCellIndices.y > cellsPerDimension.z-1) {
+                            newCellIndices.y = cellsPerDimension.z-1;
+                        }
+                        
+                        if (newCellIndices.z > cellsPerDimension.z-1) {
+                            newCellIndices.z = cellsPerDimension.z-1;
+                        }
+                        
+                        newCell = getCellID( newCellIndices, cellsPerDimension );
+                        
+                        newCellPopulation = prefixScanNumberOfAtomsInCell[newCell+1] - prefixScanNumberOfAtomsInCell[newCell];
+                        numberOfTries++;
+                        
+                    }
+                    
+                    // Randomly choose particles in this cell to collide.
+                    collidingAtoms.y = prefixScanNumberOfAtomsInCell[newCell] + (int)floor( curand_uniform_double ( &l_rngState ) * (newCellPopulation-1) );
+                    
+                }
+                else if (numberOfAtomsInCell == 2) {
+                    collidingAtoms.x = prefixScanNumberOfAtomsInCell[cell] + 0;
+                    collidingAtoms.y = prefixScanNumberOfAtomsInCell[cell] + 1;
+                }
+                else {
+                    // Randomly choose particles in this cell to collide.
+                    while (collidingAtoms.x == collidingAtoms.y) {
+                        collidingAtoms = double2Toint2_rd( curand_uniform2_double ( &l_rngState ) * (numberOfAtomsInCell-1) );
+                    }
+                    
+                    collidingAtoms = prefixScanNumberOfAtomsInCell[cell] + collidingAtoms;
+                }
                 
                 magVrel = calculateRelativeVelocity( vel, collidingAtoms );
                 
