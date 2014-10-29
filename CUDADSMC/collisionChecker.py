@@ -25,7 +25,6 @@ dBdz = 2.5;
 tres = 51;
 nAtoms = 1e6;
 nCells = 40**3 + 1;
-dt = 5e-6;
 
 vtherm = np.sqrt( 8.*kB*T / (pi*mRb) );
 sigma = 8. * pi * a**2;

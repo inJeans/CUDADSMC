@@ -136,6 +136,7 @@ __global__ void generateInitialDist(double3 *pos,
                                                      &localrngState );
         
 		vel[atom] = getRandomVelocity( Temp, &localrngState );
+        vel[atom].z = sqrt(2.) * vel[atom].z;
         
         acc[atom] = updateAccel( pos[atom] );
 		
@@ -149,7 +150,7 @@ __device__ double3 getRandomVelocity( double Temp, curandState_t *rngState )
 {
 	double3 vel = make_double3( 0., 0., 0. );
 	
-	double V = sqrt( d_kB*Temp/d_mRb);
+	double V = sqrt( 0.75*d_kB*Temp/d_mRb);
 	
 	vel = V * getGaussianPoint( 0., 1., &rngState[0] );
     
