@@ -307,13 +307,16 @@ __device__ void serialFindNumberOfAtomsInCell( int2 *cellStartEnd, int *numberOf
 void sortArrays( double3 *d_pos,
                  double3 *d_vel,
                  double3 *d_acc,
-                 int *d_cellID )
+                 int *d_cellID,
+                 hbool_t *d_isPerturb )
 {
     thrust::device_ptr<double3> th_pos = thrust::device_pointer_cast( d_pos );
     thrust::device_ptr<double3> th_vel = thrust::device_pointer_cast( d_vel );
     thrust::device_ptr<double3> th_acc = thrust::device_pointer_cast( d_acc );
     
     thrust::device_ptr<int> th_cellID = thrust::device_pointer_cast( d_cellID );
+    
+    thrust::device_ptr<hbool_t> th_isPerturb = thrust::device_pointer_cast( d_isPerturb );
     
     thrust::device_vector<int>  th_indices( numberOfAtoms );
     thrust::sequence( th_indices.begin(),
@@ -346,6 +349,18 @@ void sortArrays( double3 *d_pos,
     th_acc = th_sorted;
     
     cudaFree( d_sorted );
+    
+    hbool_t *d_sortedBool;
+    cudaCalloc( (void **)&d_sortedBool, numberOfAtoms, sizeof(hbool_t) );
+    thrust::device_ptr<hbool_t> th_sortedBool = thrust::device_pointer_cast( d_sortedBool );
+    
+    thrust::gather( th_indices.begin(),
+                    th_indices.end(),
+                    th_isPerturb,
+                    th_sortedBool );
+    th_isPerturb = th_sortedBool;
+    
+    cudaFree( d_sortedBool );
     
     return;
 }

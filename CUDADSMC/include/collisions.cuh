@@ -28,9 +28,10 @@ __device__ void serialCellStartandEndKernel( int *cellID, int2 *cellStartEnd, in
 __global__ void findNumberOfAtomsInCell( int2 *cellStartEnd, int *numberOfAtomsInCell, int numberOfCells );
 __device__ void serialFindNumberOfAtomsInCell( int2 *cellStartEnd, int *numberOfAtomsInCell, int numberOfCells );
 void sortArrays( double3 *d_pos,
-                double3 *d_vel,
-                double3 *d_acc,
-                int *d_cellID );
+                 double3 *d_vel,
+                 double3 *d_acc,
+                 int *d_cellID,
+                 hbool_t *d_isPerturb );
 __global__ void collide( double3 *vel,
                          double  *sigvrmax,
                          int     *prefixScanNumberOfAtomsInCell,

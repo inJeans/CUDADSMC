@@ -78,6 +78,8 @@ int main(int argc, const char * argv[])
     int *d_numberOfAtomsInCell;
     int *d_prefixScanNumberOfAtomsInCell;
     int *d_collisionCount;
+    
+    hbool_t *d_isPerturb;
 
     cudaCalloc( (void **)&d_pos, numberOfAtoms, sizeof(double3) );
     cudaCalloc( (void **)&d_vel, numberOfAtoms, sizeof(double3) );
@@ -92,12 +94,16 @@ int main(int argc, const char * argv[])
     cudaCalloc( (void **)&d_prefixScanNumberOfAtomsInCell, numberOfCells+1, sizeof(int) );
     cudaCalloc( (void **)&d_collisionCount, numberOfCells+1, sizeof(int) );
     
+    cudaCalloc( (void **)&d_isPerturb, numberOfAtoms, sizeof(hbool_t) );
+    
     double3 *h_pos = (double3*) calloc( numberOfAtoms, sizeof(double3) );
     double3 *h_vel = (double3*) calloc( numberOfAtoms, sizeof(double3) );
     
     int *h_numberOfAtomsInCell = (int*) calloc( numberOfCells+1, sizeof(int) );
     int *h_collisionCount = (int*) calloc( numberOfCells+1, sizeof(int) );
 	int *h_cellID = (int*) calloc( numberOfAtoms, sizeof(int) );
+    
+    hbool_t *h_isPerturb = (hbool_t*) calloc( numberOfAtoms, sizeof(hbool_t) );
     
     thrust::device_ptr<int> th_numberOfAtomsInCell = thrust::device_pointer_cast( d_numberOfAtomsInCell );
     thrust::device_ptr<int> th_prefixScanNumberOfAtomsInCell = thrust::device_pointer_cast( d_prefixScanNumberOfAtomsInCell );
@@ -116,7 +122,8 @@ int main(int argc, const char * argv[])
                            d_acc,
                            numberOfAtoms,
                            Tinit,
-                           d_rngStates );
+                           d_rngStates,
+                           d_isPerturb );
     
     initSigvrmax( d_sigvrmax, numberOfCells );
     
@@ -126,7 +133,8 @@ int main(int argc, const char * argv[])
     sortArrays( d_pos,
                 d_vel,
                 d_acc,
-                d_cellID );
+                d_cellID,
+                d_isPerturb );
     
 #pragma mark - Write Initial State
     
@@ -213,6 +221,20 @@ int main(int argc, const char * argv[])
                    filename,
                    &numberOfAtoms );
     
+    cudaMemcpy( h_isPerturb,
+                d_isPerturb,
+                numberOfAtoms*sizeof(hbool_t),
+                cudaMemcpyDeviceToHost );
+    char isPerturbDatasetName[] = "/atomData/isPerturb";
+    hdf5FileHandle hdf5handlePerturb = createHDF5Handle( atomDims,
+                                                         H5T_NATIVE_HBOOL,
+                                                         isPerturbDatasetName );
+    intialiseHDF5File( hdf5handlePerturb,
+                       filename );
+    writeHDF5File( hdf5handlePerturb,
+                   filename,
+                   h_isPerturb );
+    
 #pragma mark - Main Loop
     int blockSize;
     int gridSize;
@@ -247,7 +269,8 @@ int main(int argc, const char * argv[])
         sortArrays( d_pos,
                     d_vel,
                     d_acc,
-                    d_cellID );
+                    d_cellID,
+                    d_isPerturb );
 		
 		deviceMemset<<<numberOfCells+1,1>>>( d_cellStartEnd,
 											 make_int2( -1, -1 ),
@@ -291,6 +314,7 @@ int main(int argc, const char * argv[])
         cudaMemcpy( h_vel, d_vel, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
         cudaMemcpy( h_numberOfAtomsInCell, d_numberOfAtomsInCell, (numberOfCells+1)*sizeof(int), cudaMemcpyDeviceToHost );
         cudaMemcpy( h_collisionCount, d_collisionCount, (numberOfCells+1)*sizeof(int), cudaMemcpyDeviceToHost );
+        cudaMemcpy( h_isPerturb, d_isPerturb, numberOfAtoms*sizeof(hbool_t), cudaMemcpyDeviceToHost );
     
         writeHDF5File( hdf5handlePos,
                        filename,
@@ -310,6 +334,9 @@ int main(int argc, const char * argv[])
         writeHDF5File( hdf5handleNumber,
                        filename,
                        &numberOfAtoms );
+        writeHDF5File( hdf5handlePerturb,
+                       filename,
+                       h_isPerturb );
         
         printf("i = %i\n", i);
     }
@@ -321,6 +348,7 @@ int main(int argc, const char * argv[])
     free( h_vel );
     free( h_numberOfAtomsInCell );
 	free( h_cellID );
+    free( h_isPerturb );
     
     cudaFree( d_pos );
     cudaFree( d_vel );
@@ -332,6 +360,7 @@ int main(int argc, const char * argv[])
     cudaFree( d_prefixScanNumberOfAtomsInCell );
     cudaFree( d_collisionCount );
     cudaFree( d_rngStates );
+    cudaFree( d_isPerturb );
     
     cudaDeviceReset();
     
