@@ -374,7 +374,7 @@ __global__ void collide( double3 *vel,
                                                 cellsPerDimension );
             
             d_dt = 1.0e-6;
-            d_loopsPerCollision = 0.05 / d_dt;
+            d_loopsPerCollision = 0.025 / d_dt;
             
             double cellVolume = cellLength.x * cellLength.y * cellLength.z;
             double Mc = 0.5 * (numberOfAtomsInCell - 1) * numberOfAtomsInCell;

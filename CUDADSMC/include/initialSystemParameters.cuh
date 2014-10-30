@@ -17,7 +17,7 @@ int    numberOfAtoms = 1e3;
 double alpha = 1e6 / numberOfAtoms;
 double dt = 1.0e-6;
 
-int numberOfPrints = 50;
+int numberOfPrints = 100;
 int loopsPerCollision = 0.0007 / dt;
 
 #pragma mark Physics Constants
@@ -28,7 +28,7 @@ double h_a   = 5.3e-9;			// Constant cross-section formula;
 double h_kB  = 1.3806503e-23;	// Boltzmann's Constant
 
 #pragma mark Environmental Parameters
-double Tinit   = 20.0e-6;
+double Tinit   = 10.0e-6;
 
 #pragma mark Trap Parameters
 double dBdz = 2.5;
