@@ -22,13 +22,14 @@ hbar = 1.05457148e-34;
 T    = 20.e-6;
 dBdz = 2.5;
 
-tres = 101;
+tres = 26;
 ntrials = 1e4;
 dt = 1e-6;
 
 time = np.zeros((tres));
 pos = np.zeros((ntrials,3,tres));
 vel = np.zeros((ntrials,3,tres));
+isPerturb = np.zeros((ntrials,1,tres));
 N = np.zeros((tres));
 
 f = h5py.File('outputData.h5');
@@ -42,17 +43,21 @@ dset.read_direct(pos);
 dset = f.require_dataset('atomData/velocities',(ntrials,3,tres),False,False);
 dset.read_direct(vel);
 
+dset = f.require_dataset('atomData/isPerturb',(ntrials,1,tres),False,False);
+dset.read_direct(isPerturb);
+
 dset = f.require_dataset('atomData/atomNumber',(1,1,tres),False,False);
 dset.read_direct(N);
 
 f.close()
 
-time = time * 8.44;
+time = time * 23.5;
 
 Ek = np.zeros((N.size,))
 Ep = np.zeros((N.size,))
 Et = np.zeros((N.size,))
 Temp = np.zeros((N.size,))
+Tperturb = np.zeros((N.size,))
 
 Tx = np.zeros((N.size,))
 Ty = np.zeros((N.size,))
@@ -75,6 +80,9 @@ for i in range(0,N.size):
     Et[i] = Ek[i] + Ep[i]
 
     Temp[i] = 2./3. * np.sum( kinetic[n], 0) / N[i] / kB * 1.e6
+    
+    kineticPerturb = isPerturb[0:N[i],0,i] * 0.5 * mRb * np.sum(vel[0:N[i],:,i]**2, 1)
+    Tperturb[i] = 2./3. * np.sum( kineticPerturb[n], 0) / (0.5*ntrials) / kB * 1.e6
 
     Tx[i] = 2./3. * np.sum( 0.5 * mRb * vel[0:N[i],0,i]**2, 0) / N[i] / kB * 1.e6
     Ty[i] = 2./3. * np.sum( 0.5 * mRb * vel[0:N[i],1,i]**2, 0) / N[i] / kB * 1.e6
@@ -129,7 +137,7 @@ pl.xlabel('time (s)')
 pl.ylabel('Atom Number')
 
 pl.figure(3)
-pl.plot( time, Temp )
+pl.plot( time, Temp, time, Tperturb )
 pl.xlabel('time (s)')
 pl.ylabel('Temperature (uK)')
 

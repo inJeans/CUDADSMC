@@ -19,12 +19,12 @@ mRb  = 1.443160648e-25;
 pi   = 3.14159265;
 kB   = 1.3806503e-23;
 hbar = 1.05457148e-34;
-T    = 13.56e-6;
+T    = 9.0e-6;
 dBdz = 2.5;
 
-tres = 101;
+tres = 26;
 nAtoms = 1e6;
-nCells = 40**3 + 1;
+nCells = 20**3 + 1;
 
 vtherm = np.sqrt( 8.*kB*T / (pi*mRb) );
 sigma = 8. * pi * a**2;

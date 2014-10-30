@@ -226,7 +226,8 @@ int main(int argc, const char * argv[])
                 numberOfAtoms*sizeof(hbool_t),
                 cudaMemcpyDeviceToHost );
     char isPerturbDatasetName[] = "/atomData/isPerturb";
-    hdf5FileHandle hdf5handlePerturb = createHDF5Handle( atomDims,
+    int3 perturbDims = { numberOfAtoms, 1, 1 };
+    hdf5FileHandle hdf5handlePerturb = createHDF5Handle( perturbDims,
                                                          H5T_NATIVE_HBOOL,
                                                          isPerturbDatasetName );
     intialiseHDF5File( hdf5handlePerturb,
@@ -234,6 +235,20 @@ int main(int argc, const char * argv[])
     writeHDF5File( hdf5handlePerturb,
                    filename,
                    h_isPerturb );
+    
+    cudaMemcpy( h_cellID,
+               d_cellID,
+               numberOfAtoms*sizeof(int),
+               cudaMemcpyDeviceToHost );
+    char cellIDDatasetName[] = "/atomData/cellID";
+    hdf5FileHandle hdf5handleCellID = createHDF5Handle( perturbDims,
+                                                        H5T_NATIVE_INT,
+                                                        cellIDDatasetName );
+    intialiseHDF5File( hdf5handleCellID,
+                       filename );
+    writeHDF5File( hdf5handleCellID,
+                   filename,
+                   h_cellID );
     
 #pragma mark - Main Loop
     int blockSize;
@@ -315,6 +330,7 @@ int main(int argc, const char * argv[])
         cudaMemcpy( h_numberOfAtomsInCell, d_numberOfAtomsInCell, (numberOfCells+1)*sizeof(int), cudaMemcpyDeviceToHost );
         cudaMemcpy( h_collisionCount, d_collisionCount, (numberOfCells+1)*sizeof(int), cudaMemcpyDeviceToHost );
         cudaMemcpy( h_isPerturb, d_isPerturb, numberOfAtoms*sizeof(hbool_t), cudaMemcpyDeviceToHost );
+        cudaMemcpy( h_cellID, d_cellID, numberOfAtoms*sizeof(int), cudaMemcpyDeviceToHost );
     
         writeHDF5File( hdf5handlePos,
                        filename,
@@ -337,6 +353,9 @@ int main(int argc, const char * argv[])
         writeHDF5File( hdf5handlePerturb,
                        filename,
                        h_isPerturb );
+        writeHDF5File( hdf5handleCellID,
+                       filename,
+                       h_cellID );
         
         printf("i = %i\n", i);
     }
