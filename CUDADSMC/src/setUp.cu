@@ -82,7 +82,8 @@ void h_generateInitialDist( double3 *d_pos,
                             int      numberOfAtoms,
                             double   Temp,
                             curandState_t *d_rngStates,
-                            hbool_t *d_isPerturb )
+                            hbool_t *d_isPerturb,
+                            int *d_atomID )
 {
     int blockSize;
     int gridSize;
@@ -114,7 +115,8 @@ void h_generateInitialDist( double3 *d_pos,
                                                  numberOfAtoms,
                                                  Tinit,
                                                  d_rngStates,
-                                                 d_isPerturb );
+                                                 d_isPerturb,
+                                                 d_atomID );
     
     return;
 }
@@ -126,7 +128,8 @@ __global__ void generateInitialDist(double3 *pos,
                                     int      numberOfAtoms,
 									double   Temp,
 									curandState_t *rngState,
-                                    hbool_t *isPerturb ) {
+                                    hbool_t *isPerturb,
+                                    int *atomID ) {
     
 	for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
 		 atom < numberOfAtoms;
@@ -143,11 +146,13 @@ __global__ void generateInitialDist(double3 *pos,
         acc[atom] = updateAccel( pos[atom] );
         
         isPerturb[atom] = false;
+        
+        atomID[atom] = atom;
 		
 		// Copy state back to global memory
 		rngState[atom] = localrngState;
         
-        if (atom < 0.1*numberOfAtoms) {
+        if (atom < 0.01*numberOfAtoms) {
             pos[atom] = 0.5 * pos[atom];
             vel[atom] = sqrt(0.5) * vel[atom];
             isPerturb[atom] = true;

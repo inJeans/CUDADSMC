@@ -82,7 +82,7 @@ for i in range(0,N.size):
     Temp[i] = 2./3. * np.sum( kinetic[n], 0) / N[i] / kB * 1.e6
     
     kineticPerturb = isPerturb[0:N[i],0,i] * 0.5 * mRb * np.sum(vel[0:N[i],:,i]**2, 1)
-    Tperturb[i] = 2./3. * np.sum( kineticPerturb[n], 0) / (0.5*ntrials) / kB * 1.e6
+    Tperturb[i] = 2./3. * np.sum( kineticPerturb[n], 0) / (0.01*ntrials) / kB * 1.e6
 
     Tx[i] = 2./3. * np.sum( 0.5 * mRb * vel[0:N[i],0,i]**2, 0) / N[i] / kB * 1.e6
     Ty[i] = 2./3. * np.sum( 0.5 * mRb * vel[0:N[i],1,i]**2, 0) / N[i] / kB * 1.e6

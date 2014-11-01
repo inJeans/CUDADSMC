@@ -78,6 +78,7 @@ int main(int argc, const char * argv[])
     int *d_numberOfAtomsInCell;
     int *d_prefixScanNumberOfAtomsInCell;
     int *d_collisionCount;
+    int *d_atomID;
     
     hbool_t *d_isPerturb;
 
@@ -93,6 +94,7 @@ int main(int argc, const char * argv[])
     cudaCalloc( (void **)&d_numberOfAtomsInCell, numberOfCells+1, sizeof(int) );
     cudaCalloc( (void **)&d_prefixScanNumberOfAtomsInCell, numberOfCells+1, sizeof(int) );
     cudaCalloc( (void **)&d_collisionCount, numberOfCells+1, sizeof(int) );
+    cudaCalloc( (void **)&d_atomID, numberOfAtoms, sizeof(int) );
     
     cudaCalloc( (void **)&d_isPerturb, numberOfAtoms, sizeof(hbool_t) );
     
@@ -102,6 +104,7 @@ int main(int argc, const char * argv[])
     int *h_numberOfAtomsInCell = (int*) calloc( numberOfCells+1, sizeof(int) );
     int *h_collisionCount = (int*) calloc( numberOfCells+1, sizeof(int) );
 	int *h_cellID = (int*) calloc( numberOfAtoms, sizeof(int) );
+    int *h_atomID = (int*) calloc( numberOfAtoms, sizeof(int) );
     
     hbool_t *h_isPerturb = (hbool_t*) calloc( numberOfAtoms, sizeof(hbool_t) );
     
@@ -123,7 +126,8 @@ int main(int argc, const char * argv[])
                            numberOfAtoms,
                            Tinit,
                            d_rngStates,
-                           d_isPerturb );
+                           d_isPerturb,
+                           d_atomID );
     
     initSigvrmax( d_sigvrmax, numberOfCells );
     
@@ -134,7 +138,8 @@ int main(int argc, const char * argv[])
                 d_vel,
                 d_acc,
                 d_cellID,
-                d_isPerturb );
+                d_isPerturb,
+                d_atomID );
     
 #pragma mark - Write Initial State
     
@@ -250,6 +255,20 @@ int main(int argc, const char * argv[])
                    filename,
                    h_cellID );
     
+    cudaMemcpy( h_atomID,
+               d_atomID,
+               numberOfAtoms*sizeof(int),
+               cudaMemcpyDeviceToHost );
+    char atomIDDatasetName[] = "/atomData/atomID";
+    hdf5FileHandle hdf5handleAtomID = createHDF5Handle( perturbDims,
+                                                       H5T_NATIVE_INT,
+                                                       atomIDDatasetName );
+    intialiseHDF5File( hdf5handleAtomID,
+                      filename );
+    writeHDF5File( hdf5handleAtomID,
+                  filename,
+                  h_atomID );
+    
 #pragma mark - Main Loop
     int blockSize;
     int gridSize;
@@ -285,7 +304,44 @@ int main(int argc, const char * argv[])
                     d_vel,
                     d_acc,
                     d_cellID,
-                    d_isPerturb );
+                    d_isPerturb,
+                    d_atomID );
+        
+        cudaMemcpy( h_pos, d_pos, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
+        cudaMemcpy( h_vel, d_vel, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
+        cudaMemcpy( h_numberOfAtomsInCell, d_numberOfAtomsInCell, (numberOfCells+1)*sizeof(int), cudaMemcpyDeviceToHost );
+        cudaMemcpy( h_collisionCount, d_collisionCount, (numberOfCells+1)*sizeof(int), cudaMemcpyDeviceToHost );
+        cudaMemcpy( h_isPerturb, d_isPerturb, numberOfAtoms*sizeof(hbool_t), cudaMemcpyDeviceToHost );
+        cudaMemcpy( h_cellID, d_cellID, numberOfAtoms*sizeof(int), cudaMemcpyDeviceToHost );
+        cudaMemcpy( h_atomID, d_atomID, numberOfAtoms*sizeof(int), cudaMemcpyDeviceToHost );
+        
+        writeHDF5File( hdf5handlePos,
+                      filename,
+                      h_pos );
+        writeHDF5File( hdf5handleVel,
+                      filename,
+                      h_vel );
+        writeHDF5File( hdf5handleCollision,
+                      filename,
+                      h_collisionCount );
+        writeHDF5File( hdf5handlenAtom,
+                      filename,
+                      h_numberOfAtomsInCell );
+        writeHDF5File( hdf5handleTime,
+                      filename,
+                      &time );
+        writeHDF5File( hdf5handleNumber,
+                      filename,
+                      &numberOfAtoms );
+        writeHDF5File( hdf5handlePerturb,
+                      filename,
+                      h_isPerturb );
+        writeHDF5File( hdf5handleCellID,
+                      filename,
+                      h_cellID );
+        writeHDF5File( hdf5handleAtomID,
+                      filename,
+                      h_atomID );
 		
 		deviceMemset<<<numberOfCells+1,1>>>( d_cellStartEnd,
 											 make_int2( -1, -1 ),
@@ -325,37 +381,7 @@ int main(int argc, const char * argv[])
         
         time += loopsPerCollision * dt;
     
-        cudaMemcpy( h_pos, d_pos, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
-        cudaMemcpy( h_vel, d_vel, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
-        cudaMemcpy( h_numberOfAtomsInCell, d_numberOfAtomsInCell, (numberOfCells+1)*sizeof(int), cudaMemcpyDeviceToHost );
-        cudaMemcpy( h_collisionCount, d_collisionCount, (numberOfCells+1)*sizeof(int), cudaMemcpyDeviceToHost );
-        cudaMemcpy( h_isPerturb, d_isPerturb, numberOfAtoms*sizeof(hbool_t), cudaMemcpyDeviceToHost );
-        cudaMemcpy( h_cellID, d_cellID, numberOfAtoms*sizeof(int), cudaMemcpyDeviceToHost );
-    
-        writeHDF5File( hdf5handlePos,
-                       filename,
-                       h_pos );
-        writeHDF5File( hdf5handleVel,
-                       filename,
-                       h_vel );
-        writeHDF5File( hdf5handleCollision,
-                       filename,
-                       h_collisionCount );
-        writeHDF5File( hdf5handlenAtom,
-                       filename,
-                       h_numberOfAtomsInCell );
-        writeHDF5File( hdf5handleTime,
-                       filename,
-                       &time );
-        writeHDF5File( hdf5handleNumber,
-                       filename,
-                       &numberOfAtoms );
-        writeHDF5File( hdf5handlePerturb,
-                       filename,
-                       h_isPerturb );
-        writeHDF5File( hdf5handleCellID,
-                       filename,
-                       h_cellID );
+        
         
         printf("i = %i\n", i);
     }

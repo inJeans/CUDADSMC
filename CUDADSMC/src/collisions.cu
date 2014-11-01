@@ -308,13 +308,15 @@ void sortArrays( double3 *d_pos,
                  double3 *d_vel,
                  double3 *d_acc,
                  int *d_cellID,
-                 hbool_t *d_isPerturb )
+                 hbool_t *d_isPerturb,
+                 int *d_atomID )
 {
     thrust::device_ptr<double3> th_pos = thrust::device_pointer_cast( d_pos );
     thrust::device_ptr<double3> th_vel = thrust::device_pointer_cast( d_vel );
     thrust::device_ptr<double3> th_acc = thrust::device_pointer_cast( d_acc );
     
     thrust::device_ptr<int> th_cellID = thrust::device_pointer_cast( d_cellID );
+    thrust::device_ptr<int> th_atomID = thrust::device_pointer_cast( d_atomID );
     
     thrust::device_ptr<hbool_t> th_isPerturb = thrust::device_pointer_cast( d_isPerturb );
     
@@ -334,19 +336,25 @@ void sortArrays( double3 *d_pos,
                     th_indices.end(),
                     th_pos,
                     th_sorted );
-    th_pos = th_sorted;
+    thrust::copy( th_sorted,
+                  th_sorted + numberOfAtoms,
+                  th_pos );
 
     thrust::gather( th_indices.begin(),
                     th_indices.end(),
                     th_vel,
                     th_sorted );
-    th_vel = th_sorted;
+    thrust::copy( th_sorted,
+                  th_sorted + numberOfAtoms,
+                  th_vel );
     
     thrust::gather( th_indices.begin(),
                     th_indices.end(),
                     th_acc,
                     th_sorted );
-    th_acc = th_sorted;
+    thrust::copy( th_sorted,
+                  th_sorted + numberOfAtoms,
+                  th_acc );
     
     cudaFree( d_sorted );
     
@@ -358,9 +366,25 @@ void sortArrays( double3 *d_pos,
                     th_indices.end(),
                     th_isPerturb,
                     th_sortedBool );
-    th_isPerturb = th_sortedBool;
+    thrust::copy( th_sortedBool,
+                  th_sortedBool + numberOfAtoms,
+                  th_isPerturb );
     
     cudaFree( d_sortedBool );
+    
+    int *d_sortedInt;
+    cudaCalloc( (void **)&d_sortedInt, numberOfAtoms, sizeof(int) );
+    thrust::device_ptr<int> th_sortedInt = thrust::device_pointer_cast( d_sortedInt );
+    
+    thrust::gather( th_indices.begin(),
+                   th_indices.end(),
+                   th_atomID,
+                   th_sortedInt );
+    thrust::copy( th_sortedInt,
+                  th_sortedInt + numberOfAtoms,
+                  th_atomID );
+    
+    cudaFree( d_sortedInt );
     
     return;
 }
