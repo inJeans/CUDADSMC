@@ -22,7 +22,7 @@ hbar = 1.05457148e-34;
 T    = 20.e-6;
 dBdr = 8746.;
 
-tres = 26;
+tres = 151;
 ntrials = 1e4;
 dt = 1e-6;
 
@@ -51,7 +51,7 @@ dset.read_direct(N);
 
 f.close()
 
-time = time * 2.8;
+time = time * 1.81;
 
 Ek = np.zeros((N.size,))
 Ep = np.zeros((N.size,))

@@ -145,18 +145,13 @@ __global__ void generateInitialDist(double3 *pos,
         
         acc[atom] = updateAccel( pos[atom] );
         
-        isPerturb[atom] = false;
-        
         atomID[atom] = atom;
 		
 		// Copy state back to global memory
 		rngState[atom] = localrngState;
         
-        if (atom < 0.1*numberOfAtoms) {
-            pos[atom] = 0.5 * pos[atom];
-            vel[atom] = 0.5 * vel[atom];
-            isPerturb[atom] = true;
-        }
+        pos[atom].y = sqrt(2.)*pos[atom].y;
+        vel[atom].y = sqrt(2.)*vel[atom].y;
     }
     return;
 }
