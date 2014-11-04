@@ -152,7 +152,7 @@ __global__ void generateInitialDist(double3 *pos,
 		// Copy state back to global memory
 		rngState[atom] = localrngState;
         
-        if (atom < 0.01*numberOfAtoms) {
+        if (atom < 0.1*numberOfAtoms) {
             pos[atom] = 0.5 * pos[atom];
             vel[atom] = sqrt(0.5) * vel[atom];
             isPerturb[atom] = true;
