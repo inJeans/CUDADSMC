@@ -19,18 +19,18 @@ mRb  = 1.443160648e-25;
 pi   = 3.14159265;
 kB   = 1.3806503e-23;
 hbar = 1.05457148e-34;
-T    = 9.0e-6;
-dBdz = 2.5;
+T    = 9.2e-6;
+dBdr = 8746.;
 
 tres = 26;
 nAtoms = 1e6;
-nCells = 20**3 + 1;
+nCells = 100**3 + 1;
 
 vtherm = np.sqrt( 8.*kB*T / (pi*mRb) );
 sigma = 8. * pi * a**2;
-V = (2*0.001)**3
-n0 = nAtoms / V
-collisionRate = sigma * nAtoms * ( gs*muB*dBdz ) ** 3 / ( 128. * np.sqrt( mRb*pi**3*(kB*T)**5 ) )
+Ve = 2.*np.sqrt(2.)*pi**1.5 / ((dBdr*gs*muB / kB / T)**1.5)
+n0 = nAtoms / Ve
+collisionRate = 0.5 * n0 * sigma * vtherm * (1. / (2.*np.sqrt(2.)) )
 
 print "Analytic collision rate = ", collisionRate
 

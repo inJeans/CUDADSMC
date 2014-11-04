@@ -20,7 +20,7 @@ pi   = 3.14159265;
 kB   = 1.3806503e-23;
 hbar = 1.05457148e-34;
 T    = 20.e-6;
-dBdz = 2.5;
+dBdr = 8746.;
 
 tres = 26;
 ntrials = 1e4;
@@ -51,7 +51,7 @@ dset.read_direct(N);
 
 f.close()
 
-time = time * 23.5;
+time = time * 2.8;
 
 Ek = np.zeros((N.size,))
 Ep = np.zeros((N.size,))
@@ -75,8 +75,8 @@ for i in range(0,N.size):
     kinetic = 0.5 * mRb * np.sum(vel[0:N[i],:,i]**2, 1)
     n = np.where( np.isfinite(kinetic) )
     Ek[i] = np.sum( kinetic[n], 0 ) / N[i] / kB * 1.e6
-    radius = np.sqrt(pos[0:N[i],0,i]**2 + pos[0:N[i],1,i]**2 + 4.*pos[0:N[i],2,i]**2 )
-    Ep[i] = np.sum( 0.5*gs*muB*dBdz*radius[n], 0 ) / N[i] / kB * 1.e6
+    radius = pos[0:N[i],0,i]**2 + pos[0:N[i],1,i]**2 + pos[0:N[i],2,i]**2
+    Ep[i] = np.sum( 0.5*gs*muB*dBdr*radius[n], 0 ) / N[i] / kB * 1.e6
     Et[i] = Ek[i] + Ep[i]
 
     Temp[i] = 2./3. * np.sum( kinetic[n], 0) / N[i] / kB * 1.e6
@@ -130,11 +130,6 @@ else:
 
 #filename = './Tests/Motion/motionTest-%.3g' % dt + '.npy'
 #file = open(filename, "w")
-
-pl.figure(2)
-pl.plot( time, N )
-pl.xlabel('time (s)')
-pl.ylabel('Atom Number')
 
 pl.figure(3)
 pl.plot( time, Temp, time, Tperturb )

@@ -154,7 +154,7 @@ __global__ void generateInitialDist(double3 *pos,
         
         if (atom < 0.1*numberOfAtoms) {
             pos[atom] = 0.5 * pos[atom];
-            vel[atom] = sqrt(0.5) * vel[atom];
+            vel[atom] = 0.5 * vel[atom];
             isPerturb[atom] = true;
         }
     }
@@ -174,25 +174,10 @@ __device__ double3 getRandomVelocity( double Temp, curandState_t *rngState )
 
 __device__ double3 selectAtomInThermalDistribution( double Temp, curandState_t *rngState )
 {
-    double3 r   = make_double3( 0., 0., 0. );
-    double3 pos = make_double3( 0., 0., 0. );
-    
-    bool noAtomSelected = true;
-    while (noAtomSelected) {
-        double2 r1 = curand_normal2_double ( &rngState[0] );
-        double  r2 = curand_normal_double  ( &rngState[0] );
+    double2 r1 = curand_normal2_double ( &rngState[0] );
+    double  r2 = curand_normal_double  ( &rngState[0] );
         
-        double3 r = make_double3( r1.x, r1.y, r2 ) * d_maxGridWidth / 3;
-        
-        double U = -0.5*d_gs*d_muB*d_dBdz*sqrt(r.x*r.x+r.y*r.y+4.0*r.z*r.z);
-        
-        double Pr = exp( U / d_kB / Temp );
-        
-        if ( curand_uniform_double ( &rngState[0] ) < Pr) {
-            pos = r;
-            noAtomSelected = false;
-        }
-    }
+    double3 pos = make_double3( r1.x, r1.y, r2 ) * sqrt( d_kB*Temp / (d_gs*d_muB*d_dBdr) );
     
     return pos;
 }
@@ -211,11 +196,11 @@ __device__ double3 updateAccel( double3 pos )
 {
     double3 accel = make_double3( 0., 0., 0. );
     
-    double potential = d_gs * d_muB * d_dBdz * rsqrt( pos.x*pos.x + pos.y*pos.y + 4.*pos.z*pos.z ) / d_mRb;
+    double potential = d_gs * d_muB * d_dBdr / d_mRb;
     
-    accel.x =-0.5 * potential * pos.x;
-    accel.y =-0.5 * potential * pos.y;
-    accel.z =-2.0 * potential * pos.z;
+    accel.x =-1.0 * potential * pos.x;
+    accel.y =-1.0 * potential * pos.y;
+    accel.z =-1.0 * potential * pos.z;
     
     return accel;
 }

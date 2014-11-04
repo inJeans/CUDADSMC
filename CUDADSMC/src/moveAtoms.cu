@@ -85,11 +85,11 @@ __device__ double3 updateAcc( double3 pos )
 {
     double3 accel = make_double3( 0., 0., 0. );
     
-    double potential = d_gs * d_muB * d_dBdz * rsqrt( pos.x*pos.x + pos.y*pos.y + 4.*pos.z*pos.z ) / d_mRb;
+    double potential = d_gs * d_muB * d_dBdr / d_mRb;
     
-    accel.x =-0.5 * potential * pos.x;
-    accel.y =-0.5 * potential * pos.y;
-    accel.z =-2.0 * potential * pos.z;
+    accel.x =-1.0 * potential * pos.x;
+    accel.y =-1.0 * potential * pos.y;
+    accel.z =-1.0 * potential * pos.z;
     
     return accel;
 }
