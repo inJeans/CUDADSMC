@@ -22,7 +22,7 @@ hbar = 1.05457148e-34;
 T    = 20.e-6;
 dBdz = 2.5;
 
-tres = 101;
+tres = 51;
 ntrials = 1e4;
 dt = 1e-6;
 

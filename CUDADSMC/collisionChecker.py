@@ -22,7 +22,7 @@ hbar = 1.05457148e-34;
 T    = 13.56e-6;
 dBdz = 2.5;
 
-tres = 101;
+tres = 51;
 nAtoms = 1e6;
 nCells = 40**3 + 1;
 

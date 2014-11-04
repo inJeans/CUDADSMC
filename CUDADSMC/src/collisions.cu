@@ -328,22 +328,28 @@ void sortArrays( double3 *d_pos,
     thrust::device_ptr<double3> th_sorted = thrust::device_pointer_cast( d_sorted );
     
     thrust::gather( th_indices.begin(),
-                    th_indices.end(),
-                    th_pos,
-                    th_sorted );
-    th_pos = th_sorted;
-
-    thrust::gather( th_indices.begin(),
-                    th_indices.end(),
-                    th_vel,
-                    th_sorted );
-    th_vel = th_sorted;
+                   th_indices.end(),
+                   th_pos,
+                   th_sorted );
+    thrust::copy( th_sorted,
+                 th_sorted + numberOfAtoms,
+                 th_pos );
     
     thrust::gather( th_indices.begin(),
-                    th_indices.end(),
-                    th_acc,
-                    th_sorted );
-    th_acc = th_sorted;
+                   th_indices.end(),
+                   th_vel,
+                   th_sorted );
+    thrust::copy( th_sorted,
+                 th_sorted + numberOfAtoms,
+                 th_vel );
+    
+    thrust::gather( th_indices.begin(),
+                   th_indices.end(),
+                   th_acc,
+                   th_sorted );
+    thrust::copy( th_sorted,
+                 th_sorted + numberOfAtoms,
+                 th_acc );
     
     cudaFree( d_sorted );
     
@@ -486,6 +492,7 @@ __global__ void collide( double3 *vel,
                     // Generate a random velocity on the unit sphere.
                     pointOnSphere = getRandomPointOnSphere( &l_rngState );
                     newVel = magVrel * pointOnSphere;
+//                    newVel = magVrel * make_double3( 1., 1., 1. ) * sqrt(3.) / 3.;
                     
                     vel[collidingAtoms.x] = velcm - 0.5 * newVel;
                     vel[collidingAtoms.y] = velcm + 0.5 * newVel;
@@ -593,10 +600,20 @@ __device__ double calculateRelativeVelocity( double3 *vel, int2 collidingAtoms )
 
 __device__ double3 getRandomPointOnSphere( curandState_t *rngState )
 {
-    double2 r1 = curand_normal2_double ( rngState );
-    double  r2 = curand_normal_double  ( rngState );
+//    double2 r1 = curand_normal2_double ( rngState );
+//    double  r2 = curand_normal_double  ( rngState );
+//    
+//    double3 pointOnSphere = make_double3( r1.x, r2, r1.y ) * rsqrt( r1.x*r1.x + r1.y*r1.y + r2*r2 );
+ 
+    double u     = curand_uniform_double( rngState ) * 2. - 1.;
+    double theta = curand_uniform_double( rngState ) * 2. * d_pi;
     
-    double3 pointOnSphere = make_double3( r1.x, r1.y, r2 ) * rsqrt( r1.x*r1.x + r1.y*r1.y + r2*r2 );
+    double3 pointOnSphere = make_double3( 0., 0., 0. );
+    
+    pointOnSphere.x = sqrt( 1. - u*u ) * cos( theta );
+    pointOnSphere.y = sqrt( 1. - u*u ) * sin( theta );
+    pointOnSphere.z = u;
+    
     
     return pointOnSphere;
 }
