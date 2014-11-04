@@ -78,16 +78,24 @@ __device__ double3 updatePos( double3 pos, double3 vel )
 {
     double3 newPos = pos + vel * d_dt;
     
+    if (newPos.x > d_maxGridWidth.x || newPos.x < -d_maxGridWidth.x) {
+        newPos.x = -newPos.x;
+    }
+    
+    if (newPos.y > d_maxGridWidth.y || newPos.y < -d_maxGridWidth.y) {
+        newPos.y = -newPos.y;
+    }
+    
+    if (newPos.z > d_maxGridWidth.z || newPos.z < -d_maxGridWidth.z) {
+        newPos.z = -newPos.z;
+    }
+    
     return newPos;
 }
 
 __device__ double3 updateAcc( double3 pos )
 {
     double3 accel = make_double3( 0., 0., 0. );
-    
-    double potential = -1.0 * d_gs * d_muB * d_dBdr / d_mRb;
-    
-    accel = potential * pos;
     
     return accel;
 }

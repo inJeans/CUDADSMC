@@ -150,7 +150,6 @@ __global__ void generateInitialDist(double3 *pos,
 		// Copy state back to global memory
 		rngState[atom] = localrngState;
         
-        pos[atom].y = sqrt(2.)*pos[atom].y;
         vel[atom].y = sqrt(2.)*vel[atom].y;
     }
     return;
@@ -169,10 +168,11 @@ __device__ double3 getRandomVelocity( double Temp, curandState_t *rngState )
 
 __device__ double3 selectAtomInThermalDistribution( double Temp, curandState_t *rngState )
 {
-    double2 r1 = curand_normal2_double ( &rngState[0] );
-    double  r2 = curand_normal_double  ( &rngState[0] );
+    double r1 = curand_uniform_double ( &rngState[0] ) * 2. - 1.;
+    double r2 = curand_uniform_double ( &rngState[0] ) * 2. - 1.;
+    double r3 = curand_uniform_double ( &rngState[0] ) * 2. - 1.;
         
-    double3 pos = make_double3( r1.x, r1.y, r2 ) * sqrt( d_kB*Temp / (d_gs*d_muB*d_dBdr) );
+    double3 pos = make_double3( r1, r2, r3 ) * d_maxGridWidth;
     
     return pos;
 }
@@ -190,12 +190,6 @@ __device__ double3 getGaussianPoint( double mean, double std, curandState_t *rng
 __device__ double3 updateAccel( double3 pos )
 {
     double3 accel = make_double3( 0., 0., 0. );
-    
-    double potential = d_gs * d_muB * d_dBdr / d_mRb;
-    
-    accel.x =-1.0 * potential * pos.x;
-    accel.y =-1.0 * potential * pos.y;
-    accel.z =-1.0 * potential * pos.z;
     
     return accel;
 }
