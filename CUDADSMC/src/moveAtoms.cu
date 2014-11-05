@@ -64,6 +64,17 @@ __device__ void symplecticEulerUpdate( double3 *pos, double3 *vel, double3 *acc 
     pos[0] = updatePos( pos[0], vel[0] );
 }
 
+__device__ void explicitEulerUpdate( double3 *pos, double3 *vel, double3 *acc )
+{
+    double3 newAcc = updateAcc( pos[0] );
+    double3 newVel = updateVel( pos[0], vel[0], newAcc );
+    double3 newPos = updatePos( pos[0], vel[0] );
+    
+    pos[0] = newPos;
+    vel[0] = newVel;
+    acc[0] = newAcc;
+}
+
 __device__ double3 updateVel( double3 pos, double3 vel, double3 acc )
 {
     return vel + acc * d_dt;
@@ -76,20 +87,16 @@ __device__ double3 updateVelHalfStep( double3 pos, double3 vel, double3 acc )
 
 __device__ double3 updatePos( double3 pos, double3 vel )
 {
-    double3 newPos = pos + vel * d_dt;
-    
-    return newPos;
+    return pos + vel * d_dt;
 }
 
 __device__ double3 updateAcc( double3 pos )
 {
     double3 accel = make_double3( 0., 0., 0. );
     
-    double potential = d_gs * d_muB * d_dBdr / d_mRb;
+    double potential = -1.0 * d_gs * d_muB * d_dBdr / d_mRb;
     
-    accel.x =-1.0 * potential * pos.x;
-    accel.y =-1.0 * potential * pos.y;
-    accel.z =-1.0 * potential * pos.z;
+    accel = potential * pos;
     
     return accel;
 }

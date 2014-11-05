@@ -141,7 +141,8 @@ __global__ void generateInitialDist(double3 *pos,
         pos[atom] = selectAtomInThermalDistribution( Temp,
                                                      &localrngState );
         
-		vel[atom] = getRandomVelocity( Temp, &localrngState );
+		vel[atom] = getRandomVelocity( Temp,
+                                       &localrngState );
         
         acc[atom] = updateAccel( pos[atom] );
         
@@ -153,8 +154,8 @@ __global__ void generateInitialDist(double3 *pos,
 		rngState[atom] = localrngState;
         
         if (atom < 0.1*numberOfAtoms) {
-            pos[atom] = 0.5 * pos[atom];
-            vel[atom] = 0.5 * vel[atom];
+            pos[atom] = sqrt(0.75) * pos[atom];
+            vel[atom] = sqrt(0.75) * vel[atom];
             isPerturb[atom] = true;
         }
     }
@@ -165,19 +166,20 @@ __device__ double3 getRandomVelocity( double Temp, curandState_t *rngState )
 {
 	double3 vel = make_double3( 0., 0., 0. );
 	
-	double V = sqrt( d_kB*Temp/d_mRb);
+	double V = sqrt( d_kB*Temp/d_mRb );
 	
-	vel = V * getGaussianPoint( 0., 1., &rngState[0] );
+	vel = getGaussianPoint( 0., V, &rngState[0] );
     
 	return vel;
 }
 
 __device__ double3 selectAtomInThermalDistribution( double Temp, curandState_t *rngState )
 {
-    double2 r1 = curand_normal2_double ( &rngState[0] );
-    double  r2 = curand_normal_double  ( &rngState[0] );
+    double r1 = curand_normal_double ( &rngState[0] );
+    double r2 = curand_normal_double ( &rngState[0] );
+    double r3 = curand_normal_double ( &rngState[0] );
         
-    double3 pos = make_double3( r1.x, r1.y, r2 ) * sqrt( d_kB*Temp / (d_gs*d_muB*d_dBdr) );
+    double3 pos = make_double3( r1, r2, r3 ) * sqrt( d_kB*Temp / (d_gs*d_muB*d_dBdr) );
     
     return pos;
 }
@@ -196,11 +198,9 @@ __device__ double3 updateAccel( double3 pos )
 {
     double3 accel = make_double3( 0., 0., 0. );
     
-    double potential = d_gs * d_muB * d_dBdr / d_mRb;
+    double potential = -1.0 * d_gs * d_muB * d_dBdr / d_mRb;
     
-    accel.x =-1.0 * potential * pos.x;
-    accel.y =-1.0 * potential * pos.y;
-    accel.z =-1.0 * potential * pos.z;
+    accel = potential * pos;
     
     return accel;
 }

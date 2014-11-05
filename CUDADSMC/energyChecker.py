@@ -20,10 +20,10 @@ pi   = 3.14159265;
 kB   = 1.3806503e-23;
 hbar = 1.05457148e-34;
 T    = 20.e-6;
-dBdr = 8746.;
+dBdr = 32000.;
 
-tres = 26;
-ntrials = 1e4;
+tres = 101;
+ntrials = 1e5;
 dt = 1e-6;
 
 time = np.zeros((tres));
@@ -50,8 +50,6 @@ dset = f.require_dataset('atomData/atomNumber',(1,1,tres),False,False);
 dset.read_direct(N);
 
 f.close()
-
-time = time * 2.8;
 
 Ek = np.zeros((N.size,))
 Ep = np.zeros((N.size,))
@@ -131,8 +129,13 @@ else:
 #filename = './Tests/Motion/motionTest-%.3g' % dt + '.npy'
 #file = open(filename, "w")
 
+fit = np.polyfit(time[0:0.4*tres], np.log(np.abs(Temp[-1] - Tperturb[0:0.4*tres])),1)
+
+print "The thermalisation time is", -fit[0]
+print "Thermalisation in %f collisions", (20.96/-fit[0])
+
 pl.figure(3)
-pl.plot( time, Temp, time, Tperturb )
+pl.plot( time, Temp, time, Tperturb, time, Temp[-1] - np.exp(fit[1] + fit[0]*time), 'x' )
 pl.xlabel('time (s)')
 pl.ylabel('Temperature (uK)')
 
