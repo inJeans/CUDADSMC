@@ -51,7 +51,7 @@ dset.read_direct(N);
 
 f.close()
 
-time = time * 28.3;
+#time = time * 24.21;
 
 Ek = np.zeros((N.size,))
 Ep = np.zeros((N.size,))
@@ -131,8 +131,13 @@ else:
 #filename = './Tests/Motion/motionTest-%.3g' % dt + '.npy'
 #file = open(filename, "w")
 
+fit = np.polyfit(time[0:0.4*tres], np.log(np.abs(Temp[-1] - Tperturb[0:0.4*tres])),1)
+
+print "The thermalisation time is", -fit[0]
+print "Thermalisation in %f collisions", (24.21/-fit[0])
+
 pl.figure(3)
-pl.plot( time, Temp, time, Tperturb )
+pl.plot( time, Temp, time, Tperturb, time, Temp[-1] - np.exp(fit[1] + fit[0]*time), 'x' )
 pl.xlabel('time (s)')
 pl.ylabel('Temperature (uK)')
 

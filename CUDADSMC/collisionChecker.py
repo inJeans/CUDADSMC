@@ -19,17 +19,16 @@ mRb  = 1.443160648e-25;
 pi   = 3.14159265;
 kB   = 1.3806503e-23;
 hbar = 1.05457148e-34;
-T    = 13.3e-6;
+T    = 9.72e-6;
 dBdr = 8746.;
 
-tres = 151;
+tres = 26;
 nAtoms = 1e6;
-nCells = 10**3 + 1;
+nCells = 5**3 + 1;
 
 vtherm = np.sqrt( 8.*kB*T / (pi*mRb) );
-vrel = np.sqrt(2) * vtherm
+vrel = np.sqrt(2.) * vtherm
 sigma = 8. * pi * a**2;
-#Ve = (2. * 0.00005)**3
 Ve = (2. * 0.00005)**3
 n0 = nAtoms / Ve
 collisionRate = 0.5 * n0 * sigma * vrel
