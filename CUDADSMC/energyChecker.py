@@ -23,7 +23,7 @@ T    = 20.e-6;
 dBdr = 8746.;
 
 tres = 26;
-ntrials = 1e4;
+ntrials = 1e5;
 dt = 1e-6;
 
 time = np.zeros((tres));
@@ -50,8 +50,6 @@ dset = f.require_dataset('atomData/atomNumber',(1,1,tres),False,False);
 dset.read_direct(N);
 
 f.close()
-
-time = time * 28.3;
 
 Ek = np.zeros((N.size,))
 Ep = np.zeros((N.size,))
@@ -136,8 +134,13 @@ pl.plot( time, Temp, time, Tperturb )
 pl.xlabel('time (s)')
 pl.ylabel('Temperature (uK)')
 
+fit = np.polyfit(time[0:0.25*tres], np.log(np.abs(Ty[0:0.25*tres] - Tx[-1])),1)
+
+print "The thermalisation time is", -fit[0]
+print "Thermalisation in %f collisions", (28.35/-fit[0])
+
 pl.figure(4)
-pl.plot( time, Tx, time, Ty, time, Tz )
+pl.plot( time, Tx, time, Ty, time, Tz, time, Tx[-1] + np.exp(fit[1] + fit[0]*time), 'x' )
 pl.xlabel('time (s)')
 pl.ylabel('Directional Temperature (uK)')
 
