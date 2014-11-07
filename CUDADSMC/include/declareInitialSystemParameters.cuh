@@ -19,7 +19,7 @@ extern int    numberOfAtoms;
 extern int    numberOfCells;
 extern int3   cellsPerDimension;
 extern double dt;
-extern double T;
+extern double alpha;
 
 #pragma mark Physical Constants
 

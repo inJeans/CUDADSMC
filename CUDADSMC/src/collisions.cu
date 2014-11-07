@@ -18,7 +18,7 @@
 
 #pragma mark - Indexing
 
-double indexAtoms( double3 *d_pos, int *d_cellID, int3 cellsPerDimension )
+double indexAtoms( double3 *d_pos, int *d_cellID, int3 cellsPerDimension, int numberOfAtoms )
 {
     double *d_radius;
     cudaCalloc( (void **)&d_radius, numberOfAtoms, sizeof(double) );
@@ -309,7 +309,8 @@ void sortArrays( double3 *d_pos,
                  double3 *d_acc,
                  int *d_cellID,
                  hbool_t *d_isPerturb,
-                 int *d_atomID )
+                 int *d_atomID ,
+                 int numberOfAtoms )
 {
     thrust::device_ptr<double3> th_pos = thrust::device_pointer_cast( d_pos );
     thrust::device_ptr<double3> th_vel = thrust::device_pointer_cast( d_vel );
@@ -525,11 +526,16 @@ __global__ void collide( double3 *vel,
                     // Generate a random velocity on the unit sphere.
                     pointOnSphere = getRandomPointOnSphere( &l_rngState );
                     newVel = magVrel * pointOnSphere;
-                    
+                    double Eki = dot(vel[collidingAtoms.x],vel[collidingAtoms.x]) + dot(vel[collidingAtoms.y],vel[collidingAtoms.y]);
                     vel[collidingAtoms.x] = velcm - 0.5 * newVel;
                     vel[collidingAtoms.y] = velcm + 0.5 * newVel;
 //                    collisionCount[cell] += d_alpha;
                     collisionCount[cell]++;
+                    double Ekf = dot(vel[collidingAtoms.x],vel[collidingAtoms.x]) + dot(vel[collidingAtoms.y],vel[collidingAtoms.y]);
+                    
+//                    if (collidingAtoms.x > 1000 || collidingAtoms.y > 1000) {
+//                        printf("Atoms out here do collide, atom1 = %i, atom2 = %i\n", collidingAtoms.x, collidingAtoms.y );
+//                    }
                 }
             }
             
@@ -635,7 +641,7 @@ __device__ double3 getRandomPointOnSphere( curandState_t *rngState )
     double2 r1 = curand_normal2_double ( rngState );
     double  r2 = curand_normal_double  ( rngState );
     
-    double3 pointOnSphere = make_double3( r1.x, r1.y, r2 ) * rsqrt( r1.x*r1.x + r1.y*r1.y + r2*r2 );
+    double3 pointOnSphere = make_double3( r1.x, r2, r1.y ) * rsqrt( r1.x*r1.x + r1.y*r1.y + r2*r2 );
     
     return pointOnSphere;
 }

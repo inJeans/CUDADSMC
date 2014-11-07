@@ -12,7 +12,7 @@
 #include "vectorMath.cuh"
 #include "hdf5.h"
 
-double indexAtoms( double3 *d_pos, int *d_cellID, int3 cellsPerDimension );
+double indexAtoms( double3 *d_pos, int *d_cellID, int3 cellsPerDimension, int numberOfAtoms );
 void h_calculateRadius( double3 *pos, double *radius, int numberOfAtoms );
 __global__ void calculateRadius( double3 *pos, double *radius, int numberOfAtoms );
 double findMedian( double *v, int N );
@@ -32,7 +32,8 @@ void sortArrays( double3 *d_pos,
                  double3 *d_acc,
                  int *d_cellID,
                  hbool_t *d_isPerturb,
-                 int *d_atomID);
+                 int *d_atomID,
+                 int numberOfAtoms );
 __global__ void collide( double3 *vel,
                          double  *sigvrmax,
                          int     *prefixScanNumberOfAtomsInCell,

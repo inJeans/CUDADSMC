@@ -162,17 +162,16 @@ __device__ double3 getRandomVelocity( double Temp, curandState_t *rngState )
 	
 	double V = sqrt( d_kB*Temp/d_mRb);
 	
-	vel = V * getGaussianPoint( 0., 1., &rngState[0] );
+	vel = getGaussianPoint( 0., V, &rngState[0] );
     
 	return vel;
 }
 
 __device__ double3 selectAtomInThermalDistribution( double Temp, curandState_t *rngState )
 {
-    double2 r1 = curand_normal2_double ( &rngState[0] );
-    double  r2 = curand_normal_double  ( &rngState[0] );
+    double r = sqrt( d_kB*Temp / (d_gs*d_muB*d_dBdr) );
         
-    double3 pos = make_double3( r1.x, r1.y, r2 ) * sqrt( d_kB*Temp / (d_gs*d_muB*d_dBdr) );
+    double3 pos = getGaussianPoint( 0., r, &rngState[0] );
     
     return pos;
 }
@@ -191,18 +190,16 @@ __device__ double3 updateAccel( double3 pos )
 {
     double3 accel = make_double3( 0., 0., 0. );
     
-    double potential = d_gs * d_muB * d_dBdr / d_mRb;
+    double potential = -1.0 * d_gs * d_muB * d_dBdr / d_mRb;
     
-    accel.x =-1.0 * potential * pos.x;
-    accel.y =-1.0 * potential * pos.y;
-    accel.z =-1.0 * potential * pos.z;
+    accel = potential * pos;
     
     return accel;
 }
 
 void initSigvrmax( double *d_sigvrmax, int numberOfCells )
 {
-    double sigvrmax = sqrt(8.*h_kB*Tinit/(h_pi*h_mRb))*8.*h_pi*h_a*h_a;
+    double sigvrmax = sqrt(16.*h_kB*Tinit/(h_pi*h_mRb))*8.*h_pi*h_a*h_a;
     
     cudaSetMem( d_sigvrmax, sigvrmax, numberOfCells + 1 );
 }

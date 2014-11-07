@@ -20,10 +20,10 @@ pi   = 3.14159265;
 kB   = 1.3806503e-23;
 hbar = 1.05457148e-34;
 T    = 20.e-6;
-dBdr = 8746.;
+dBdr = 32000.;
 
-tres = 151;
-ntrials = 1e4;
+tres = 76;
+ntrials = 1e4   ;
 dt = 1e-6;
 
 time = np.zeros((tres));
@@ -50,8 +50,6 @@ dset = f.require_dataset('atomData/atomNumber',(1,1,tres),False,False);
 dset.read_direct(N);
 
 f.close()
-
-time = time * 1.81;
 
 Ek = np.zeros((N.size,))
 Ep = np.zeros((N.size,))
@@ -80,9 +78,6 @@ for i in range(0,N.size):
     Et[i] = Ek[i] + Ep[i]
 
     Temp[i] = 2./3. * np.sum( kinetic[n], 0) / N[i] / kB * 1.e6
-    
-    kineticPerturb = isPerturb[0:N[i],0,i] * 0.5 * mRb * np.sum(vel[0:N[i],:,i]**2, 1)
-    Tperturb[i] = 2./3. * np.sum( kineticPerturb[n], 0) / (0.1*ntrials) / kB * 1.e6
 
     Tx[i] = 2./3. * np.sum( 0.5 * mRb * vel[0:N[i],0,i]**2, 0) / N[i] / kB * 1.e6
     Ty[i] = 2./3. * np.sum( 0.5 * mRb * vel[0:N[i],1,i]**2, 0) / N[i] / kB * 1.e6
@@ -132,12 +127,17 @@ else:
 #file = open(filename, "w")
 
 pl.figure(3)
-pl.plot( time, Temp, time, Tperturb )
+pl.plot( time, Temp )
 pl.xlabel('time (s)')
 pl.ylabel('Temperature (uK)')
 
+fit = np.polyfit(time[0:0.25*tres], np.log(np.abs(Ty[0:0.25*tres] - Tx[-1])),1)
+
+print "The thermalisation time is", -fit[0]
+print "Thermalisation in %f collisions", (11.98/-fit[0])
+
 pl.figure(4)
-pl.plot( time, Tx, time, Ty, time, Tz )
+pl.plot( time, Tx/Tx[0], time, Ty/Tx[0], time, Tz/Tx[0], time, (Tx[-1] + np.exp(fit[1] + fit[0]*time))/Tx[0], 'x' )
 pl.xlabel('time (s)')
 pl.ylabel('Directional Temperature (uK)')
 

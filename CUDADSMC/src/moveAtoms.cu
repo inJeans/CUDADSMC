@@ -83,11 +83,9 @@ __device__ double3 updatePos( double3 pos, double3 vel )
 
 __device__ double3 updateAcc( double3 pos )
 {
-    double3 accel = make_double3( 0., 0., 0. );
-    
     double potential = -1.0 * d_gs * d_muB * d_dBdr / d_mRb;
     
-    accel = potential * pos;
+    double3 accel = potential * pos;
     
     return accel;
 }
