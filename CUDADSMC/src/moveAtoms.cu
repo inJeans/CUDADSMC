@@ -90,6 +90,7 @@ __device__ double3 updateAcc( double3 pos )
     accel.x =-0.5 * potential * pos.x;
     accel.y =-0.5 * potential * pos.y;
     accel.z =-2.0 * potential * pos.z;
+
     
     return accel;
 }

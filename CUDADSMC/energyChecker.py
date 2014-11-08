@@ -22,7 +22,7 @@ hbar = 1.05457148e-34;
 T    = 20.e-6;
 dBdz = 2.5;
 
-tres = 51;
+tres = 101;
 ntrials = 1e4;
 dt = 1e-6;
 
@@ -46,8 +46,6 @@ dset = f.require_dataset('atomData/atomNumber',(1,1,tres),False,False);
 dset.read_direct(N);
 
 f.close()
-
-time = time * 8.44;
 
 Ek = np.zeros((N.size,))
 Ep = np.zeros((N.size,))
@@ -133,8 +131,13 @@ pl.plot( time, Temp )
 pl.xlabel('time (s)')
 pl.ylabel('Temperature (uK)')
 
+fit = np.polyfit( time[0:0.25*tres], np.log(Ty[0:0.25*tres] - Ty[-1]), 1)
+
+print "The thermalsation time is", -fit[0]
+print "That means it takes this many collisions", -27.4 / fit[0]
+
 pl.figure(4)
-pl.plot( time, Tx, time, Ty, time, Tz )
+pl.plot( time, Tx, time, Ty, time, Tz, time, Ty[-1] + np.exp( fit[1] + fit[0]*time ), 'x' )
 pl.xlabel('time (s)')
 pl.ylabel('Directional Temperature (uK)')
 

@@ -142,8 +142,8 @@ __global__ void generateInitialDist(double3 *pos,
 		// Copy state back to global memory
 		rngState[atom] = localrngState;
         
-        pos[atom].z = 2. * pos[atom].z;
-        vel[atom].z = sqrt(2.) * vel[atom].z;
+        pos[atom].z = 1. / 2. * pos[atom].z;
+        vel[atom].z = 1. / sqrt(2.) * vel[atom].z;
     }
     return;
 }

@@ -22,9 +22,9 @@ hbar = 1.05457148e-34;
 T    = 13.56e-6;
 dBdz = 2.5;
 
-tres = 51;
+tres = 101;
 nAtoms = 1e6;
-nCells = 40**3 + 1;
+nCells = 50**3 + 1;
 
 vtherm = np.sqrt( 8.*kB*T / (pi*mRb) );
 sigma = 8. * pi * a**2;

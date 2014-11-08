@@ -18,12 +18,12 @@
 
 #pragma mark - Indexing
 
-double indexAtoms( double3 *d_pos, int *d_cellID, int3 cellsPerDimension )
+double indexAtoms( double3 *d_pos, int *d_cellID, int3 cellsPerDimension, int numberOfAtoms )
 {
     double *d_radius;
     cudaCalloc( (void **)&d_radius, numberOfAtoms, sizeof(double) );
     
-	h_calculateRadius( d_pos,
+    h_calculateRadius( d_pos,
                        d_radius,
                        numberOfAtoms );
     
@@ -79,9 +79,9 @@ void h_calculateRadius( double3 *d_pos, double *d_radius, int numberOfAtoms )
 __global__ void calculateRadius( double3 *pos, double *radius, int numberOfAtoms )
 {
     for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
-		 atom < numberOfAtoms;
-		 atom += blockDim.x * gridDim.x)
-	{
+         atom < numberOfAtoms;
+         atom += blockDim.x * gridDim.x)
+    {
         radius[atom] = length( pos[atom] );
     }
     
@@ -159,19 +159,19 @@ void h_findAtomIndex( double3 *d_pos, int *d_cellID, double medianR, int numberO
 __global__ void findAtomIndex( double3 *pos, int *cellID, double medianR, int numberOfAtoms, int3 cellsPerDimension )
 {
     for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
-		 atom < numberOfAtoms;
-		 atom += blockDim.x * gridDim.x)
-	{
+         atom < numberOfAtoms;
+         atom += blockDim.x * gridDim.x)
+    {
         double3 l_pos = pos[atom];
         
         double3 gridMin    = getGridMin( medianR );
         double3 cellLength = getCellLength( medianR,
                                             cellsPerDimension );
-    
+        
         int3 cellIndices = getCellIndices( l_pos,
                                            gridMin,
                                            cellLength );
-		
+        
         cellID[atom] = getCellID( cellIndices, cellsPerDimension );
     }
     
@@ -180,7 +180,7 @@ __global__ void findAtomIndex( double3 *pos, int *cellID, double medianR, int nu
 
 __device__ double3 getCellLength( double medianR, int3 cellsPerDimension )
 {
-//    double3 cellLength = 2.0 * d_maxGridWidth / cellsPerDimension;
+    //    double3 cellLength = 2.0 * d_maxGridWidth / cellsPerDimension;
     double3 cellLength = 2.0 * d_meshWidth * medianR / cellsPerDimension;
     
     return cellLength;
@@ -190,10 +190,10 @@ __device__ int3 getCellIndices( double3 pos, double3 gridMin, double3 cellLength
 {
     int3 index = { 0, 0, 0 };
     
-    index.x = __double2int_rd ( (pos.x - gridMin.x) / cellLength.x );
-    index.y = __double2int_rd ( (pos.y - gridMin.y) / cellLength.y );
-    index.z = __double2int_rd ( (pos.z - gridMin.z) / cellLength.z );
-	
+    index.x = (int) floor( (pos.x - gridMin.x) / cellLength.x );
+    index.y = (int) floor( (pos.y - gridMin.y) / cellLength.y );
+    index.z = (int) floor( (pos.z - gridMin.z) / cellLength.z );
+    
     return index;
 }
 
@@ -213,7 +213,7 @@ __device__ int getCellID( int3 index, int3 cellsPerDimension )
 
 __device__ double3 getGridMin( double medianR )
 {
-//    double3 gridMin = -1.0 * d_maxGridWidth;
+    //    double3 gridMin = -1.0 * d_maxGridWidth;
     double3 gridMin = -1.0 * d_meshWidth * medianR * make_double3( 1.0, 1.0, 1.0 );
     
     return  gridMin;
@@ -221,36 +221,10 @@ __device__ double3 getGridMin( double medianR )
 
 __global__ void cellStartandEndKernel( int *cellID, int2 *cellStartEnd, int numberOfAtoms )
 {
-	for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
-		 atom < numberOfAtoms;
-		 atom += blockDim.x * gridDim.x)
-	{
-        // Find the beginning of the cell
-        if (atom == 0) {
-            cellStartEnd[cellID[atom]].x = 0;
-        }
-        else if (cellID[atom] != cellID[atom-1]) {
-            cellStartEnd[cellID[atom]].x = atom;
-        }
-        
-        // Find the end of the cell
-        if (atom == numberOfAtoms - 1) {
-            cellStartEnd[cellID[atom]].y = numberOfAtoms-1;
-        }
-        else if (cellID[atom] != cellID[atom+1]) {
-            cellStartEnd[cellID[atom]].y = atom;
-        }
-    }
-    
-    return;
-}
-
-__device__ void serialCellStartandEndKernel( int *cellID, int2 *cellStartEnd, int numberOfAtoms )
-{
-	for ( int atom = 0;
-		  atom < numberOfAtoms;
-		  atom++ )
-	{
+    for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
+         atom < numberOfAtoms;
+         atom += blockDim.x * gridDim.x)
+    {
         // Find the beginning of the cell
         if (atom == 0) {
             cellStartEnd[cellID[atom]].x = 0;
@@ -274,29 +248,17 @@ __device__ void serialCellStartandEndKernel( int *cellID, int2 *cellStartEnd, in
 __global__ void findNumberOfAtomsInCell( int2 *cellStartEnd, int *numberOfAtomsInCell, int numberOfCells )
 {
     for ( int cell = blockIdx.x * blockDim.x + threadIdx.x;
-		  cell < numberOfCells+1;
-		  cell += blockDim.x * gridDim.x)
-	{
-		if (cellStartEnd[cell].x == -1)
-		{
-			numberOfAtomsInCell[cell] = 0;
-		}
-		else
-		{
-			numberOfAtomsInCell[cell] = cellStartEnd[cell].y - cellStartEnd[cell].x + 1;
-		}
-    }
-    
-    return;
-}
-
-__device__ void serialFindNumberOfAtomsInCell( int2 *cellStartEnd, int *numberOfAtomsInCell, int numberOfCells )
-{
-    for (int cell = 0;
-		 cell < numberOfCells;
-		 cell++ )
-	{
-        numberOfAtomsInCell[cell] = cellStartEnd[cell].y - cellStartEnd[cell].x + 1;
+         cell < numberOfCells+1;
+         cell += blockDim.x * gridDim.x)
+    {
+        if (cellStartEnd[cell].x == -1)
+        {
+            numberOfAtomsInCell[cell] = 0;
+        }
+        else
+        {
+            numberOfAtomsInCell[cell] = cellStartEnd[cell].y - cellStartEnd[cell].x + 1;
+        }
     }
     
     return;
@@ -307,7 +269,8 @@ __device__ void serialFindNumberOfAtomsInCell( int2 *cellStartEnd, int *numberOf
 void sortArrays( double3 *d_pos,
                  double3 *d_vel,
                  double3 *d_acc,
-                 int *d_cellID )
+                 int *d_cellID,
+                 int numberOfAtoms )
 {
     thrust::device_ptr<double3> th_pos = thrust::device_pointer_cast( d_pos );
     thrust::device_ptr<double3> th_vel = thrust::device_pointer_cast( d_vel );
@@ -328,28 +291,28 @@ void sortArrays( double3 *d_pos,
     thrust::device_ptr<double3> th_sorted = thrust::device_pointer_cast( d_sorted );
     
     thrust::gather( th_indices.begin(),
-                   th_indices.end(),
-                   th_pos,
-                   th_sorted );
+                    th_indices.end(),
+                    th_pos,
+                    th_sorted );
     thrust::copy( th_sorted,
-                 th_sorted + numberOfAtoms,
-                 th_pos );
+                  th_sorted + numberOfAtoms,
+                  th_pos );
     
     thrust::gather( th_indices.begin(),
-                   th_indices.end(),
-                   th_vel,
-                   th_sorted );
+                    th_indices.end(),
+                    th_vel,
+                    th_sorted );
     thrust::copy( th_sorted,
-                 th_sorted + numberOfAtoms,
-                 th_vel );
+                  th_sorted + numberOfAtoms,
+                  th_vel );
     
     thrust::gather( th_indices.begin(),
-                   th_indices.end(),
-                   th_acc,
-                   th_sorted );
+                    th_indices.end(),
+                    th_acc,
+                    th_sorted );
     thrust::copy( th_sorted,
-                 th_sorted + numberOfAtoms,
-                 th_acc );
+                  th_sorted + numberOfAtoms,
+                  th_acc );
     
     cudaFree( d_sorted );
     
@@ -370,14 +333,14 @@ __global__ void collide( double3 *vel,
                          int *cellID )
 {
     for ( int cell = blockIdx.x * blockDim.x + threadIdx.x;
-          cell < numberOfCells;
-          cell += blockDim.x * gridDim.x)
+         cell < numberOfCells;
+         cell += blockDim.x * gridDim.x)
     {
         int numberOfAtomsInCell = prefixScanNumberOfAtomsInCell[cell+1] - prefixScanNumberOfAtomsInCell[cell];
         
         if (numberOfAtomsInCell > 1) {
             double3 cellLength = getCellLength( medianR,
-                                                cellsPerDimension );
+                                               cellsPerDimension );
             
             d_dt = 1.0e-6;
             d_loopsPerCollision = 0.025 / d_dt;
@@ -400,16 +363,16 @@ __global__ void collide( double3 *vel,
             curandState_t l_rngState = rngState[cell];
             
             for ( int l_collision = 0;
-                  l_collision < Ncol;
-                  l_collision++ )
+                 l_collision < Ncol;
+                 l_collision++ )
             {
                 int2 collidingAtoms = {0,0};
                 
-//                collidingAtoms = chooseCollidingAtoms( numberOfAtomsInCell,
-//                                                       prefixScanNumberOfAtomsInCell,
-//                                                       cellsPerDimension,
-//                                                       &l_rngState,
-//                                                       cell );
+                //                collidingAtoms = chooseCollidingAtoms( numberOfAtomsInCell,
+                //                                                       prefixScanNumberOfAtomsInCell,
+                //                                                       cellsPerDimension,
+                //                                                       &l_rngState,
+                //                                                       cell );
                 
                 if (numberOfAtomsInCell == 1) {
                     
@@ -492,19 +455,23 @@ __global__ void collide( double3 *vel,
                     // Generate a random velocity on the unit sphere.
                     pointOnSphere = getRandomPointOnSphere( &l_rngState );
                     newVel = magVrel * pointOnSphere;
-//                    newVel = magVrel * make_double3( 1., 1., 1. ) * sqrt(3.) / 3.;
-                    
+                    double Eki = dot(vel[collidingAtoms.x],vel[collidingAtoms.x]) + dot(vel[collidingAtoms.y],vel[collidingAtoms.y]);
                     vel[collidingAtoms.x] = velcm - 0.5 * newVel;
                     vel[collidingAtoms.y] = velcm + 0.5 * newVel;
-//                    collisionCount[cell] += d_alpha;
+                    //                    collisionCount[cell] += d_alpha;
                     collisionCount[cell]++;
+                    double Ekf = dot(vel[collidingAtoms.x],vel[collidingAtoms.x]) + dot(vel[collidingAtoms.y],vel[collidingAtoms.y]);
+                    
+                    //                    if (collidingAtoms.x > 1000 || collidingAtoms.y > 1000) {
+                    //                        printf("Atoms out here do collide, atom1 = %i, atom2 = %i\n", collidingAtoms.x, collidingAtoms.y );
+                    //                    }
                 }
             }
             
             rngState[cell] = l_rngState;
         }
     }
-
+    
     return;
 }
 
@@ -600,20 +567,10 @@ __device__ double calculateRelativeVelocity( double3 *vel, int2 collidingAtoms )
 
 __device__ double3 getRandomPointOnSphere( curandState_t *rngState )
 {
-//    double2 r1 = curand_normal2_double ( rngState );
-//    double  r2 = curand_normal_double  ( rngState );
-//    
-//    double3 pointOnSphere = make_double3( r1.x, r2, r1.y ) * rsqrt( r1.x*r1.x + r1.y*r1.y + r2*r2 );
- 
-    double u     = curand_uniform_double( rngState ) * 2. - 1.;
-    double theta = curand_uniform_double( rngState ) * 2. * d_pi;
+    double2 r1 = curand_normal2_double ( rngState );
+    double  r2 = curand_normal_double  ( rngState );
     
-    double3 pointOnSphere = make_double3( 0., 0., 0. );
-    
-    pointOnSphere.x = sqrt( 1. - u*u ) * cos( theta );
-    pointOnSphere.y = sqrt( 1. - u*u ) * sin( theta );
-    pointOnSphere.z = u;
-    
+    double3 pointOnSphere = make_double3( r1.x, r2, r1.y ) * rsqrt( r1.x*r1.x + r1.y*r1.y + r2*r2 );
     
     return pointOnSphere;
 }

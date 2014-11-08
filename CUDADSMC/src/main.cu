@@ -31,7 +31,21 @@ char groupname[] = "/atomData";
 int main(int argc, const char * argv[])
 {
 #pragma mark - Read commandline arguments
-    if ( argc == 3 )
+    int    numberOfAtoms;
+    int    numberOfCells;
+    int3   cellsPerDimension;
+    double alpha;
+    
+    if ( argc < 3 )
+    {
+        int Nc = 50;
+        cellsPerDimension = make_int3( Nc, Nc, Nc );
+        numberOfCells = Nc*Nc*Nc;
+        
+        numberOfAtoms = 1e4;
+        alpha = 1e6 / numberOfAtoms;
+    }
+    else if ( argc == 3 )
     {
         int Nc = atoi(argv[1]);
         cellsPerDimension = make_int3( Nc, Nc, Nc );
@@ -122,11 +136,13 @@ int main(int argc, const char * argv[])
     
     medianR = indexAtoms( d_pos,
                           d_cellID,
-                          cellsPerDimension );
+                          cellsPerDimension,
+                          numberOfAtoms );
     sortArrays( d_pos,
                 d_vel,
                 d_acc,
-                d_cellID );
+                d_cellID,
+                numberOfAtoms );
     
 #pragma mark - Write Initial State
     
@@ -242,12 +258,14 @@ int main(int argc, const char * argv[])
         
         medianR = indexAtoms( d_pos,
                               d_cellID,
-                              cellsPerDimension );
+                              cellsPerDimension,
+                              numberOfAtoms );
         
         sortArrays( d_pos,
                     d_vel,
                     d_acc,
-                    d_cellID );
+                    d_cellID,
+                    numberOfAtoms );
 		
 		deviceMemset<<<numberOfCells+1,1>>>( d_cellStartEnd,
 											 make_int2( -1, -1 ),
