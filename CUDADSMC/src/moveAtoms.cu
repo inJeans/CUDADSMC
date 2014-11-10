@@ -33,7 +33,7 @@ __global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, int numberO
         double3 l_acc = acc[atom];
 		
 //        for (int i=0; i<d_loopsPerCollision; i++) {
-            velocityVerletUpdate( &l_pos,
+            symplecticEulerUpdate( &l_pos,
                                   &l_vel,
                                   &l_acc );
 //        }

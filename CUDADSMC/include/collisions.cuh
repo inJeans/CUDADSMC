@@ -43,7 +43,8 @@ __global__ void collide( double3 *vel,
                          int3     cellsPerDimension,
                          int      numberOfCells,
                          curandState_t *rngState,
-                         int *cellID );
+                         int *cellID,
+                         int *atomID);
 __device__ int2 chooseCollidingAtoms( int numberOfAtomsInCell, int *prefixScanNumberOfAtomsInCell, int3 cellsPerDimension, curandState_t *rngState, int cell );
 __device__ int3 extractCellIndices( int cell, int3 cellsPerDimension );
 __device__ double calculateRelativeVelocity( double3 *vel, int2 collidingAtoms );

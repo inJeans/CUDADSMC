@@ -326,12 +326,12 @@ int main(int argc, const char * argv[])
                     d_isPerturb,
                     d_atomID,
                     numberOfAtoms );
-		
-		deviceMemset<<<numberOfCells+1,1>>>( d_cellStartEnd,
-											 make_int2( -1, -1 ),
-											 numberOfCells + 1 );
         
-		cellStartandEndKernel<<<gridSize,blockSize>>>( d_cellID,
+        deviceMemset<<<numberOfCells+1,1>>>( d_cellStartEnd,
+                                             make_int2( -1, -1 ),
+                                             numberOfCells + 1 );
+        
+        cellStartandEndKernel<<<gridSize,blockSize>>>( d_cellID,
                                                        d_cellStartEnd,
                                                        numberOfAtoms );
         
@@ -352,7 +352,8 @@ int main(int argc, const char * argv[])
                                       cellsPerDimension,
                                       numberOfCells,
                                       d_rngStates,
-                                      d_cellID );
+                                      d_cellID,
+                                      d_atomID );
         
 #pragma mark Evolve System
         

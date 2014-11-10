@@ -131,13 +131,13 @@ pl.plot( time, Temp )
 pl.xlabel('time (s)')
 pl.ylabel('Temperature (uK)')
 
-fit = np.polyfit(time[0:0.25*tres], np.log(np.abs(Ty[0:0.25*tres] - Tx[-1])),1)
+fit = np.polyfit(time[0:0.25*tres], np.log(np.abs(Ty[0:0.25*tres] - Ty[-1])),1)
 
 print "The thermalisation time is", -fit[0]
 print "Thermalisation in %f collisions", (11.98/-fit[0])
 
 pl.figure(4)
-pl.plot( time, Tx/Tx[0], time, Ty/Tx[0], time, Tz/Tx[0], time, (Tx[-1] + np.exp(fit[1] + fit[0]*time))/Tx[0], 'x' )
+pl.plot( time, Tx/Tx[0], time, Ty/Tx[0], time, Tz/Tx[0], time, (Ty[-1] + np.exp(fit[1] + fit[0]*time))/Tx[0], 'x' )
 pl.xlabel('time (s)')
 pl.ylabel('Directional Temperature (uK)')
 

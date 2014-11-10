@@ -312,80 +312,87 @@ void sortArrays( double3 *d_pos,
                  int *d_atomID ,
                  int numberOfAtoms )
 {
-    thrust::device_ptr<double3> th_pos = thrust::device_pointer_cast( d_pos );
-    thrust::device_ptr<double3> th_vel = thrust::device_pointer_cast( d_vel );
-    thrust::device_ptr<double3> th_acc = thrust::device_pointer_cast( d_acc );
+//    thrust::device_ptr<double3> th_pos = thrust::device_pointer_cast( d_pos );
+//    thrust::device_ptr<double3> th_vel = thrust::device_pointer_cast( d_vel );
+//    thrust::device_ptr<double3> th_acc = thrust::device_pointer_cast( d_acc );
+//    
+//    thrust::device_ptr<int> th_cellID = thrust::device_pointer_cast( d_cellID );
+//    thrust::device_ptr<int> th_atomID = thrust::device_pointer_cast( d_atomID );
+//    
+//    thrust::device_ptr<hbool_t> th_isPerturb = thrust::device_pointer_cast( d_isPerturb );
+//    
+//    thrust::device_vector<int>  th_indices( numberOfAtoms );
+//    thrust::sequence( th_indices.begin(),
+//                      th_indices.end() );
+//    
+//    thrust::sort_by_key( th_cellID,
+//                         th_cellID + numberOfAtoms,
+//                         th_indices.begin() );
+//    
+//    double3 *d_sorted;
+//    cudaCalloc( (void **)&d_sorted, numberOfAtoms, sizeof(double3) );
+//    thrust::device_ptr<double3> th_sorted = thrust::device_pointer_cast( d_sorted );
+//    
+//    thrust::gather( th_indices.begin(),
+//                    th_indices.end(),
+//                    th_pos,
+//                    th_sorted );
+//    thrust::copy( th_sorted,
+//                  th_sorted + numberOfAtoms,
+//                  th_pos );
+//
+//    thrust::gather( th_indices.begin(),
+//                    th_indices.end(),
+//                    th_vel,
+//                    th_sorted );
+//    thrust::copy( th_sorted,
+//                  th_sorted + numberOfAtoms,
+//                  th_vel );
+//    
+//    thrust::gather( th_indices.begin(),
+//                    th_indices.end(),
+//                    th_acc,
+//                    th_sorted );
+//    thrust::copy( th_sorted,
+//                  th_sorted + numberOfAtoms,
+//                  th_acc );
+//    
+//    cudaFree( d_sorted );
+//    
+//    hbool_t *d_sortedBool;
+//    cudaCalloc( (void **)&d_sortedBool, numberOfAtoms, sizeof(hbool_t) );
+//    thrust::device_ptr<hbool_t> th_sortedBool = thrust::device_pointer_cast( d_sortedBool );
+//    
+//    thrust::gather( th_indices.begin(),
+//                    th_indices.end(),
+//                    th_isPerturb,
+//                    th_sortedBool );
+//    thrust::copy( th_sortedBool,
+//                  th_sortedBool + numberOfAtoms,
+//                  th_isPerturb );
+//    
+//    cudaFree( d_sortedBool );
+//    
+//    int *d_sortedInt;
+//    cudaCalloc( (void **)&d_sortedInt, numberOfAtoms, sizeof(int) );
+//    thrust::device_ptr<int> th_sortedInt = thrust::device_pointer_cast( d_sortedInt );
+//    
+//    thrust::gather( th_indices.begin(),
+//                   th_indices.end(),
+//                   th_atomID,
+//                   th_sortedInt );
+//    thrust::copy( th_sortedInt,
+//                  th_sortedInt + numberOfAtoms,
+//                  th_atomID );
+//    
+//    cudaFree( d_sortedInt );
     
     thrust::device_ptr<int> th_cellID = thrust::device_pointer_cast( d_cellID );
     thrust::device_ptr<int> th_atomID = thrust::device_pointer_cast( d_atomID );
     
-    thrust::device_ptr<hbool_t> th_isPerturb = thrust::device_pointer_cast( d_isPerturb );
-    
-    thrust::device_vector<int>  th_indices( numberOfAtoms );
-    thrust::sequence( th_indices.begin(),
-                      th_indices.end() );
-    
     thrust::sort_by_key( th_cellID,
                          th_cellID + numberOfAtoms,
-                         th_indices.begin() );
-    
-    double3 *d_sorted;
-    cudaCalloc( (void **)&d_sorted, numberOfAtoms, sizeof(double3) );
-    thrust::device_ptr<double3> th_sorted = thrust::device_pointer_cast( d_sorted );
-    
-    thrust::gather( th_indices.begin(),
-                    th_indices.end(),
-                    th_pos,
-                    th_sorted );
-    thrust::copy( th_sorted,
-                  th_sorted + numberOfAtoms,
-                  th_pos );
-
-    thrust::gather( th_indices.begin(),
-                    th_indices.end(),
-                    th_vel,
-                    th_sorted );
-    thrust::copy( th_sorted,
-                  th_sorted + numberOfAtoms,
-                  th_vel );
-    
-    thrust::gather( th_indices.begin(),
-                    th_indices.end(),
-                    th_acc,
-                    th_sorted );
-    thrust::copy( th_sorted,
-                  th_sorted + numberOfAtoms,
-                  th_acc );
-    
-    cudaFree( d_sorted );
-    
-    hbool_t *d_sortedBool;
-    cudaCalloc( (void **)&d_sortedBool, numberOfAtoms, sizeof(hbool_t) );
-    thrust::device_ptr<hbool_t> th_sortedBool = thrust::device_pointer_cast( d_sortedBool );
-    
-    thrust::gather( th_indices.begin(),
-                    th_indices.end(),
-                    th_isPerturb,
-                    th_sortedBool );
-    thrust::copy( th_sortedBool,
-                  th_sortedBool + numberOfAtoms,
-                  th_isPerturb );
-    
-    cudaFree( d_sortedBool );
-    
-    int *d_sortedInt;
-    cudaCalloc( (void **)&d_sortedInt, numberOfAtoms, sizeof(int) );
-    thrust::device_ptr<int> th_sortedInt = thrust::device_pointer_cast( d_sortedInt );
-    
-    thrust::gather( th_indices.begin(),
-                   th_indices.end(),
-                   th_atomID,
-                   th_sortedInt );
-    thrust::copy( th_sortedInt,
-                  th_sortedInt + numberOfAtoms,
-                  th_atomID );
-    
-    cudaFree( d_sortedInt );
+                         th_atomID );
     
     return;
 }
@@ -401,7 +408,7 @@ __global__ void collide( double3 *vel,
                          int3     cellsPerDimension,
                          int      numberOfCells,
                          curandState_t *rngState,
-                         int *cellID )
+                         int *cellID, int *atomID )
 {
     for ( int cell = blockIdx.x * blockDim.x + threadIdx.x;
           cell < numberOfCells;
@@ -477,8 +484,8 @@ __global__ void collide( double3 *vel,
                             newCellIndices.x = cellsPerDimension.x-1;
                         }
                         
-                        if (newCellIndices.y > cellsPerDimension.z-1) {
-                            newCellIndices.y = cellsPerDimension.z-1;
+                        if (newCellIndices.y > cellsPerDimension.y-1) {
+                            newCellIndices.y = cellsPerDimension.y-1;
                         }
                         
                         if (newCellIndices.z > cellsPerDimension.z-1) {
@@ -497,8 +504,8 @@ __global__ void collide( double3 *vel,
                     
                 }
                 else if (numberOfAtomsInCell == 2) {
-                    collidingAtoms.x = prefixScanNumberOfAtomsInCell[cell] + 0;
-                    collidingAtoms.y = prefixScanNumberOfAtomsInCell[cell] + 1;
+                    collidingAtoms.x = atomID[prefixScanNumberOfAtomsInCell[cell] + 0];
+                    collidingAtoms.y = atomID[prefixScanNumberOfAtomsInCell[cell] + 1];
                 }
                 else {
                     // Randomly choose particles in this cell to collide.
@@ -506,7 +513,9 @@ __global__ void collide( double3 *vel,
                         collidingAtoms = double2Toint2_rd( make_double2( curand_uniform_double ( &l_rngState ), curand_uniform_double ( &l_rngState ) ) * (numberOfAtomsInCell-1) );
                     }
                     
-                    collidingAtoms = prefixScanNumberOfAtomsInCell[cell] + collidingAtoms;
+//                    collidingAtoms = prefixScanNumberOfAtomsInCell[cell] + collidingAtoms;
+                    collidingAtoms.x = atomID[prefixScanNumberOfAtomsInCell[cell] + collidingAtoms.x];
+                    collidingAtoms.y = atomID[prefixScanNumberOfAtomsInCell[cell] + collidingAtoms.y];
                 }
                 
                 magVrel = calculateRelativeVelocity( vel, collidingAtoms );
@@ -582,8 +591,8 @@ __device__ int2 chooseCollidingAtoms( int numberOfAtomsInCell, int *prefixScanNu
                 newCellIndices.x = cellsPerDimension.x-1;
             }
             
-            if (newCellIndices.y > cellsPerDimension.z-1) {
-                newCellIndices.y = cellsPerDimension.z-1;
+            if (newCellIndices.y > cellsPerDimension.y-1) {
+                newCellIndices.y = cellsPerDimension.y-1;
             }
             
             if (newCellIndices.z > cellsPerDimension.z-1) {
@@ -638,10 +647,11 @@ __device__ double calculateRelativeVelocity( double3 *vel, int2 collidingAtoms )
 
 __device__ double3 getRandomPointOnSphere( curandState_t *rngState )
 {
-    double2 r1 = curand_normal2_double ( rngState );
-    double  r2 = curand_normal_double  ( rngState );
+    double r1 = curand_normal_double ( rngState );
+    double r2 = curand_normal_double ( rngState );
+    double r3 = curand_normal_double ( rngState );
     
-    double3 pointOnSphere = make_double3( r1.x, r2, r1.y ) * rsqrt( r1.x*r1.x + r1.y*r1.y + r2*r2 );
+    double3 pointOnSphere = make_double3( r1, r2, r3 ) * rsqrt( r1*r1 + r2*r2 + r3*r3 );
     
     return pointOnSphere;
 }
