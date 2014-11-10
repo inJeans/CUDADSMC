@@ -138,25 +138,10 @@ __global__ void generateInitialDist(double3 *pos,
 		/* Copy state to local memory for efficiency */
 		curandState_t localrngState = rngState[atom];
 		
-        bool lookingForAtom = true;
-        while (lookingForAtom) {
-            pos[atom] = selectAtomInThermalDistribution( Temp,
-                                                        &localrngState );
-            
-            vel[atom] = getRandomVelocity( Temp, &localrngState );
-            
-            double H = 0.5*d_mRb*dot(vel[atom],vel[atom]) + 0.5*d_gs*d_muB*d_dBdr*dot(pos[atom],pos[atom]);
-            
-            if ( exp(-H/(d_kB*Temp)) < curand_uniform_double(&localrngState) )
-            {
-                lookingForAtom = false;
-            }
-            
-        }
-//        pos[atom] = selectAtomInThermalDistribution( Temp,
-//                                                     &localrngState );
-//        
-//		vel[atom] = getRandomVelocity( Temp, &localrngState );
+        pos[atom] = selectAtomInThermalDistribution( Temp,
+                                                     &localrngState );
+        
+		vel[atom] = getRandomVelocity( Temp, &localrngState );
         
         acc[atom] = updateAccel( pos[atom] );
         
