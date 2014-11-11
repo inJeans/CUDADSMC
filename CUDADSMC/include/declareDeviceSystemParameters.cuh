@@ -28,5 +28,6 @@ extern __device__ double d_dBdr;
 extern __device__ double d_wavelength;
 
 extern __device__ int d_loopsPerCollision;	// loops per collision
+extern __device__ double d_Temp;
 
 #endif

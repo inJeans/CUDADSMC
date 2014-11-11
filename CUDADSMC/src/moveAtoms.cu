@@ -22,15 +22,15 @@ __global__ void copyConstantsToDevice( double dt )
 	return;
 }
 
-__global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, int numberOfAtoms )
+__global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, int *atomID, int numberOfAtoms )
 {
     for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
 		 atom < numberOfAtoms;
 		 atom += blockDim.x * gridDim.x)
 	{
-		double3 l_pos = pos[atom];
-        double3 l_vel = vel[atom];
-        double3 l_acc = acc[atom];
+		double3 l_pos = pos[atomID[atom]];
+        double3 l_vel = vel[atomID[atom]];
+        double3 l_acc = acc[atomID[atom]];
 		
 //        for (int i=0; i<d_loopsPerCollision; i++) {
             symplecticEulerUpdate( &l_pos,
@@ -38,9 +38,9 @@ __global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, int numberO
                                   &l_acc );
 //        }
     
-        pos[atom] = l_pos;
-        vel[atom] = l_vel;
-        acc[atom] = l_acc;
+        pos[atomID[atom]] = l_pos;
+        vel[atomID[atom]] = l_vel;
+        acc[atomID[atom]] = l_acc;
 		
     }
     

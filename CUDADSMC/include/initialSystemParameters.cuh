@@ -11,7 +11,7 @@
 
 #pragma mark -
 
-int numberOfPrints = 75;
+int numberOfPrints = 100;
 int loopsPerCollision = 0.0007 / dt;
 double dt = 1.e-6;
 

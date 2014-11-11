@@ -22,7 +22,7 @@ hbar = 1.05457148e-34;
 T    = 20.e-6;
 dBdr = 32000.;
 
-tres = 76;
+tres = 101;
 ntrials = 1e4   ;
 dt = 1e-6;
 
@@ -42,9 +42,6 @@ dset.read_direct(pos);
 
 dset = f.require_dataset('atomData/velocities',(ntrials,3,tres),False,False);
 dset.read_direct(vel);
-
-dset = f.require_dataset('atomData/isPerturb',(ntrials,1,tres),False,False);
-dset.read_direct(isPerturb);
 
 dset = f.require_dataset('atomData/atomNumber',(1,1,tres),False,False);
 dset.read_direct(N);
@@ -140,6 +137,14 @@ pl.figure(4)
 pl.plot( time, Tx/Tx[0], time, Ty/Tx[0], time, Tz/Tx[0], time, (Ty[-1] + np.exp(fit[1] + fit[0]*time))/Tx[0], 'x' )
 pl.xlabel('time (s)')
 pl.ylabel('Directional Temperature (uK)')
+
+fit = np.polyfit(np.log(N), np.log(Temp),1)
+print "eta = ", 3.*fit[0] + 2.
+
+pl.figure(5)
+pl.plot(np.log(N), np.log(Temp), 'x', np.log(N), fit[1] + fit[0]*np.log(N))
+pl.xlabel(r'$\log N$')
+pl.ylabel(r'$\log T$')
 
 #pl.figure(5)
 #

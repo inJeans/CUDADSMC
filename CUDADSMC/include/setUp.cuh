@@ -28,7 +28,6 @@ void h_generateInitialDist( double3 *pos,
                             int      numberOfAtoms,
                             double   Temp,
                             curandState_t *rngState,
-                            hbool_t *isPerturb,
                             int *atomID );
 
 __global__ void generateInitialDist( double3 *pos,
@@ -37,7 +36,6 @@ __global__ void generateInitialDist( double3 *pos,
                                      int      numberOfAtoms,
 									 double   Temp,
                                      curandState_t *rngState,
-                                     hbool_t *d_isPerturb,
                                      int *atomID );
 
 __device__ double3 getRandomVelocity( double Temp,

@@ -13,6 +13,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/sort.h>
 #include <thrust/scan.h>
+#include <thrust/remove.h>
 
 #include "declareInitialSystemParameters.cuh"
 #include "initialSystemParameters.cuh"
@@ -24,6 +25,7 @@
 #include "setUp.cuh"
 #include "moveAtoms.cuh"
 #include "collisions.cuh"
+#include "evaporation.cuh"
 
 char filename[] = "outputData.h5";
 char groupname[] = "/atomData";
@@ -85,6 +87,7 @@ int main(int argc, const char * argv[])
     
     double time = 0.;
     double medianR;
+    double Temp = Tinit;
     
     int2 *d_cellStartEnd;
     
@@ -93,8 +96,8 @@ int main(int argc, const char * argv[])
     int *d_prefixScanNumberOfAtomsInCell;
     int *d_collisionCount;
     int *d_atomID;
-    
-    hbool_t *d_isPerturb;
+    int *d_evapTag;
+    int *d_newEnd;
 
     cudaCalloc( (void **)&d_pos, numberOfAtoms, sizeof(double3) );
     cudaCalloc( (void **)&d_vel, numberOfAtoms, sizeof(double3) );
@@ -109,8 +112,8 @@ int main(int argc, const char * argv[])
     cudaCalloc( (void **)&d_prefixScanNumberOfAtomsInCell, numberOfCells+1, sizeof(int) );
     cudaCalloc( (void **)&d_collisionCount, numberOfCells+1, sizeof(int) );
     cudaCalloc( (void **)&d_atomID, numberOfAtoms, sizeof(int) );
-    
-    cudaCalloc( (void **)&d_isPerturb, numberOfAtoms, sizeof(hbool_t) );
+    cudaCalloc( (void **)&d_evapTag, numberOfAtoms, sizeof(int) );
+    cudaCalloc( (void **)&d_newEnd, 1, sizeof(int) );
     
     double3 *h_pos = (double3*) calloc( numberOfAtoms, sizeof(double3) );
     double3 *h_vel = (double3*) calloc( numberOfAtoms, sizeof(double3) );
@@ -120,10 +123,11 @@ int main(int argc, const char * argv[])
 	int *h_cellID = (int*) calloc( numberOfAtoms, sizeof(int) );
     int *h_atomID = (int*) calloc( numberOfAtoms, sizeof(int) );
     
-    hbool_t *h_isPerturb = (hbool_t*) calloc( numberOfAtoms, sizeof(hbool_t) );
-    
     thrust::device_ptr<int> th_numberOfAtomsInCell = thrust::device_pointer_cast( d_numberOfAtomsInCell );
     thrust::device_ptr<int> th_prefixScanNumberOfAtomsInCell = thrust::device_pointer_cast( d_prefixScanNumberOfAtomsInCell );
+    thrust::device_ptr<int> th_atomID = thrust::device_pointer_cast( d_atomID );
+    thrust::device_ptr<int> th_evapTag = thrust::device_pointer_cast( d_evapTag );
+    thrust::device_ptr<int> th_newEnd = thrust::device_pointer_cast( d_newEnd );
     
 #pragma mark - Set up atom system
 	
@@ -140,20 +144,16 @@ int main(int argc, const char * argv[])
                            numberOfAtoms,
                            Tinit,
                            d_rngStates,
-                           d_isPerturb,
                            d_atomID );
     
     initSigvrmax( d_sigvrmax, numberOfCells );
     
     medianR = indexAtoms( d_pos,
                           d_cellID,
+                          d_atomID,
                           cellsPerDimension,
                           numberOfAtoms );
-    sortArrays( d_pos,
-                d_vel,
-                d_acc,
-                d_cellID,
-                d_isPerturb,
+    sortArrays( d_cellID,
                 d_atomID,
                 numberOfAtoms );
     
@@ -234,35 +234,21 @@ int main(int argc, const char * argv[])
     
     char numberDatasetName[] = "/atomData/atomNumber";
     hdf5FileHandle hdf5handleNumber = createHDF5Handle( timeDims,
-                                                      H5T_NATIVE_INT,
-                                                      numberDatasetName );
+                                                       H5T_NATIVE_INT,
+                                                       numberDatasetName );
     intialiseHDF5File( hdf5handleNumber,
                        filename );
     writeHDF5File( hdf5handleNumber,
                    filename,
                    &numberOfAtoms );
     
-    cudaMemcpy( h_isPerturb,
-                d_isPerturb,
-                numberOfAtoms*sizeof(hbool_t),
-                cudaMemcpyDeviceToHost );
-    char isPerturbDatasetName[] = "/atomData/isPerturb";
-    int3 perturbDims = { numberOfAtoms, 1, 1 };
-    hdf5FileHandle hdf5handlePerturb = createHDF5Handle( perturbDims,
-                                                         H5T_NATIVE_HBOOL,
-                                                         isPerturbDatasetName );
-    intialiseHDF5File( hdf5handlePerturb,
-                       filename );
-    writeHDF5File( hdf5handlePerturb,
-                   filename,
-                   h_isPerturb );
-    
     cudaMemcpy( h_cellID,
-               d_cellID,
-               numberOfAtoms*sizeof(int),
-               cudaMemcpyDeviceToHost );
+                d_cellID,
+                numberOfAtoms*sizeof(int),
+                cudaMemcpyDeviceToHost );
     char cellIDDatasetName[] = "/atomData/cellID";
-    hdf5FileHandle hdf5handleCellID = createHDF5Handle( perturbDims,
+    int3 particleDims = { numberOfAtoms, 1, 1 };
+    hdf5FileHandle hdf5handleCellID = createHDF5Handle( particleDims,
                                                         H5T_NATIVE_INT,
                                                         cellIDDatasetName );
     intialiseHDF5File( hdf5handleCellID,
@@ -276,14 +262,14 @@ int main(int argc, const char * argv[])
                numberOfAtoms*sizeof(int),
                cudaMemcpyDeviceToHost );
     char atomIDDatasetName[] = "/atomData/atomID";
-    hdf5FileHandle hdf5handleAtomID = createHDF5Handle( perturbDims,
-                                                       H5T_NATIVE_INT,
-                                                       atomIDDatasetName );
+    hdf5FileHandle hdf5handleAtomID = createHDF5Handle( particleDims,
+                                                        H5T_NATIVE_INT,
+                                                        atomIDDatasetName );
     intialiseHDF5File( hdf5handleAtomID,
-                      filename );
+                       filename );
     writeHDF5File( hdf5handleAtomID,
-                  filename,
-                  h_atomID );
+                   filename,
+                   h_atomID );
     
 #pragma mark - Main Loop
     int blockSize;
@@ -316,14 +302,11 @@ int main(int argc, const char * argv[])
         
         medianR = indexAtoms( d_pos,
                               d_cellID,
+                             d_atomID,
                               cellsPerDimension,
                               numberOfAtoms );
         
-        sortArrays( d_pos,
-                    d_vel,
-                    d_acc,
-                    d_cellID,
-                    d_isPerturb,
+        sortArrays( d_cellID,
                     d_atomID,
                     numberOfAtoms );
         
@@ -352,18 +335,37 @@ int main(int argc, const char * argv[])
                                       cellsPerDimension,
                                       numberOfCells,
                                       d_rngStates,
-                                      d_cellID,
                                       d_atomID );
         
 #pragma mark Evolve System
         
         for (int j=0; j<loopsPerCollision; j++) {
             
-            moveAtoms<<<gridSize,blockSize>>>( d_pos,
-                                               d_vel,
-                                               d_acc,
-                                               numberOfAtoms );
+            moveAtoms<<<gridSize,blockSize>>>(d_pos,
+                                              d_vel,
+                                              d_acc,
+                                              d_atomID,
+                                              numberOfAtoms );
         }
+        
+#pragma mark Evaporate Atoms
+        
+        Temp = calculateTemp(d_vel,
+                             d_atomID,
+                             numberOfAtoms );
+        h_evaporationTag(d_pos,
+                         d_atomID,
+                         d_evapTag,
+                         Temp,
+                         numberOfAtoms );
+        
+        cudaMemcpy( (void*)&d_Temp, (void*)&Temp, 1*sizeof(double), cudaMemcpyHostToDevice );
+        th_newEnd = thrust::remove_if(th_atomID,
+                          th_atomID + numberOfAtoms,
+                          th_evapTag,
+                          thrust::identity<int>());
+        
+        numberOfAtoms = (int)(th_newEnd - th_atomID);
         
         printf( "Number of atoms = %i, ", numberOfAtoms);
         
@@ -373,7 +375,6 @@ int main(int argc, const char * argv[])
         cudaMemcpy( h_vel, d_vel, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
         cudaMemcpy( h_numberOfAtomsInCell, d_numberOfAtomsInCell, (numberOfCells+1)*sizeof(int), cudaMemcpyDeviceToHost );
         cudaMemcpy( h_collisionCount, d_collisionCount, (numberOfCells+1)*sizeof(int), cudaMemcpyDeviceToHost );
-        cudaMemcpy( h_isPerturb, d_isPerturb, numberOfAtoms*sizeof(hbool_t), cudaMemcpyDeviceToHost );
         cudaMemcpy( h_cellID, d_cellID, numberOfAtoms*sizeof(int), cudaMemcpyDeviceToHost );
         cudaMemcpy( h_atomID, d_atomID, numberOfAtoms*sizeof(int), cudaMemcpyDeviceToHost );
         
@@ -395,9 +396,6 @@ int main(int argc, const char * argv[])
         writeHDF5File( hdf5handleNumber,
                        filename,
                        &numberOfAtoms );
-        writeHDF5File( hdf5handlePerturb,
-                       filename,
-                       h_isPerturb );
         writeHDF5File( hdf5handleCellID,
                        filename,
                        h_cellID );
@@ -415,7 +413,6 @@ int main(int argc, const char * argv[])
     free( h_vel );
     free( h_numberOfAtomsInCell );
 	free( h_cellID );
-    free( h_isPerturb );
     
     cudaFree( d_pos );
     cudaFree( d_vel );
@@ -423,11 +420,12 @@ int main(int argc, const char * argv[])
     cudaFree( d_sigvrmax );
     cudaFree( d_cellStartEnd );
     cudaFree( d_cellID );
+    cudaFree( d_atomID );
     cudaFree( d_numberOfAtomsInCell );
     cudaFree( d_prefixScanNumberOfAtomsInCell );
     cudaFree( d_collisionCount );
     cudaFree( d_rngStates );
-    cudaFree( d_isPerturb );
+    cudaFree( d_evapTag );
     
     cudaDeviceReset();
     
