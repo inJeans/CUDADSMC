@@ -66,7 +66,7 @@ __global__ void evaporationTag( double3 *pos,
          atom += blockDim.x * gridDim.x)
     {
         double3 l_pos = pos[atomID[atom]];
-        double potential = 0.5 * d_gs * d_muB * d_dBdr * dot( l_pos, l_pos );
+        double potential = 0.5 * d_gs * d_muB * d_dBdz * sqrt( l_pos.x*l_pos.x + l_pos.y*l_pos.y + 4.*l_pos.z*l_pos.z );
         
         if ( potential > d_eta * d_kB * Temp ) {
             evapTag[atom] = 1;

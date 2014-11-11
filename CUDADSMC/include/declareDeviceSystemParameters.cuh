@@ -24,7 +24,7 @@ extern __device__ double d_meshWidth;
 extern __device__ double3 d_maxGridWidth;
 extern __device__ double d_alpha;
 extern __device__ double d_dt;
-extern __device__ double d_dBdr;
+extern __device__ double d_dBdz;
 extern __device__ double d_wavelength;
 
 extern __device__ int d_loopsPerCollision;	// loops per collision
