@@ -11,6 +11,8 @@
 
 #include <stdio.h>
 #include <cuda.h>
+#include "math.h"
+#include <cuComplex.h>
 #include <curand_kernel.h>
 #include <hdf5.h>
 
@@ -25,6 +27,8 @@ __global__ void initRNG( curandState_t *rngState,
 void h_generateInitialDist( double3 *pos,
                             double3 *vel,
                             double3 *acc,
+                           cuDoubleComplex *d_psiUp,
+                           cuDoubleComplex *d_psiDn,
                             int      numberOfAtoms,
                             double   Temp,
                             curandState_t *rngState,
@@ -33,6 +37,8 @@ void h_generateInitialDist( double3 *pos,
 __global__ void generateInitialDist( double3 *pos,
                                      double3 *vel,
                                      double3 *acc,
+                                    cuDoubleComplex *psiUp,
+                                    cuDoubleComplex *psiDn,
                                      int      numberOfAtoms,
 									 double   Temp,
                                      curandState_t *rngState,
@@ -49,6 +55,14 @@ __device__ double3 getGaussianPoint( double mean,
                                      curandState_t *rngState );
 
 __device__ double3 updateAccel( double3 pos );
+
+__device__ cuDoubleComplex getAlignedSpinUp( double3 pos );
+
+__device__ cuDoubleComplex getAlignedSpinDn( double3 pos );
+
+__device__ double3 getMagFieldNormal( double3 pos );
+
+__device__ double3 getMagField( double3 pos );
 
 void initSigvrmax( double *d_sigvrmax, int numberOfCells );
 

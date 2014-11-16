@@ -20,16 +20,18 @@ pi   = 3.14159265;
 kB   = 1.3806503e-23;
 hbar = 1.05457148e-34;
 T    = 20.e-6;
-dBdr = 32000.;
+dBdz = 2.5;
 
-tres = 101;
+tres = 51;
 ntrials = 1e4   ;
 dt = 1e-6;
 
 time = np.zeros((tres));
 pos = np.zeros((ntrials,3,tres));
 vel = np.zeros((ntrials,3,tres));
-isPerturb = np.zeros((ntrials,1,tres));
+psiUp = np.zeros((ntrials,2,tres));
+psiDn = np.zeros((ntrials,2,tres));
+atomID = np.zeros((ntrials,1,tres));
 N = np.zeros((tres));
 
 f = h5py.File('outputData.h5');
@@ -42,6 +44,15 @@ dset.read_direct(pos);
 
 dset = f.require_dataset('atomData/velocities',(ntrials,3,tres),False,False);
 dset.read_direct(vel);
+
+dset = f.require_dataset('atomData/psiUp',(ntrials,2,tres),False,False);
+dset.read_direct(psiUp);
+
+dset = f.require_dataset('atomData/psiDn',(ntrials,2,tres),False,False);
+dset.read_direct(psiDn);
+
+dset = f.require_dataset('atomData/atomID',(ntrials,1,tres),False,False);
+dset.read_direct(atomID);
 
 dset = f.require_dataset('atomData/atomNumber',(1,1,tres),False,False);
 dset.read_direct(N);
@@ -66,27 +77,34 @@ avx = np.zeros((N.size,))
 avy = np.zeros((N.size,))
 avz = np.zeros((N.size,))
 
+Bnx =    pos[:,0,:] / np.sqrt(pos[:,0,:]**2 + pos[:,1,:]**2 + 4.*pos[:,2,:]**2)
+Bny =    pos[:,1,:] / np.sqrt(pos[:,0,:]**2 + pos[:,1,:]**2 + 4.*pos[:,2,:]**2)
+Bnz =-2.*pos[:,2,:] / np.sqrt(pos[:,0,:]**2 + pos[:,1,:]**2 + 4.*pos[:,2,:]**2)
+B   = 0.5 * dBdz * np.sqrt(pos[:,0,:]**2 + pos[:,1,:]**2 + 4.*pos[:,2,:]**2)
+
 for i in range(0,N.size):
-    kinetic = 0.5 * mRb * np.sum(vel[0:N[i],:,i]**2, 1)
-    n = np.where( np.isfinite(kinetic) )
+    kinetic = 0.5 * mRb * np.sum(vel[:,:,i]**2, 1)
+    n = atomID[0:N[i],0,i].astype(int)
     Ek[i] = np.sum( kinetic[n], 0 ) / N[i] / kB * 1.e6
-    radius = pos[0:N[i],0,i]**2 + pos[0:N[i],1,i]**2 + pos[0:N[i],2,i]**2
-    Ep[i] = np.sum( 0.5*gs*muB*dBdr*radius[n], 0 ) / N[i] / kB * 1.e6
+    proj = 2. * Bnx[n,i] * ( psiUp[n,0,i]*psiDn[n,0,i] + psiUp[n,1,i]*psiDn[n,1,i] ) + \
+           2. * Bny[n,i] * ( psiUp[n,0,i]*psiDn[n,1,i] - psiUp[n,1,i]*psiDn[n,0,i] ) + \
+           2. * Bnz[n,i] * ( psiUp[n,0,i]*psiUp[n,0,i] + psiUp[n,1,i]*psiUp[n,1,i] - 0.5 )
+    Ep[i] = np.sum( 0.5*gs*muB*B[n,i]*proj, 0 ) / N[i] / kB * 1.e6
     Et[i] = Ek[i] + Ep[i]
 
     Temp[i] = 2./3. * np.sum( kinetic[n], 0) / N[i] / kB * 1.e6
 
-    Tx[i] = 2./3. * np.sum( 0.5 * mRb * vel[0:N[i],0,i]**2, 0) / N[i] / kB * 1.e6
-    Ty[i] = 2./3. * np.sum( 0.5 * mRb * vel[0:N[i],1,i]**2, 0) / N[i] / kB * 1.e6
-    Tz[i] = 2./3. * np.sum( 0.5 * mRb * vel[0:N[i],2,i]**2, 0) / N[i] / kB * 1.e6
+    Tx[i] = 2./3. * np.sum( 0.5 * mRb * vel[n,0,i]**2, 0) / N[i] / kB * 1.e6
+    Ty[i] = 2./3. * np.sum( 0.5 * mRb * vel[n,1,i]**2, 0) / N[i] / kB * 1.e6
+    Tz[i] = 2./3. * np.sum( 0.5 * mRb * vel[n,2,i]**2, 0) / N[i] / kB * 1.e6
 
-    vx[i] = 2./3. * np.sum( 0.5 * mRb * vel[0:N[i],0,i], 0) / N[i] / kB * 1.e6
-    vy[i] = 2./3. * np.sum( 0.5 * mRb * vel[0:N[i],1,i], 0) / N[i] / kB * 1.e6
-    vz[i] = 2./3. * np.sum( 0.5 * mRb * vel[0:N[i],2,i], 0) / N[i] / kB * 1.e6
+    vx[i] = 2./3. * np.sum( 0.5 * mRb * vel[n,0,i], 0) / N[i] / kB * 1.e6
+    vy[i] = 2./3. * np.sum( 0.5 * mRb * vel[n,1,i], 0) / N[i] / kB * 1.e6
+    vz[i] = 2./3. * np.sum( 0.5 * mRb * vel[n,2,i], 0) / N[i] / kB * 1.e6
 
-    avx[i] = np.sum( pos[0:N[i],0,i], 0) / N[i] * 1.e6
-    avy[i] = np.sum( pos[0:N[i],1,i], 0) / N[i] * 1.e6
-    avz[i] = np.sum( pos[0:N[i],2,i], 0) / N[i] * 1.e6
+    avx[i] = np.sum( pos[n,0,i], 0) / N[i] * 1.e6
+    avy[i] = np.sum( pos[n,1,i], 0) / N[i] * 1.e6
+    avz[i] = np.sum( pos[n,2,i], 0) / N[i] * 1.e6
 
 #    fr = np.sqrt( fpos[:,0,i]**2 + fpos[:,1,i]**2 + fpos[:,2,i]**2 )
 #    fp = np.where( fr > 0. )
@@ -145,6 +163,12 @@ pl.figure(5)
 pl.plot(np.log(N), np.log(Temp), 'x', np.log(N), fit[1] + fit[0]*np.log(N))
 pl.xlabel(r'$\log N$')
 pl.ylabel(r'$\log T$')
+
+norm = psiUp[:,0,:]**2 + psiUp[:,1,:]**2 + psiDn[:,0,:]**2 + psiDn[:,1,:]**2
+dNorm = np.mean(norm - 1., 0)
+
+pl.figure(6)
+pl.plot(time,dNorm);
 
 #pl.figure(5)
 #

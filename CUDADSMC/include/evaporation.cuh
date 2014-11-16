@@ -10,12 +10,16 @@
 #define CUDADSMC_evaporation_cuh
 
 void h_evaporationTag(double3 *d_pos,
+                      cuDoubleComplex *d_psiUp,
+                      cuDoubleComplex *d_psiDn,
                       int     *d_atomID,
                       int     *d_evapTag,
                       double   Temp,
                       int      numberOfAtoms );
 
 __global__ void evaporationTag(double3 *pos,
+                               cuDoubleComplex *psiUp,
+                               cuDoubleComplex *psiDn,
                                int     *atomID,
                                int     *evapTag,
                                double   Temp,
@@ -34,5 +38,8 @@ __global__ void calculateSpeed2(double3 *vel,
                                 int      numberOfAtoms );
 
 double findMean( double *v, int N );
+
+__device__ double3 getMagneticFieldN( double3 pos );
+__device__ double3 getMagneticF( double3 pos );
 
 #endif

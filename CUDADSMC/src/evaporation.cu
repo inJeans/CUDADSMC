@@ -17,6 +17,8 @@
 #include "deviceSystemParameters.cuh"
 
 void h_evaporationTag(double3 *d_pos,
+                      cuDoubleComplex *d_psiUp,
+                      cuDoubleComplex *d_psiDn,
                       int     *d_atomID,
                       int     *d_evapTag,
                       double   Temp,
@@ -47,6 +49,8 @@ void h_evaporationTag(double3 *d_pos,
 #endif
     
     evaporationTag<<<gridSize,blockSize>>>(d_pos,
+                                           d_psiUp,
+                                           d_psiDn,
                                            d_atomID,
                                            d_evapTag,
                                            Temp,
@@ -56,6 +60,8 @@ void h_evaporationTag(double3 *d_pos,
 }
 
 __global__ void evaporationTag( double3 *pos,
+                                cuDoubleComplex *psiUp,
+                                cuDoubleComplex *psiDn,
                                 int     *atomID,
                                 int     *evapTag,
                                 double   Temp,
@@ -65,10 +71,16 @@ __global__ void evaporationTag( double3 *pos,
          atom < numberOfAtoms;
          atom += blockDim.x * gridDim.x)
     {
+        cuDoubleComplex l_psiUp = psiUp[atomID[atom]];
+        cuDoubleComplex l_psiDn = psiDn[atomID[atom]];
         double3 l_pos = pos[atomID[atom]];
-        double potential = 0.5 * d_gs * d_muB * d_dBdz * sqrt( l_pos.x*l_pos.x + l_pos.y*l_pos.y + 4.*l_pos.z*l_pos.z );
+        double3 Bn    = getMagneticFieldN( l_pos );
         
-        if ( potential > d_eta * d_kB * Temp ) {
+        double proj = 2. * Bn.x * ( l_psiUp.x*l_psiDn.x + l_psiUp.y*l_psiDn.y ) +
+                      2. * Bn.y * ( l_psiUp.x*l_psiDn.y - l_psiUp.y*l_psiDn.x ) +
+                      2. * Bn.z * ( l_psiUp.x*l_psiUp.x + l_psiUp.y*l_psiUp.y - 0.5 );
+        
+        if ( proj < 0.5 ) {
             evapTag[atom] = 1;
         }
         else
@@ -95,7 +107,7 @@ double calculateTemp(double3 *d_vel,
     double T  = h_mRb / 3. / h_kB * findMean(d_speed2,
                                              numberOfAtoms );
 
-    printf("The temperature is %fuK\n", T * 1.e6 );
+//    printf("The temperature is %fuK\n", T * 1.e6 );
     
     cudaFree( d_speed2 );
     
@@ -161,4 +173,20 @@ double findMean( double *v, int N )
     double sum = thrust::reduce( th_v, th_v + N );
     
     return sum / N;
+}
+
+__device__ double3 getMagneticFieldN( double3 pos )
+{
+    double3 B = getMagneticF( pos );
+    
+    double3 Bn = B / length( B );
+    
+    return Bn;
+}
+
+__device__ double3 getMagneticF( double3 pos )
+{
+    double3 B = d_dBdz * make_double3( 0.5 * pos.x, 0.5 * pos.y, -pos.z );
+    
+    return B;
 }

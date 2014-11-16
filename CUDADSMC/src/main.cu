@@ -9,6 +9,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <cuda.h>
+#include "math.h"
+#include <cuComplex.h>
 #include <curand_kernel.h>
 #include <thrust/device_vector.h>
 #include <thrust/sort.h>
@@ -83,6 +85,9 @@ int main(int argc, const char * argv[])
     double3 *d_vel;
     double3 *d_acc;
     
+    cuDoubleComplex *d_psiUp;
+    cuDoubleComplex *d_psiDn;
+    
     double *d_sigvrmax;
     
     double time = 0.;
@@ -103,6 +108,9 @@ int main(int argc, const char * argv[])
     cudaCalloc( (void **)&d_vel, numberOfAtoms, sizeof(double3) );
     cudaCalloc( (void **)&d_acc, numberOfAtoms, sizeof(double3) );
     
+    cudaCalloc( (void **)&d_psiUp, numberOfAtoms, sizeof(cuDoubleComplex) );
+    cudaCalloc( (void **)&d_psiDn, numberOfAtoms, sizeof(cuDoubleComplex) );
+    
     cudaCalloc( (void **)&d_sigvrmax, numberOfCells+1, sizeof(double) );
     
     cudaCalloc( (void **)&d_cellStartEnd, numberOfCells+1, sizeof(int2) );
@@ -118,6 +126,9 @@ int main(int argc, const char * argv[])
     double3 *h_pos = (double3*) calloc( numberOfAtoms, sizeof(double3) );
     double3 *h_vel = (double3*) calloc( numberOfAtoms, sizeof(double3) );
     
+    cuDoubleComplex *h_psiUp = (cuDoubleComplex*) calloc( numberOfAtoms, sizeof(cuDoubleComplex) );
+    cuDoubleComplex *h_psiDn = (cuDoubleComplex*) calloc( numberOfAtoms, sizeof(cuDoubleComplex) );
+    
     int *h_numberOfAtomsInCell = (int*) calloc( numberOfCells+1, sizeof(int) );
     int *h_collisionCount = (int*) calloc( numberOfCells+1, sizeof(int) );
 	int *h_cellID = (int*) calloc( numberOfAtoms, sizeof(int) );
@@ -131,7 +142,7 @@ int main(int argc, const char * argv[])
     
 #pragma mark - Set up atom system
 	
-    dt = 1.e-6;
+    dt = 1.0e-6;
     loopsPerCollision = 0.025 / dt;
     
 	copyConstantsToDevice<<<1,1>>>( dt );
@@ -141,6 +152,8 @@ int main(int argc, const char * argv[])
     h_generateInitialDist( d_pos,
                            d_vel,
                            d_acc,
+                          d_psiUp,
+                          d_psiDn,
                            numberOfAtoms,
                            Tinit,
                            d_rngStates,
@@ -190,6 +203,35 @@ int main(int argc, const char * argv[])
 	writeHDF5File( hdf5handleVel,
                    filename,
                    h_vel );
+    
+    cudaMemcpy(h_psiUp,
+               d_psiUp,
+               numberOfAtoms*sizeof(cuDoubleComplex),
+               cudaMemcpyDeviceToHost );
+    char psiUpDatasetName[] = "/atomData/psiUp";
+    int3 psiDims = { numberOfAtoms, 2, 1 };
+    hdf5FileHandle hdf5handlePsiUp = createHDF5Handle(psiDims,
+                                                      H5T_NATIVE_DOUBLE,
+                                                      psiUpDatasetName );
+    intialiseHDF5File(hdf5handlePsiUp,
+                      filename );
+    writeHDF5File(hdf5handlePsiUp,
+                  filename,
+                  h_psiUp );
+    
+    cudaMemcpy(h_psiDn,
+               d_psiDn,
+               numberOfAtoms*sizeof(cuDoubleComplex),
+               cudaMemcpyDeviceToHost );
+    char psiDnDatasetName[] = "/atomData/psiDn";
+    hdf5FileHandle hdf5handlePsiDn = createHDF5Handle(psiDims,
+                                                      H5T_NATIVE_DOUBLE,
+                                                      psiDnDatasetName );
+    intialiseHDF5File(hdf5handlePsiDn,
+                      filename );
+    writeHDF5File(hdf5handlePsiDn,
+                  filename,
+                  h_psiDn );
     
     cudaMemcpy( h_collisionCount,
                 d_collisionCount,
@@ -344,35 +386,40 @@ int main(int argc, const char * argv[])
             moveAtoms<<<gridSize,blockSize>>>(d_pos,
                                               d_vel,
                                               d_acc,
+                                              d_psiUp,
+                                              d_psiDn,
                                               d_atomID,
                                               numberOfAtoms );
+         #pragma mark Evaporate Atoms   
+            Temp = calculateTemp(d_vel,
+                                 d_atomID,
+                                 numberOfAtoms );
+            h_evaporationTag(d_pos,
+                             d_psiUp,
+                             d_psiDn,
+                             d_atomID,
+                             d_evapTag,
+                             Temp,
+                             numberOfAtoms );
+            
+            cudaMemcpy( (void*)&d_Temp, (void*)&Temp, 1*sizeof(double), cudaMemcpyHostToDevice );
+            th_newEnd = thrust::remove_if(th_atomID,
+                                          th_atomID + numberOfAtoms,
+                                          th_evapTag,
+                                          thrust::identity<int>());
+            
+            numberOfAtoms = (int)(th_newEnd - th_atomID);
         }
         
-#pragma mark Evaporate Atoms
-        
-        Temp = calculateTemp(d_vel,
-                             d_atomID,
-                             numberOfAtoms );
-        h_evaporationTag(d_pos,
-                         d_atomID,
-                         d_evapTag,
-                         Temp,
-                         numberOfAtoms );
-        
-        cudaMemcpy( (void*)&d_Temp, (void*)&Temp, 1*sizeof(double), cudaMemcpyHostToDevice );
-        th_newEnd = thrust::remove_if(th_atomID,
-                          th_atomID + numberOfAtoms,
-                          th_evapTag,
-                          thrust::identity<int>());
-        
-        numberOfAtoms = (int)(th_newEnd - th_atomID);
-        
+        printf("The temperature is %fuK\n", Temp * 1.e6 );
         printf( "Number of atoms = %i, ", numberOfAtoms);
         
         time += loopsPerCollision * dt;
     
         cudaMemcpy( h_pos, d_pos, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
         cudaMemcpy( h_vel, d_vel, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
+        cudaMemcpy( h_psiUp, d_psiUp, numberOfAtoms*sizeof(cuDoubleComplex), cudaMemcpyDeviceToHost );
+        cudaMemcpy( h_psiDn, d_psiDn, numberOfAtoms*sizeof(cuDoubleComplex), cudaMemcpyDeviceToHost );
         cudaMemcpy( h_numberOfAtomsInCell, d_numberOfAtomsInCell, (numberOfCells+1)*sizeof(int), cudaMemcpyDeviceToHost );
         cudaMemcpy( h_collisionCount, d_collisionCount, (numberOfCells+1)*sizeof(int), cudaMemcpyDeviceToHost );
         cudaMemcpy( h_cellID, d_cellID, numberOfAtoms*sizeof(int), cudaMemcpyDeviceToHost );
@@ -384,6 +431,12 @@ int main(int argc, const char * argv[])
         writeHDF5File( hdf5handleVel,
                        filename,
                        h_vel );
+        writeHDF5File(hdf5handlePsiUp,
+                      filename,
+                      h_psiUp );
+        writeHDF5File(hdf5handlePsiDn,
+                      filename,
+                      h_psiDn );
         writeHDF5File( hdf5handleCollision,
                        filename,
                        h_collisionCount );
@@ -411,12 +464,16 @@ int main(int argc, const char * argv[])
     
     free( h_pos );
     free( h_vel );
+    free( h_psiUp );
+    free( h_psiDn );
     free( h_numberOfAtomsInCell );
 	free( h_cellID );
     
     cudaFree( d_pos );
     cudaFree( d_vel );
     cudaFree( d_acc );
+    cudaFree( d_psiUp );
+    cudaFree( d_psiDn );
     cudaFree( d_sigvrmax );
     cudaFree( d_cellStartEnd );
     cudaFree( d_cellID );

@@ -79,6 +79,8 @@ __global__ void initRNG( curandState_t *rngState, int numberOfAtoms )
 void h_generateInitialDist( double3 *d_pos,
                             double3 *d_vel,
                             double3 *d_acc,
+                           cuDoubleComplex *d_psiUp,
+                           cuDoubleComplex *d_psiDn,
                             int      numberOfAtoms,
                             double   Temp,
                             curandState_t *d_rngStates,
@@ -111,6 +113,8 @@ void h_generateInitialDist( double3 *d_pos,
     generateInitialDist<<<gridSize,blockSize>>>( d_pos,
                                                  d_vel,
                                                  d_acc,
+                                                 d_psiUp,
+                                                 d_psiDn,
                                                  numberOfAtoms,
                                                  Tinit,
                                                  d_rngStates,
@@ -123,6 +127,8 @@ void h_generateInitialDist( double3 *d_pos,
 __global__ void generateInitialDist(double3 *pos,
                                     double3 *vel,
                                     double3 *acc,
+                                    cuDoubleComplex *psiUp,
+                                    cuDoubleComplex *psiDn,
                                     int      numberOfAtoms,
 									double   Temp,
 									curandState_t *rngState,
@@ -141,6 +147,9 @@ __global__ void generateInitialDist(double3 *pos,
 		vel[atom] = getRandomVelocity( Temp, &localrngState );
         
         acc[atom] = updateAccel( pos[atom] );
+        
+        psiUp[atom] = getAlignedSpinUp( pos[atom] );
+        psiDn[atom] = getAlignedSpinDn( pos[atom] );
         
         atomID[atom] = atom;
 		
@@ -208,6 +217,40 @@ __device__ double3 updateAccel( double3 pos )
     accel.z =-2.0 * potential * pos.z;
     
     return accel;
+}
+
+__device__ cuDoubleComplex getAlignedSpinUp( double3 pos )
+{
+    double3 Bn = getMagFieldNormal( pos );
+    
+    cuDoubleComplex psiUp = 0.5 * make_cuDoubleComplex( 1. + Bn.x + Bn.z, -Bn.y ) * rsqrt( 1 + Bn.x );
+    
+    return psiUp;
+}
+
+__device__ cuDoubleComplex getAlignedSpinDn( double3 pos )
+{
+    double3 Bn = getMagFieldNormal( pos );
+    
+    cuDoubleComplex psiDn = 0.5 * make_cuDoubleComplex( 1. + Bn.x - Bn.z,  Bn.y ) * rsqrt( 1 + Bn.x );
+    
+    return psiDn;
+}
+
+__device__ double3 getMagFieldNormal( double3 pos )
+{
+    double3 B = getMagField( pos );
+    
+    double3 Bn = B / length( B );
+    
+    return Bn;
+}
+
+__device__ double3 getMagField( double3 pos )
+{
+    double3 B = d_dBdz * make_double3( 0.5 * pos.x, 0.5 * pos.y, -pos.z );
+    
+    return B;
 }
 
 void initSigvrmax( double *d_sigvrmax, int numberOfCells )
