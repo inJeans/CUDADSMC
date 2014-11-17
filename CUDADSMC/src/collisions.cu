@@ -345,7 +345,7 @@ __global__ void collide( double3 *vel,
             double3 cellLength = getCellLength( medianR,
                                                 cellsPerDimension );
             
-            d_dt = 1.0e-6;
+            d_dt = 0.5e-7;
             d_loopsPerCollision = 0.025 / d_dt;
             
             double cellVolume = cellLength.x * cellLength.y * cellLength.z;

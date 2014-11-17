@@ -21,7 +21,9 @@ __constant__ double d_hbar = 1.05457148e-34;	// hbar
 __device__ double d_meshWidth = 2.5;
 __device__ double3 d_maxGridWidth = { 0.001, 0.001, 0.001 };
 __device__ double d_dt;
-__device__ double d_dBdz = 2.5;
+__device__ double d_B0    = 0.01;
+__device__ double d_dBdx   = 20.5;
+__device__ double d_d2Bdx2 = 28000;
 __device__ double d_wavelength = 6.06012e-8;
 __device__ double d_eta = 7.;
 

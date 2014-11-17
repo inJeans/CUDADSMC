@@ -20,9 +20,11 @@ pi   = 3.14159265;
 kB   = 1.3806503e-23;
 hbar = 1.05457148e-34;
 T    = 20.e-6;
-dBdz = 2.5;
+B0 = 0.01;
+dBdx = 20.5;
+d2Bdx2 = 28000;
 
-tres = 51;
+tres = 26;
 ntrials = 1e4   ;
 dt = 1e-6;
 
@@ -77,10 +79,14 @@ avx = np.zeros((N.size,))
 avy = np.zeros((N.size,))
 avz = np.zeros((N.size,))
 
-Bnx =    pos[:,0,:] / np.sqrt(pos[:,0,:]**2 + pos[:,1,:]**2 + 4.*pos[:,2,:]**2)
-Bny =    pos[:,1,:] / np.sqrt(pos[:,0,:]**2 + pos[:,1,:]**2 + 4.*pos[:,2,:]**2)
-Bnz =-2.*pos[:,2,:] / np.sqrt(pos[:,0,:]**2 + pos[:,1,:]**2 + 4.*pos[:,2,:]**2)
-B   = 0.5 * dBdz * np.sqrt(pos[:,0,:]**2 + pos[:,1,:]**2 + 4.*pos[:,2,:]**2)
+Bx = dBdx*pos[:,0,:] - 0.5*d2Bdx2*pos[:,0,:]*pos[:,2,:];
+By =-dBdx*pos[:,1,:] - 0.5*d2Bdx2*pos[:,1,:]*pos[:,2,:];
+Bz = B0 + 0.5*d2Bdx2*( pos[:,2,:]*pos[:,2,:] - 0.5*( pos[:,0,:]*pos[:,0,:] + pos[:,1,:]*pos[:,1,:] ) );
+B  = np.sqrt( Bx**2 + By**2 + Bz**2 );
+
+Bnx = Bx / B;
+Bny = By / B;
+Bnz = Bz / B;
 
 for i in range(0,N.size):
     kinetic = 0.5 * mRb * np.sum(vel[:,:,i]**2, 1)
@@ -89,7 +95,8 @@ for i in range(0,N.size):
     proj = 2. * Bnx[n,i] * ( psiUp[n,0,i]*psiDn[n,0,i] + psiUp[n,1,i]*psiDn[n,1,i] ) + \
            2. * Bny[n,i] * ( psiUp[n,0,i]*psiDn[n,1,i] - psiUp[n,1,i]*psiDn[n,0,i] ) + \
            2. * Bnz[n,i] * ( psiUp[n,0,i]*psiUp[n,0,i] + psiUp[n,1,i]*psiUp[n,1,i] - 0.5 )
-    Ep[i] = np.sum( 0.5*gs*muB*B[n,i]*proj, 0 ) / N[i] / kB * 1.e6
+    bias = 2. * B0 * ( psiUp[n,0,i]*psiUp[n,0,i] + psiUp[n,1,i]*psiUp[n,1,i] - 0.5 )
+    Ep[i] = np.sum( 0.5*gs*muB*(B[n,i]*proj-bias), 0 ) / N[i] / kB * 1.e6
     Et[i] = Ek[i] + Ep[i]
 
     Temp[i] = 2./3. * np.sum( kinetic[n], 0) / N[i] / kB * 1.e6

@@ -142,7 +142,7 @@ int main(int argc, const char * argv[])
     
 #pragma mark - Set up atom system
 	
-    dt = 1.0e-6;
+    dt = 0.5e-7;
     loopsPerCollision = 0.025 / dt;
     
 	copyConstantsToDevice<<<1,1>>>( dt );

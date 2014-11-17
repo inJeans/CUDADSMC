@@ -11,7 +11,7 @@
 
 #pragma mark -
 
-int numberOfPrints = 50;
+int numberOfPrints = 25;
 int loopsPerCollision = 0.0007 / dt;
 double dt = 1.e-6;
 
@@ -26,6 +26,6 @@ double h_kB  = 1.3806503e-23;	// Boltzmann's Constant
 double Tinit   = 20.0e-6;
 
 #pragma mark Trap Parameters
-double dBdz = 2.5;
+double dBdr = 32000;
 
 #endif

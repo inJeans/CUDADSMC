@@ -146,10 +146,12 @@ __global__ void generateInitialDist(double3 *pos,
         
 		vel[atom] = getRandomVelocity( Temp, &localrngState );
         
-        acc[atom] = updateAccel( pos[atom] );
-        
         psiUp[atom] = getAlignedSpinUp( pos[atom] );
         psiDn[atom] = getAlignedSpinDn( pos[atom] );
+        
+        acc[atom] = updateAccel( pos[atom],
+                                 psiUp[atom],
+                                 psiDn[atom]);
         
         atomID[atom] = atom;
 		
@@ -182,7 +184,8 @@ __device__ double3 selectAtomInThermalDistribution( double Temp, curandState_t *
         
         double3 r = make_double3( r1.x, r1.y, r2 ) * d_maxGridWidth / 3;
         
-        double U = -0.5*d_gs*d_muB*d_dBdz*sqrt(r.x*r.x+r.y*r.y+4.0*r.z*r.z);
+        double d2Bdr2 = d_dBdx*d_dBdx / d_B0 - 0.5 * d_d2Bdx2;
+        double U = -0.25*d_gs*d_muB*( d2Bdr2*(r.x*r.x + r.y*r.y) + d_d2Bdx2*r.z*r.z );
         
         double Pr = exp( U / d_kB / Temp );
         
@@ -206,15 +209,26 @@ __device__ double3 getGaussianPoint( double mean, double std, curandState_t *rng
     return point;
 }
 
-__device__ double3 updateAccel( double3 pos )
+__device__ double3 updateAccel( double3 pos, cuDoubleComplex psiUp, cuDoubleComplex psiDn )
 {
     double3 accel = make_double3( 0., 0., 0. );
     
-    double potential = d_gs * d_muB * d_dBdz * rsqrt( pos.x*pos.x + pos.y*pos.y + 4.*pos.z*pos.z ) / d_mRb;
+    double3 dBdx = diffMagFieldAlongx( pos );
+    double3 dBdy = diffMagFieldAlongy( pos );
+    double3 dBdz = diffMagFieldAlongz( pos );
     
-    accel.x =-0.5 * potential * pos.x;
-    accel.y =-0.5 * potential * pos.y;
-    accel.z =-2.0 * potential * pos.z;
+    double potential = -1.0 * d_gs * d_muB / d_mRb;
+    
+    accel.x = potential * ( dBdx.x * (psiUp.x*psiDn.x + psiUp.y*psiDn.y) +
+                            dBdx.y * (psiUp.x*psiDn.y - psiUp.y*psiDn.x) +
+                            dBdx.z * (psiUp.x*psiUp.x + psiUp.y*psiUp.y - 0.5) );
+    accel.y = potential * ( dBdy.x * (psiUp.x*psiDn.x + psiUp.y*psiDn.y) +
+                            dBdy.y * (psiUp.x*psiDn.y - psiUp.y*psiDn.x) +
+                            dBdy.z * (psiUp.x*psiUp.x + psiUp.y*psiUp.y - 0.5) );
+    accel.z = potential * ( dBdz.x * (psiUp.x*psiDn.x + psiUp.y*psiDn.y) +
+                            dBdz.y * (psiUp.x*psiDn.y - psiUp.y*psiDn.x) +
+                            dBdz.z * (psiUp.x*psiUp.x + psiUp.y*psiUp.y - 0.5) );
+    
     
     return accel;
 }
@@ -248,9 +262,35 @@ __device__ double3 getMagFieldNormal( double3 pos )
 
 __device__ double3 getMagField( double3 pos )
 {
-    double3 B = d_dBdz * make_double3( 0.5 * pos.x, 0.5 * pos.y, -pos.z );
+    double3 B = d_B0     * make_double3( 0., 0., 1. ) +
+                d_dBdx   * make_double3( pos.x, -pos.y, 0. ) +
+          0.5 * d_d2Bdx2 * make_double3( -pos.x*pos.z, -pos.y*pos.z, pos.z*pos.z - 0.5*(pos.x*pos.x+pos.y*pos.y) );
     
     return B;
+}
+
+__device__ double3 diffMagFieldAlongx( double3 pos )
+{
+    double3 dBdx = make_double3( d_dBdx - 0.5 * d_d2Bdx2 * pos.z,
+                                 0.,
+                                -0.5 * d_d2Bdx2 * pos.x );
+    return dBdx;
+}
+
+__device__ double3 diffMagFieldAlongy( double3 pos )
+{
+    double3 dBdy = make_double3( 0.,
+                                -d_dBdx - 0.5 * d_d2Bdx2 * pos.z,
+                                -0.5 * d_d2Bdx2 * pos.y );
+    return dBdy;
+}
+
+__device__ double3 diffMagFieldAlongz( double3 pos )
+{
+    double3 dBdz = make_double3(-0.5 * d_d2Bdx2 * pos.x,
+                                -0.5 * d_d2Bdx2 * pos.y,
+                                 d_d2Bdx2 * pos.z );
+    return dBdz;
 }
 
 void initSigvrmax( double *d_sigvrmax, int numberOfCells )

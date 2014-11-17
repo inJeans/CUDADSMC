@@ -54,7 +54,7 @@ __device__ double3 getGaussianPoint( double mean,
                                      double std,
                                      curandState_t *rngState );
 
-__device__ double3 updateAccel( double3 pos );
+__device__ double3 updateAccel( double3 pos, cuDoubleComplex psiUp, cuDoubleComplex psiDn );
 
 __device__ cuDoubleComplex getAlignedSpinUp( double3 pos );
 
@@ -63,6 +63,9 @@ __device__ cuDoubleComplex getAlignedSpinDn( double3 pos );
 __device__ double3 getMagFieldNormal( double3 pos );
 
 __device__ double3 getMagField( double3 pos );
+__device__ double3 diffMagFieldAlongx( double3 pos );
+__device__ double3 diffMagFieldAlongy( double3 pos );
+__device__ double3 diffMagFieldAlongz( double3 pos );
 
 void initSigvrmax( double *d_sigvrmax, int numberOfCells );
 

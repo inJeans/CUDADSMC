@@ -67,7 +67,8 @@ __device__ void velocityVerletUpdate( double3 *pos, double3 *vel, double3 *acc, 
                                  acc[0] );
     pos[0]   = updatePos(pos[0],
                          vel[0] );
-    acc[0]   = updateAcc(psiUp[0],
+    acc[0]   = updateAcc(pos[0],
+                         psiUp[0],
                          psiDn[0] );
     vel[0]   = updateVelHalfStep(pos[0],
                                  vel[0],
@@ -86,7 +87,8 @@ __device__ void symplecticEulerUpdate( double3 *pos, double3 *vel, double3 *acc,
                            psiUpTemp,
                            psiDn[0] );
     
-    acc[0] = updateAcc(psiUp[0],
+    acc[0] = updateAcc(pos[0],
+                       psiUp[0],
                        psiDn[0] );
     vel[0] = updateVel(pos[0],
                        vel[0],
@@ -112,15 +114,25 @@ __device__ double3 updatePos( double3 pos, double3 vel )
     return newPos;
 }
 
-__device__ double3 updateAcc( cuDoubleComplex psiUp, cuDoubleComplex psiDn )
+__device__ double3 updateAcc( double3 pos, cuDoubleComplex psiUp, cuDoubleComplex psiDn )
 {
     double3 accel = make_double3( 0., 0., 0. );
     
-    double potential = -1.0 * d_gs * d_muB * d_dBdz / d_mRb;
+    double3 dBdx = diffMagneticFieldAlongx( pos );
+    double3 dBdy = diffMagneticFieldAlongy( pos );
+    double3 dBdz = diffMagneticFieldAlongz( pos );
     
-    accel.x = potential * (psiUp.x*psiDn.x + psiUp.y*psiDn.y);
-    accel.y = potential * (psiUp.x*psiDn.y - psiUp.y*psiDn.x);
-    accel.z = potential * (1. - 2.*psiUp.x*psiUp.x - 2.*psiUp.y*psiUp.y);
+    double potential = -1.0 * d_gs * d_muB / d_mRb;
+    
+    accel.x = potential * ( dBdx.x * (psiUp.x*psiDn.x + psiUp.y*psiDn.y) +
+                            dBdx.y * (psiUp.x*psiDn.y - psiUp.y*psiDn.x) +
+                            dBdx.z * (psiUp.x*psiUp.x + psiUp.y*psiUp.y - 0.5) );
+    accel.y = potential * ( dBdy.x * (psiUp.x*psiDn.x + psiUp.y*psiDn.y) +
+                            dBdy.y * (psiUp.x*psiDn.y - psiUp.y*psiDn.x) +
+                            dBdy.z * (psiUp.x*psiUp.x + psiUp.y*psiUp.y - 0.5) );
+    accel.z = potential * ( dBdz.x * (psiUp.x*psiDn.x + psiUp.y*psiDn.y) +
+                            dBdz.y * (psiUp.x*psiDn.y - psiUp.y*psiDn.x) +
+                            dBdz.z * (psiUp.x*psiUp.x + psiUp.y*psiUp.y - 0.5) );
     
     
     return accel;
@@ -140,8 +152,6 @@ __device__ cuDoubleComplex updatePsiUp(double3 pos,
     cuDoubleComplex newPsiUp = make_cuDoubleComplex( psiUp.x*cosTheta + ( Bn.x*psiDn.y - Bn.y*psiDn.x + Bn.z*psiUp.y)*sinTheta,
                                                      psiUp.y*cosTheta + (-Bn.x*psiDn.x - Bn.y*psiDn.y - Bn.z*psiUp.x)*sinTheta );
     
-//    cuDoubleComplex newPsiUp = 0.5 * make_cuDoubleComplex( 1. + Bn.x + Bn.z, -Bn.y ) * rsqrt( 1 + Bn.x );
-    
     return newPsiUp;
 }
 
@@ -158,8 +168,6 @@ __device__ cuDoubleComplex updatePsiDn(double3 pos,
     
     cuDoubleComplex newPsiDn = make_cuDoubleComplex( psiDn.x*cosTheta + ( Bn.x*psiUp.y + Bn.y*psiUp.x - Bn.z*psiDn.y)*sinTheta,
                                                      psiDn.y*cosTheta + (-Bn.x*psiUp.x + Bn.y*psiUp.y + Bn.z*psiDn.x)*sinTheta );
-    
-//    cuDoubleComplex newPsiDn = 0.5 * make_cuDoubleComplex( 1. + Bn.x - Bn.z,  Bn.y ) * rsqrt( 1 + Bn.x );
     
     return newPsiDn;
 }
@@ -182,7 +190,33 @@ __device__ double getMagB( double3 pos )
 
 __device__ double3 getMagneticField( double3 pos )
 {
-    double3 B = d_dBdz * make_double3( 0.5 * pos.x, 0.5 * pos.y, -pos.z );
+    double3 B = d_B0     * make_double3( 0., 0., 1. ) +
+                d_dBdx   * make_double3( pos.x, -pos.y, 0. ) +
+          0.5 * d_d2Bdx2 * make_double3( -pos.x*pos.z, -pos.y*pos.z, pos.z*pos.z - 0.5*(pos.x*pos.x+pos.y*pos.y) );
     
     return B;
+}
+
+__device__ double3 diffMagneticFieldAlongx( double3 pos )
+{
+    double3 dBdx = make_double3( d_dBdx - 0.5 * d_d2Bdx2 * pos.z,
+                                 0.,
+                                -0.5 * d_d2Bdx2 * pos.x );
+    return dBdx;
+}
+
+__device__ double3 diffMagneticFieldAlongy( double3 pos )
+{
+    double3 dBdy = make_double3( 0.,
+                                -d_dBdx - 0.5 * d_d2Bdx2 * pos.z,
+                                -0.5 * d_d2Bdx2 * pos.y );
+    return dBdy;
+}
+
+__device__ double3 diffMagneticFieldAlongz( double3 pos )
+{
+    double3 dBdz = make_double3(-0.5 * d_d2Bdx2 * pos.x,
+                                -0.5 * d_d2Bdx2 * pos.y,
+                                       d_d2Bdx2 * pos.z );
+    return dBdz;
 }
