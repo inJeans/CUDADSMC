@@ -140,34 +140,34 @@ int main(int argc, const char * argv[])
     createHDF5File( filename,
                     groupname );
     
-    cudaMemcpy( h_pos,
-                d_pos,
-                numberOfAtoms*sizeof(double3),
-                cudaMemcpyDeviceToHost );
-	char posDatasetName[] = "/atomData/positions";
-    int3 atomDims = { numberOfAtoms, 3, 1 };
-    hdf5FileHandle hdf5handlePos = createHDF5Handle( atomDims,
-                                                     H5T_NATIVE_DOUBLE,
-                                                     posDatasetName );
-	intialiseHDF5File( hdf5handlePos,
-                       filename );
-	writeHDF5File( hdf5handlePos,
-                   filename,
-                   h_pos );
-    
-    cudaMemcpy( h_vel,
-                d_vel,
-                numberOfAtoms*sizeof(double3),
-                cudaMemcpyDeviceToHost );
-    char velDatasetName[] = "/atomData/velocities";
-    hdf5FileHandle hdf5handleVel = createHDF5Handle( atomDims,
-                                                     H5T_NATIVE_DOUBLE,
-                                                     velDatasetName );
-    intialiseHDF5File( hdf5handleVel,
-                       filename );
-	writeHDF5File( hdf5handleVel,
-                   filename,
-                   h_vel );
+//    cudaMemcpy( h_pos,
+//                d_pos,
+//                numberOfAtoms*sizeof(double3),
+//                cudaMemcpyDeviceToHost );
+//	char posDatasetName[] = "/atomData/positions";
+//    int3 atomDims = { numberOfAtoms, 3, 1 };
+//    hdf5FileHandle hdf5handlePos = createHDF5Handle( atomDims,
+//                                                     H5T_NATIVE_DOUBLE,
+//                                                     posDatasetName );
+//	intialiseHDF5File( hdf5handlePos,
+//                       filename );
+//	writeHDF5File( hdf5handlePos,
+//                   filename,
+//                   h_pos );
+//    
+//    cudaMemcpy( h_vel,
+//                d_vel,
+//                numberOfAtoms*sizeof(double3),
+//                cudaMemcpyDeviceToHost );
+//    char velDatasetName[] = "/atomData/velocities";
+//    hdf5FileHandle hdf5handleVel = createHDF5Handle( atomDims,
+//                                                     H5T_NATIVE_DOUBLE,
+//                                                     velDatasetName );
+//    intialiseHDF5File( hdf5handleVel,
+//                       filename );
+//	writeHDF5File( hdf5handleVel,
+//                   filename,
+//                   h_vel );
     
     cudaMemcpy( h_collisionCount,
                 d_collisionCount,
@@ -297,17 +297,17 @@ int main(int argc, const char * argv[])
         
         time += loopsPerCollision * dt;
     
-        cudaMemcpy( h_pos, d_pos, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
-        cudaMemcpy( h_vel, d_vel, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
+//        cudaMemcpy( h_pos, d_pos, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
+//        cudaMemcpy( h_vel, d_vel, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
         cudaMemcpy( h_numberOfAtomsInCell, d_numberOfAtomsInCell, (numberOfCells+1)*sizeof(int), cudaMemcpyDeviceToHost );
         cudaMemcpy( h_collisionCount, d_collisionCount, (numberOfCells+1)*sizeof(int), cudaMemcpyDeviceToHost );
     
-        writeHDF5File( hdf5handlePos,
-                       filename,
-                       h_pos );
-        writeHDF5File( hdf5handleVel,
-                       filename,
-                       h_vel );
+//        writeHDF5File( hdf5handlePos,
+//                       filename,
+//                       h_pos );
+//        writeHDF5File( hdf5handleVel,
+//                       filename,
+//                       h_vel );
         writeHDF5File( hdf5handleCollision,
                        filename,
                        h_collisionCount );
