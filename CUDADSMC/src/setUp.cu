@@ -29,7 +29,7 @@ int findRNGArrayLength( int numberOfCells )
     
     return sizeOfRNG;
 }
-void h_initRNG( curandStatePhilox4_32_10_t *d_rngStates, int sizeOfRNG )
+void h_initRNG( curandState_t *d_rngStates, int sizeOfRNG )
 {
     int blockSize;
     int gridSize;
@@ -60,7 +60,7 @@ void h_initRNG( curandStatePhilox4_32_10_t *d_rngStates, int sizeOfRNG )
     return;
 }
 
-__global__ void initRNG( curandStatePhilox4_32_10_t *rngState, int numberOfAtoms )
+__global__ void initRNG( curandState_t *rngState, int numberOfAtoms )
 {
 	for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
 		 atom < numberOfAtoms;
@@ -79,9 +79,10 @@ __global__ void initRNG( curandStatePhilox4_32_10_t *rngState, int numberOfAtoms
 void h_generateInitialDist( double3 *d_pos,
                             double3 *d_vel,
                             double3 *d_acc,
+                            int     *d_atomID,
                             int      numberOfAtoms,
                             double   Temp,
-                            curandStatePhilox4_32_10_t *d_rngStates )
+                            curandState_t *d_rngStates )
 {
     int blockSize;
     int gridSize;
@@ -110,6 +111,7 @@ void h_generateInitialDist( double3 *d_pos,
     generateInitialDist<<<gridSize,blockSize>>>( d_pos,
                                                  d_vel,
                                                  d_acc,
+                                                 d_atomID,
                                                  numberOfAtoms,
                                                  Tinit,
                                                  d_rngStates );
@@ -121,22 +123,25 @@ void h_generateInitialDist( double3 *d_pos,
 __global__ void generateInitialDist(double3 *pos,
                                     double3 *vel,
                                     double3 *acc,
+                                    int     *atomID,
                                     int      numberOfAtoms,
 									double   Temp,
-									curandStatePhilox4_32_10_t *rngState) {
+									curandState_t *rngState) {
     
 	for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
 		 atom < numberOfAtoms;
 		 atom += blockDim.x * gridDim.x)
 	{
 		/* Copy state to local memory for efficiency */
-		curandStatePhilox4_32_10_t localrngState = rngState[atom];
+		curandState_t localrngState = rngState[atom];
 		
         pos[atom] = selectAtomInBox( &localrngState );
         
 		vel[atom] = getRandomVelocity( Temp, &localrngState );
         
         acc[atom] = updateAccel( pos[atom] );
+        
+        atomID[atom] = atom;
 		
 		// Copy state back to global memory
 		rngState[atom] = localrngState;
@@ -144,7 +149,7 @@ __global__ void generateInitialDist(double3 *pos,
     return;
 }
 
-__device__ double3 getRandomVelocity( double Temp, curandStatePhilox4_32_10_t *rngState )
+__device__ double3 getRandomVelocity( double Temp, curandState_t *rngState )
 {
 	double3 vel = make_double3( 0., 0., 0. );
 	
@@ -155,19 +160,20 @@ __device__ double3 getRandomVelocity( double Temp, curandStatePhilox4_32_10_t *r
 	return vel;
 }
 
-__device__ double3 selectAtomInBox( curandStatePhilox4_32_10_t *rngState )
+__device__ double3 selectAtomInBox( curandState_t *rngState )
 {
     double3 r   = make_double3( 0., 0., 0. );
     
-    double2 r1 = ( curand_uniform2_double ( &rngState[0] ) * 2. - 1. );
-    double  r2 = ( curand_uniform_double  ( &rngState[0] ) * 2. - 1. );
+    double r1 = ( curand_uniform_double ( &rngState[0] ) * 2. - 1. );
+    double r2 = ( curand_uniform_double ( &rngState[0] ) * 2. - 1. );
+    double r3 = ( curand_uniform_double ( &rngState[0] ) * 2. - 1. );
     
-    double3 pos = make_double3( r1.x, r1.y, r2 ) * d_maxGridWidth;
+    double3 pos = make_double3( r1, r2, r3 ) * d_maxGridWidth;
     
     return pos;
 }
 
-__device__ double3 getGaussianPoint( double mean, double std, curandStatePhilox4_32_10_t *rngState )
+__device__ double3 getGaussianPoint( double mean, double std, curandState_t *rngState )
 {
     double2 r1 = curand_normal2_double ( &rngState[0] ) * std + mean;
 	double  r2 = curand_normal_double  ( &rngState[0] ) * std + mean;

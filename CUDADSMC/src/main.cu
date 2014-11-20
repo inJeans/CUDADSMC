@@ -38,7 +38,7 @@ int main(int argc, const char * argv[])
         numberOfCells = Nc*Nc*Nc;
         
         numberOfAtoms = atoi(argv[2]);
-        alpha = 1e10 / numberOfAtoms;
+        alpha = 1e6 / numberOfAtoms;
     }
     else if( argc > 3 )
     {
@@ -62,8 +62,8 @@ int main(int argc, const char * argv[])
     
     int sizeOfRNG = findRNGArrayLength( numberOfCells );
 	
-	curandStatePhilox4_32_10_t *d_rngStates;
-	cudaMalloc( (void **)&d_rngStates, sizeOfRNG*sizeof(curandStatePhilox4_32_10_t) );
+	curandState_t *d_rngStates;
+	cudaMalloc( (void **)&d_rngStates, sizeOfRNG*sizeof(curandState_t) );
     
     double3 *d_pos;
     double3 *d_vel;
@@ -77,6 +77,7 @@ int main(int argc, const char * argv[])
     int2 *d_cellStartEnd;
     
     int *d_cellID;
+    int *d_atomID;
     int *d_numberOfAtomsInCell;
     int *d_prefixScanNumberOfAtomsInCell;
     int *d_collisionCount;
@@ -90,6 +91,7 @@ int main(int argc, const char * argv[])
     cudaCalloc( (void **)&d_cellStartEnd, numberOfCells+1, sizeof(int2) );
     
     cudaCalloc( (void **)&d_cellID, numberOfAtoms, sizeof(int) );
+    cudaCalloc( (void **)&d_atomID, numberOfAtoms, sizeof(int) );
     cudaCalloc( (void **)&d_numberOfAtomsInCell, numberOfCells+1, sizeof(int) );
     cudaCalloc( (void **)&d_prefixScanNumberOfAtomsInCell, numberOfCells+1, sizeof(int) );
     cudaCalloc( (void **)&d_collisionCount, numberOfCells+1, sizeof(int) );
@@ -107,7 +109,7 @@ int main(int argc, const char * argv[])
 #pragma mark - Set up atom system
 	
     dt = 1.e-6;
-    loopsPerCollision = 0.005 / dt;
+    loopsPerCollision = ceil(14.5 / numberOfPrints / dt);
     
 	copyConstantsToDevice<<<1,1>>>( dt );
 	
@@ -116,19 +118,22 @@ int main(int argc, const char * argv[])
     h_generateInitialDist( d_pos,
                            d_vel,
                            d_acc,
+                           d_atomID,
                            numberOfAtoms,
                            Tinit,
                            d_rngStates );
     
     initSigvrmax( d_sigvrmax, numberOfCells );
     
-    medianR = indexAtoms( d_pos,
-                          d_cellID,
-                          cellsPerDimension );
-    sortArrays( d_pos,
-                d_vel,
-                d_acc,
-                d_cellID );
+    medianR = indexAtoms(d_pos,
+                         d_cellID,
+                         d_atomID,
+                         cellsPerDimension,
+                         numberOfAtoms );
+    
+    sortArrays(d_cellID,
+               d_atomID,
+               numberOfAtoms );
     
 #pragma mark - Write Initial State
     
@@ -244,17 +249,19 @@ int main(int argc, const char * argv[])
         
         medianR = indexAtoms( d_pos,
                               d_cellID,
-                              cellsPerDimension );
+                              d_atomID,
+                              cellsPerDimension,
+                              numberOfAtoms );
         
-        sortArrays( d_pos,
-                    d_vel,
-                    d_acc,
-                    d_cellID );
+        sortArrays( d_cellID,
+                    d_atomID,
+                    numberOfAtoms );
 		
 		deviceMemset<<<numberOfCells+1,1>>>( d_cellStartEnd,
 											 make_int2( -1, -1 ),
 											 numberOfCells + 1 );
 		cellStartandEndKernel<<<gridSize,blockSize>>>( d_cellID,
+                                                       d_atomID,
                                                        d_cellStartEnd,
                                                        numberOfAtoms );
         findNumberOfAtomsInCell<<<numberOfCells+1,1>>>( d_cellStartEnd,
@@ -273,17 +280,17 @@ int main(int argc, const char * argv[])
                                       cellsPerDimension,
                                       numberOfCells,
                                       d_rngStates,
-                                      d_cellID );
+                                      d_atomID );
         
 #pragma mark Evolve System
         
         for (int j=0; j<loopsPerCollision; j++) {
             
-            moveAtoms<<<gridSize,blockSize>>>( d_pos,
-                                               d_vel,
-                                               d_acc,
-                                               numberOfAtoms,
-                                               medianR );
+            moveAtoms<<<gridSize,blockSize>>>(d_pos,
+                                              d_vel,
+                                              d_acc,
+                                              d_atomID,
+                                              numberOfAtoms );
         }
         
         printf( "Number of atoms = %i, ", numberOfAtoms);
@@ -314,7 +321,7 @@ int main(int argc, const char * argv[])
                        filename,
                        &numberOfAtoms );
         
-        printf("i = %i\n", i);
+        printf("%%%i complete, t = %g s\n", i*100/numberOfPrints, time);
     }
     
     // insert code here...
@@ -331,6 +338,7 @@ int main(int argc, const char * argv[])
     cudaFree( d_sigvrmax );
     cudaFree( d_cellStartEnd );
     cudaFree( d_cellID );
+    cudaFree( d_atomID );
     cudaFree( d_numberOfAtomsInCell );
     cudaFree( d_prefixScanNumberOfAtomsInCell );
     cudaFree( d_collisionCount );

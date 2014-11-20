@@ -14,10 +14,10 @@
 int3   cellsPerDimension = {5, 5, 5};
 int    numberOfCells = cellsPerDimension.x*cellsPerDimension.y*cellsPerDimension.z;
 int    numberOfAtoms = 1e3;
-double alpha = 1e10 / numberOfAtoms;
+double alpha = 1e6 / numberOfAtoms;
 double dt = 1.0e-6;
 
-int numberOfPrints = 50;
+int numberOfPrints = 100;
 int loopsPerCollision = 0.0007 / dt;
 
 #pragma mark Physics Constants

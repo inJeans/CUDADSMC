@@ -22,36 +22,35 @@ __global__ void copyConstantsToDevice( double dt )
 	return;
 }
 
-__global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, int numberOfAtoms, double medianR )
+__global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, int *atomID, int numberOfAtoms )
 {
     for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
-		 atom < numberOfAtoms;
-		 atom += blockDim.x * gridDim.x)
-	{
-		double3 l_pos = pos[atom];
-        double3 l_vel = vel[atom];
-        double3 l_acc = acc[atom];
+         atom < numberOfAtoms;
+         atom += blockDim.x * gridDim.x)
+    {
+        double3 l_pos = pos[atomID[atom]];
+        double3 l_vel = vel[atomID[atom]];
+        double3 l_acc = acc[atomID[atom]];
 		
 //        for (int i=0; i<d_loopsPerCollision; i++) {
             velocityVerletUpdate( &l_pos,
                                   &l_vel,
-                                  &l_acc,
-                                  medianR );
+                                  &l_acc );
 //        }
     
-        pos[atom] = l_pos;
-        vel[atom] = l_vel;
-        acc[atom] = l_acc;
+        pos[atomID[atom]] = l_pos;
+        vel[atomID[atom]] = l_vel;
+        acc[atomID[atom]] = l_acc;
 		
     }
     
     return;
 }
 
-__device__ void velocityVerletUpdate( double3 *pos, double3 *vel, double3 *acc, double medianR )
+__device__ void velocityVerletUpdate( double3 *pos, double3 *vel, double3 *acc )
 {
     vel[0] = updateVelHalfStep( pos[0], vel[0], acc[0] );
-    pos[0] = updatePos( pos[0], vel[0], medianR );
+    pos[0] = updatePos( pos[0], vel[0] );
     acc[0] = updateAcc( pos[0] );
     vel[0] = updateVelHalfStep( pos[0], vel[0], acc[0] );
     
@@ -76,11 +75,11 @@ __device__ void velocityVerletUpdate( double3 *pos, double3 *vel, double3 *acc, 
     return;
 }
 
-__device__ void symplecticEulerUpdate( double3 *pos, double3 *vel, double3 *acc, double medianR )
+__device__ void symplecticEulerUpdate( double3 *pos, double3 *vel, double3 *acc )
 {
     acc[0] = updateAcc( pos[0] );
     vel[0] = updateVel( pos[0], vel[0], acc[0] );
-    pos[0] = updatePos( pos[0], vel[0], medianR );
+    pos[0] = updatePos( pos[0], vel[0] );
 }
 
 __device__ double3 updateVel( double3 pos, double3 vel, double3 acc )
@@ -93,7 +92,7 @@ __device__ double3 updateVelHalfStep( double3 pos, double3 vel, double3 acc )
     return vel + 0.5 * acc * d_dt;
 }
 
-__device__ double3 updatePos( double3 pos, double3 vel, double medianR )
+__device__ double3 updatePos( double3 pos, double3 vel )
 {
     double3 newPos = pos + vel * d_dt;
     
