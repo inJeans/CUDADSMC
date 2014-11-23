@@ -22,7 +22,7 @@ hbar = 1.05457148e-34;
 T    = 20.e-6;
 dBdr = 8746.;
 
-tres = 26;
+tres = 101;
 ntrials = 1e5;
 dt = 1e-6;
 
@@ -31,6 +31,7 @@ pos = np.zeros((ntrials,3,tres));
 vel = np.zeros((ntrials,3,tres));
 isPerturb = np.zeros((ntrials,1,tres));
 N = np.zeros((tres));
+collisionCount = np.zeros((10**3+1,1,tres));
 
 f = h5py.File('outputData.h5');
 
@@ -49,7 +50,14 @@ dset.read_direct(isPerturb);
 dset = f.require_dataset('atomData/atomNumber',(1,1,tres),False,False);
 dset.read_direct(N);
 
+dset = f.require_dataset('atomData/collisionCount',(10**3+1,1,tres),False,False);
+dset.read_direct(collisionCount);
+
 f.close()
+
+totalColl = np.sum( collisionCount, 0 )[0,:];
+colls = np.cumsum( totalColl ) / N[0];
+time = colls;
 
 #time = time * 24.21;
 
