@@ -19,8 +19,8 @@ mRb  = 1.443160648e-25;
 pi   = 3.14159265;
 kB   = 1.3806503e-23;
 hbar = 1.05457148e-34;
-T    = 9.7e-6;
-dBdr = 32000.;
+T    = 20.5e-6;
+dBdr = 47.5**2/0.01 - 150000./2.;
 
 tres = 101;
 nAtoms = 1e6;
@@ -29,9 +29,9 @@ nCells = 100**3 + 1;
 vtherm = np.sqrt( 8.*kB*T / (pi*mRb) );
 vrel = np.sqrt(2.) * vtherm
 sigma = 8. * pi * a**2;
-Ve = 2.*np.sqrt(2.)*pi**1.5 / ((dBdr*gs*muB / kB / T)**1.5)
+Ve = 8. * ( pi*kB*T / (gs*muB*dBdr) )**1.5
 n0 = nAtoms / Ve
-collisionRate = 0.5 * n0 * sigma * vrel * (1. / (2.*np.sqrt(2.)) )
+collisionRate = 0.25 * n0 * sigma * vtherm
 
 print "Analytic collision rate = ", collisionRate
 
@@ -58,7 +58,7 @@ f.close()
 
 totalColl = np.sum( collisionCount, 0 )[0,:];
 
-collRate = np.gradient( totalColl, time[1]-time[0] ) / N ;
+collRate = totalColl / ( time[1]-time[0] ) / N ;
 
 print "Computational collision rate = ", np.mean(collRate[10:-1])
 print "sigma = ", np.std(collRate[10:-1])

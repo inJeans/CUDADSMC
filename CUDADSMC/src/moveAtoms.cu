@@ -22,26 +22,26 @@ __global__ void copyConstantsToDevice( double dt )
 	return;
 }
 
-__global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, int numberOfAtoms )
+__global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, int *atomID, int numberOfAtoms )
 {
     for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
-		 atom < numberOfAtoms;
-		 atom += blockDim.x * gridDim.x)
-	{
-		double3 l_pos = pos[atom];
-        double3 l_vel = vel[atom];
-        double3 l_acc = acc[atom];
-		
-//        for (int i=0; i<d_loopsPerCollision; i++) {
-            velocityVerletUpdate( &l_pos,
-                                  &l_vel,
-                                  &l_acc );
-//        }
-    
-        pos[atom] = l_pos;
-        vel[atom] = l_vel;
-        acc[atom] = l_acc;
-		
+         atom < numberOfAtoms;
+         atom += blockDim.x * gridDim.x)
+    {
+        double3 l_pos = pos[atomID[atom]];
+        double3 l_vel = vel[atomID[atom]];
+        double3 l_acc = acc[atomID[atom]];
+        
+        //        for (int i=0; i<d_loopsPerCollision; i++) {
+        velocityVerletUpdate(&l_pos,
+                             &l_vel,
+                             &l_acc );
+        //        }
+        
+        pos[atomID[atom]] = l_pos;
+        vel[atomID[atom]] = l_vel;
+        acc[atomID[atom]] = l_acc;
+        
     }
     
     return;
@@ -94,7 +94,8 @@ __device__ double3 updateAcc( double3 pos )
 {
     double3 accel = make_double3( 0., 0., 0. );
     
-    double potential = -1.0 * d_gs * d_muB * d_dBdr / d_mRb;
+    double d2Bdr2 = d_dBdx*d_dBdx / d_B0 - 0.5 * d_d2Bdx2;
+    double potential = -0.5 * d_gs * d_muB * d2Bdr2 / d_mRb;
     
     accel = potential * pos;
     

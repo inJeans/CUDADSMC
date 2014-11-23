@@ -114,7 +114,7 @@ int main(int argc, const char * argv[])
 #pragma mark - Set up atom system
 	
     dt = 1.e-6;
-    loopsPerCollision = 0.0025 / dt;
+    loopsPerCollision = ceil(0.25 / 100. / dt);
     
 	copyConstantsToDevice<<<1,1>>>( dt );
 	
@@ -131,15 +131,15 @@ int main(int argc, const char * argv[])
     
     initSigvrmax( d_sigvrmax, numberOfCells );
     
-    medianR = indexAtoms( d_pos,
-                          d_cellID,
-                          cellsPerDimension );
-    sortArrays( d_pos,
-                d_vel,
-                d_acc,
-                d_cellID,
-                d_isPerturb,
-                d_atomID );
+    medianR = indexAtoms(d_pos,
+                         d_cellID,
+                         d_atomID,
+                         cellsPerDimension,
+                         numberOfAtoms );
+    
+    sortArrays(d_cellID,
+               d_atomID,
+               numberOfAtoms );
     
 #pragma mark - Write Initial State
     
@@ -296,49 +296,50 @@ int main(int argc, const char * argv[])
     {
 #pragma mark Collide Atoms
         
-        medianR = indexAtoms( d_pos,
-                              d_cellID,
-                              cellsPerDimension );
+        medianR = indexAtoms(d_pos,
+                             d_cellID,
+                             d_atomID,
+                             cellsPerDimension,
+                             numberOfAtoms );
         
-        sortArrays( d_pos,
-                    d_vel,
-                    d_acc,
-                    d_cellID,
-                    d_isPerturb,
-                    d_atomID );
-		
-		deviceMemset<<<numberOfCells+1,1>>>( d_cellStartEnd,
-											 make_int2( -1, -1 ),
-											 numberOfCells + 1 );
-		cellStartandEndKernel<<<gridSize,blockSize>>>( d_cellID,
-                                                       d_cellStartEnd,
-                                                       numberOfAtoms );
-        findNumberOfAtomsInCell<<<numberOfCells+1,1>>>( d_cellStartEnd,
-                                                        d_numberOfAtomsInCell,
-                                                        numberOfCells );
-        thrust::exclusive_scan( th_numberOfAtomsInCell,
-                                th_numberOfAtomsInCell + numberOfCells + 1,
-                                th_prefixScanNumberOfAtomsInCell );
+        sortArrays(d_cellID,
+                   d_atomID,
+                   numberOfAtoms );
         
-        collide<<<numberOfCells,1>>>( d_vel,
-                                      d_sigvrmax,
-                                      d_prefixScanNumberOfAtomsInCell,
-                                      d_collisionCount,
-                                      medianR,
-                                      alpha,
-                                      cellsPerDimension,
-                                      numberOfCells,
-                                      d_rngStates,
-                                      d_cellID );
+        deviceMemset<<<numberOfCells+1,1>>>(d_cellStartEnd,
+                                            make_int2( -1, -1 ),
+                                            numberOfCells + 1 );
+        cellStartandEndKernel<<<gridSize,blockSize>>>(d_cellID,
+                                                      d_atomID,
+                                                      d_cellStartEnd,
+                                                      numberOfAtoms );
+        findNumberOfAtomsInCell<<<numberOfCells+1,1>>>(d_cellStartEnd,
+                                                       d_numberOfAtomsInCell,
+                                                       numberOfCells );
+        thrust::exclusive_scan(th_numberOfAtomsInCell,
+                               th_numberOfAtomsInCell + numberOfCells + 1,
+                               th_prefixScanNumberOfAtomsInCell );
+        
+        collide<<<numberOfCells,1>>>(d_vel,
+                                     d_sigvrmax,
+                                     d_prefixScanNumberOfAtomsInCell,
+                                     d_collisionCount,
+                                     medianR,
+                                     alpha,
+                                     cellsPerDimension,
+                                     numberOfCells,
+                                     d_rngStates,
+                                     d_atomID );
         
 #pragma mark Evolve System
         
         for (int j=0; j<loopsPerCollision; j++) {
             
             moveAtoms<<<gridSize,blockSize>>>( d_pos,
-                                               d_vel,
-                                               d_acc,
-                                               numberOfAtoms );
+                                              d_vel,
+                                              d_acc,
+                                              d_atomID,
+                                              numberOfAtoms );
         }
         
         printf( "Number of atoms = %i, ", numberOfAtoms);
@@ -381,7 +382,7 @@ int main(int argc, const char * argv[])
                        filename,
                        h_atomID );
         
-        printf("i = %i\n", i);
+        printf("%%%i complete, t = %g s\n", i*100/numberOfPrints, time);
     }
     
     // insert code here...

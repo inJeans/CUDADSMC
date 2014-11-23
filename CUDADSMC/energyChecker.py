@@ -20,10 +20,10 @@ pi   = 3.14159265;
 kB   = 1.3806503e-23;
 hbar = 1.05457148e-34;
 T    = 20.e-6;
-dBdr = 32000.;
+dBdr = 47.5**2/0.01 - 150000./2.;
 
 tres = 101;
-ntrials = 1e5;
+ntrials = 1e6;
 dt = 1e-6;
 
 time = np.zeros((tres));
@@ -74,7 +74,7 @@ for i in range(0,N.size):
     n = np.where( np.isfinite(kinetic) )
     Ek[i] = np.sum( kinetic[n], 0 ) / N[i] / kB * 1.e6
     radius = pos[0:N[i],0,i]**2 + pos[0:N[i],1,i]**2 + pos[0:N[i],2,i]**2
-    Ep[i] = np.sum( 0.5*gs*muB*dBdr*radius[n], 0 ) / N[i] / kB * 1.e6
+    Ep[i] = np.sum( 0.25*gs*muB*dBdr*radius[n], 0 ) / N[i] / kB * 1.e6
     Et[i] = Ek[i] + Ep[i]
 
     Temp[i] = 2./3. * np.sum( kinetic[n], 0) / N[i] / kB * 1.e6
@@ -132,10 +132,10 @@ else:
 fit = np.polyfit(time[0:0.4*tres], np.log(np.abs(Temp[-1] - Tperturb[0:0.4*tres])),1)
 
 print "The thermalisation time is", -fit[0]
-print "Thermalisation in %f collisions", (20.96/-fit[0])
+print "Thermalisation in %f collisions", (32.37/-fit[0])
 
 pl.figure(3)
-pl.plot( time, Temp, time, Tperturb, time, Temp[-1] - np.exp(fit[1] + fit[0]*time), 'x' )
+pl.plot( time, Temp, time, Tperturb, time, Temp[-1] + np.exp(fit[1] + fit[0]*time), 'x' )
 pl.xlabel('time (s)')
 pl.ylabel('Temperature (uK)')
 

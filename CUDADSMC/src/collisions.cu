@@ -18,32 +18,34 @@
 
 #pragma mark - Indexing
 
-double indexAtoms( double3 *d_pos, int *d_cellID, int3 cellsPerDimension )
+double indexAtoms( double3 *d_pos, int *d_cellID, int *d_atomID, int3 cellsPerDimension, int numberOfAtoms )
 {
     double *d_radius;
     cudaCalloc( (void **)&d_radius, numberOfAtoms, sizeof(double) );
     
-	h_calculateRadius( d_pos,
-                       d_radius,
-                       numberOfAtoms );
+    h_calculateRadius( d_pos,
+                      d_radius,
+                      d_atomID,
+                      numberOfAtoms );
     
     double medianR = findMedian( d_radius,
-                                 numberOfAtoms );
+                                numberOfAtoms );
     
     printf("The median radius is %f\n", medianR );
     
     h_findAtomIndex( d_pos,
-                     d_cellID,
-                     medianR,
-                     numberOfAtoms,
-                     cellsPerDimension );
+                    d_cellID,
+                    d_atomID,
+                    medianR,
+                    numberOfAtoms,
+                    cellsPerDimension );
     
     cudaFree( d_radius );
     
     return medianR;
 }
 
-void h_calculateRadius( double3 *d_pos, double *d_radius, int numberOfAtoms )
+void h_calculateRadius( double3 *d_pos, double *d_radius, int *d_atomID, int numberOfAtoms )
 {
     int blockSize;
     int gridSize;
@@ -52,37 +54,38 @@ void h_calculateRadius( double3 *d_pos, double *d_radius, int numberOfAtoms )
     int minGridSize;
     
     cudaOccupancyMaxPotentialBlockSize( &minGridSize,
-                                        &blockSize,
-                                        (const void *) calculateRadius,
-                                        0,
-                                        sizeOfRNG );
+                                       &blockSize,
+                                       (const void *) calculateRadius,
+                                       0,
+                                       sizeOfRNG );
     gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
 #else
     int device;
     cudaGetDevice ( &device );
     int numSMs;
     cudaDeviceGetAttribute( &numSMs,
-                            cudaDevAttrMultiProcessorCount,
-                            device);
+                           cudaDevAttrMultiProcessorCount,
+                           device);
     
     gridSize = 256*numSMs;
     blockSize = NUM_THREADS;
 #endif
     
     calculateRadius<<<gridSize,blockSize>>>( d_pos,
-                                             d_radius,
-                                             numberOfAtoms );
+                                            d_radius,
+                                            d_atomID,
+                                            numberOfAtoms );
     
     return;
 }
 
-__global__ void calculateRadius( double3 *pos, double *radius, int numberOfAtoms )
+__global__ void calculateRadius( double3 *pos, double *radius, int *atomID, int numberOfAtoms )
 {
     for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
-		 atom < numberOfAtoms;
-		 atom += blockDim.x * gridDim.x)
-	{
-        radius[atom] = length( pos[atom] );
+         atom < numberOfAtoms;
+         atom += blockDim.x * gridDim.x)
+    {
+        radius[atom] = length( pos[atomID[atom]] );
     }
     
     return;
@@ -93,7 +96,7 @@ double findMedian( double *v, int N )
     thrust::device_ptr<double> ptr = thrust::device_pointer_cast( v );
     
     thrust::sort( ptr,
-                  ptr + N );
+                 ptr + N );
     
     double *d_median;
     cudaCalloc( (void **)&d_median, 1, sizeof(double) );
@@ -121,7 +124,7 @@ __global__ void getMedian( double *v, double *median, int N)
     return;
 }
 
-void h_findAtomIndex( double3 *d_pos, int *d_cellID, double medianR, int numberOfAtoms, int3 cellsPerDimension )
+void h_findAtomIndex( double3 *d_pos, int *d_cellID, int *d_atomID, double medianR, int numberOfAtoms, int3 cellsPerDimension )
 {
     int blockSize;
     int gridSize;
@@ -130,49 +133,52 @@ void h_findAtomIndex( double3 *d_pos, int *d_cellID, double medianR, int numberO
     int minGridSize;
     
     cudaOccupancyMaxPotentialBlockSize( &minGridSize,
-                                        &blockSize,
-                                        (const void *) calculateRadius,
-                                        0,
-                                        sizeOfRNG );
+                                       &blockSize,
+                                       (const void *) calculateRadius,
+                                       0,
+                                       sizeOfRNG );
     gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
 #else
     int device;
     cudaGetDevice ( &device );
     int numSMs;
     cudaDeviceGetAttribute( &numSMs,
-                            cudaDevAttrMultiProcessorCount,
-                            device);
+                           cudaDevAttrMultiProcessorCount,
+                           device);
     
     gridSize = 256*numSMs;
     blockSize = NUM_THREADS;
 #endif
     
     findAtomIndex<<<gridSize,blockSize>>>( d_pos,
-                                           d_cellID,
-                                           medianR,
-                                           numberOfAtoms,
-                                           cellsPerDimension );
+                                          d_cellID,
+                                          d_atomID,
+                                          medianR,
+                                          numberOfAtoms,
+                                          cellsPerDimension );
     
     return;
 }
 
-__global__ void findAtomIndex( double3 *pos, int *cellID, double medianR, int numberOfAtoms, int3 cellsPerDimension )
+__global__ void findAtomIndex( double3 *pos, int *cellID, int *atomID, double medianR, int numberOfAtoms, int3 cellsPerDimension )
 {
     for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
-		 atom < numberOfAtoms;
-		 atom += blockDim.x * gridDim.x)
-	{
-        double3 l_pos = pos[atom];
+         atom < numberOfAtoms;
+         atom += blockDim.x * gridDim.x)
+    {
+        double3 l_pos = pos[atomID[atom]];
+        
+        
         
         double3 gridMin    = getGridMin( medianR );
         double3 cellLength = getCellLength( medianR,
-                                            cellsPerDimension );
-    
-        int3 cellIndices = getCellIndices( l_pos,
-                                           gridMin,
-                                           cellLength );
-		
-        cellID[atom] = getCellID( cellIndices, cellsPerDimension );
+                                           cellsPerDimension );
+        
+        int3 cellIndices = getCellIndices(l_pos,
+                                          gridMin,
+                                          cellLength );
+        
+        cellID[atomID[atom]] = getCellID( cellIndices, cellsPerDimension );
     }
     
     return;
@@ -180,8 +186,7 @@ __global__ void findAtomIndex( double3 *pos, int *cellID, double medianR, int nu
 
 __device__ double3 getCellLength( double medianR, int3 cellsPerDimension )
 {
-//    double3 cellLength = 2.0 * d_maxGridWidth / cellsPerDimension;
-    double3 cellLength = 2.0 * d_meshWidth * medianR / cellsPerDimension;
+    double3 cellLength = 2.0 * d_maxGridWidth / cellsPerDimension;
     
     return cellLength;
 }
@@ -193,7 +198,9 @@ __device__ int3 getCellIndices( double3 pos, double3 gridMin, double3 cellLength
     index.x = __double2int_rd ( (pos.x - gridMin.x) / cellLength.x );
     index.y = __double2int_rd ( (pos.y - gridMin.y) / cellLength.y );
     index.z = __double2int_rd ( (pos.z - gridMin.z) / cellLength.z );
-	
+    
+    //    printf("pos.x = %f, gridMin.x = %f, cellLength.x = %f, index.x = %i\n", pos.x, gridMin.x, cellLength.x, index.x );
+    
     return index;
 }
 
@@ -213,58 +220,31 @@ __device__ int getCellID( int3 index, int3 cellsPerDimension )
 
 __device__ double3 getGridMin( double medianR )
 {
-//    double3 gridMin = -1.0 * d_maxGridWidth;
-    double3 gridMin = -1.0 * d_meshWidth * medianR * make_double3( 1.0, 1.0, 1.0 );
+    double3 gridMin = -1.0 * d_maxGridWidth;
     
     return  gridMin;
 }
 
-__global__ void cellStartandEndKernel( int *cellID, int2 *cellStartEnd, int numberOfAtoms )
+__global__ void cellStartandEndKernel( int *cellID, int *atomID, int2 *cellStartEnd, int numberOfAtoms )
 {
-	for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
-		 atom < numberOfAtoms;
-		 atom += blockDim.x * gridDim.x)
-	{
+    for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
+         atom < numberOfAtoms;
+         atom += blockDim.x * gridDim.x)
+    {
         // Find the beginning of the cell
-        if (atom == 0) {
-            cellStartEnd[cellID[atom]].x = 0;
+        if (atomID[atom] == 0) {
+            cellStartEnd[cellID[atomID[atom]]].x = 0;
         }
-        else if (cellID[atom] != cellID[atom-1]) {
-            cellStartEnd[cellID[atom]].x = atom;
+        else if (cellID[atomID[atom]] != cellID[atomID[atom]-1]) {
+            cellStartEnd[cellID[atomID[atom]]].x = atomID[atom];
         }
         
         // Find the end of the cell
-        if (atom == numberOfAtoms - 1) {
-            cellStartEnd[cellID[atom]].y = numberOfAtoms-1;
+        if (atomID[atom] == numberOfAtoms - 1) {
+            cellStartEnd[cellID[atomID[atom]]].y = numberOfAtoms-1;
         }
-        else if (cellID[atom] != cellID[atom+1]) {
-            cellStartEnd[cellID[atom]].y = atom;
-        }
-    }
-    
-    return;
-}
-
-__device__ void serialCellStartandEndKernel( int *cellID, int2 *cellStartEnd, int numberOfAtoms )
-{
-	for ( int atom = 0;
-		  atom < numberOfAtoms;
-		  atom++ )
-	{
-        // Find the beginning of the cell
-        if (atom == 0) {
-            cellStartEnd[cellID[atom]].x = 0;
-        }
-        else if (cellID[atom] != cellID[atom-1]) {
-            cellStartEnd[cellID[atom]].x = atom;
-        }
-        
-        // Find the end of the cell
-        if (atom == numberOfAtoms - 1) {
-            cellStartEnd[cellID[atom]].y = numberOfAtoms-1;
-        }
-        else if (cellID[atom] != cellID[atom+1]) {
-            cellStartEnd[cellID[atom]].y = atom;
+        else if (cellID[atomID[atom]] != cellID[atomID[atom]+1]) {
+            cellStartEnd[cellID[atomID[atom]]].y = atomID[atom];
         }
     }
     
@@ -274,29 +254,17 @@ __device__ void serialCellStartandEndKernel( int *cellID, int2 *cellStartEnd, in
 __global__ void findNumberOfAtomsInCell( int2 *cellStartEnd, int *numberOfAtomsInCell, int numberOfCells )
 {
     for ( int cell = blockIdx.x * blockDim.x + threadIdx.x;
-		  cell < numberOfCells+1;
-		  cell += blockDim.x * gridDim.x)
-	{
-		if (cellStartEnd[cell].x == -1)
-		{
-			numberOfAtomsInCell[cell] = 0;
-		}
-		else
-		{
-			numberOfAtomsInCell[cell] = cellStartEnd[cell].y - cellStartEnd[cell].x + 1;
-		}
-    }
-    
-    return;
-}
-
-__device__ void serialFindNumberOfAtomsInCell( int2 *cellStartEnd, int *numberOfAtomsInCell, int numberOfCells )
-{
-    for (int cell = 0;
-		 cell < numberOfCells;
-		 cell++ )
-	{
-        numberOfAtomsInCell[cell] = cellStartEnd[cell].y - cellStartEnd[cell].x + 1;
+         cell < numberOfCells+1;
+         cell += blockDim.x * gridDim.x)
+    {
+        if (cellStartEnd[cell].x == -1)
+        {
+            numberOfAtomsInCell[cell] = 0;
+        }
+        else
+        {
+            numberOfAtomsInCell[cell] = cellStartEnd[cell].y - cellStartEnd[cell].x + 1;
+        }
     }
     
     return;
@@ -304,87 +272,16 @@ __device__ void serialFindNumberOfAtomsInCell( int2 *cellStartEnd, int *numberOf
 
 #pragma mark - Sorting
 
-void sortArrays( double3 *d_pos,
-                 double3 *d_vel,
-                 double3 *d_acc,
-                 int *d_cellID,
-                 hbool_t *d_isPerturb,
-                 int *d_atomID )
+void sortArrays(int *d_cellID,
+                int *d_atomID ,
+                int numberOfAtoms )
 {
-    thrust::device_ptr<double3> th_pos = thrust::device_pointer_cast( d_pos );
-    thrust::device_ptr<double3> th_vel = thrust::device_pointer_cast( d_vel );
-    thrust::device_ptr<double3> th_acc = thrust::device_pointer_cast( d_acc );
-    
     thrust::device_ptr<int> th_cellID = thrust::device_pointer_cast( d_cellID );
     thrust::device_ptr<int> th_atomID = thrust::device_pointer_cast( d_atomID );
     
-    thrust::device_ptr<hbool_t> th_isPerturb = thrust::device_pointer_cast( d_isPerturb );
-    
-    thrust::device_vector<int>  th_indices( numberOfAtoms );
-    thrust::sequence( th_indices.begin(),
-                      th_indices.end() );
-    
-    thrust::sort_by_key( th_cellID,
-                         th_cellID + numberOfAtoms,
-                         th_indices.begin() );
-    
-    double3 *d_sorted;
-    cudaCalloc( (void **)&d_sorted, numberOfAtoms, sizeof(double3) );
-    thrust::device_ptr<double3> th_sorted = thrust::device_pointer_cast( d_sorted );
-    
-    thrust::gather( th_indices.begin(),
-                    th_indices.end(),
-                    th_pos,
-                    th_sorted );
-    thrust::copy( th_sorted,
-                  th_sorted + numberOfAtoms,
-                  th_pos );
-
-    thrust::gather( th_indices.begin(),
-                    th_indices.end(),
-                    th_vel,
-                    th_sorted );
-    thrust::copy( th_sorted,
-                  th_sorted + numberOfAtoms,
-                  th_vel );
-    
-    thrust::gather( th_indices.begin(),
-                    th_indices.end(),
-                    th_acc,
-                    th_sorted );
-    thrust::copy( th_sorted,
-                  th_sorted + numberOfAtoms,
-                  th_acc );
-    
-    cudaFree( d_sorted );
-    
-    hbool_t *d_sortedBool;
-    cudaCalloc( (void **)&d_sortedBool, numberOfAtoms, sizeof(hbool_t) );
-    thrust::device_ptr<hbool_t> th_sortedBool = thrust::device_pointer_cast( d_sortedBool );
-    
-    thrust::gather( th_indices.begin(),
-                    th_indices.end(),
-                    th_isPerturb,
-                    th_sortedBool );
-    thrust::copy( th_sortedBool,
-                  th_sortedBool + numberOfAtoms,
-                  th_isPerturb );
-    
-    cudaFree( d_sortedBool );
-    
-    int *d_sortedInt;
-    cudaCalloc( (void **)&d_sortedInt, numberOfAtoms, sizeof(int) );
-    thrust::device_ptr<int> th_sortedInt = thrust::device_pointer_cast( d_sortedInt );
-    
-    thrust::gather( th_indices.begin(),
-                   th_indices.end(),
-                   th_atomID,
-                   th_sortedInt );
-    thrust::copy( th_sortedInt,
-                  th_sortedInt + numberOfAtoms,
-                  th_atomID );
-    
-    cudaFree( d_sortedInt );
+    thrust::sort_by_key(th_cellID,
+                        th_cellID + numberOfAtoms,
+                        th_atomID );
     
     return;
 }
@@ -392,28 +289,28 @@ void sortArrays( double3 *d_pos,
 #pragma mark - Collisions
 
 __global__ void collide( double3 *vel,
-                         double  *sigvrmax,
-                         int     *prefixScanNumberOfAtomsInCell,
-                         int     *collisionCount,
-                         double   medianR,
-                         double   alpha,
-                         int3     cellsPerDimension,
-                         int      numberOfCells,
-                         curandState_t *rngState,
-                         int *cellID )
+                        double  *sigvrmax,
+                        int     *prefixScanNumberOfAtomsInCell,
+                        int     *collisionCount,
+                        double   medianR,
+                        double   alpha,
+                        int3     cellsPerDimension,
+                        int      numberOfCells,
+                        curandState_t *rngState,
+                        int *atomID )
 {
     for ( int cell = blockIdx.x * blockDim.x + threadIdx.x;
-          cell < numberOfCells;
-          cell += blockDim.x * gridDim.x)
+         cell < numberOfCells;
+         cell += blockDim.x * gridDim.x)
     {
         int numberOfAtomsInCell = prefixScanNumberOfAtomsInCell[cell+1] - prefixScanNumberOfAtomsInCell[cell];
         
         if (numberOfAtomsInCell > 1) {
             double3 cellLength = getCellLength( medianR,
-                                                cellsPerDimension );
+                                               cellsPerDimension );
             
-            d_dt = 1.e-6;
-            d_loopsPerCollision = 0.0025 / d_dt;
+            d_dt = 1.0e-6;
+            d_loopsPerCollision = ceil(0.25 / 100. / d_dt);
             
             double cellVolume = cellLength.x * cellLength.y * cellLength.z;
             double Mc = 0.5 * (numberOfAtomsInCell - 1) * numberOfAtomsInCell;
@@ -432,17 +329,19 @@ __global__ void collide( double3 *vel,
             
             curandState_t l_rngState = rngState[cell];
             
+            collisionCount[cell] = 0;
+            
             for ( int l_collision = 0;
-                  l_collision < Ncol;
-                  l_collision++ )
+                 l_collision < Ncol;
+                 l_collision++ )
             {
                 int2 collidingAtoms = {0,0};
                 
-//                collidingAtoms = chooseCollidingAtoms( numberOfAtomsInCell,
-//                                                       prefixScanNumberOfAtomsInCell,
-//                                                       cellsPerDimension,
-//                                                       &l_rngState,
-//                                                       cell );
+                //                collidingAtoms = chooseCollidingAtoms( numberOfAtomsInCell,
+                //                                                       prefixScanNumberOfAtomsInCell,
+                //                                                       cellsPerDimension,
+                //                                                       &l_rngState,
+                //                                                       cell );
                 
                 if (numberOfAtomsInCell == 1) {
                     
@@ -476,8 +375,8 @@ __global__ void collide( double3 *vel,
                             newCellIndices.x = cellsPerDimension.x-1;
                         }
                         
-                        if (newCellIndices.y > cellsPerDimension.z-1) {
-                            newCellIndices.y = cellsPerDimension.z-1;
+                        if (newCellIndices.y > cellsPerDimension.y-1) {
+                            newCellIndices.y = cellsPerDimension.y-1;
                         }
                         
                         if (newCellIndices.z > cellsPerDimension.z-1) {
@@ -496,8 +395,8 @@ __global__ void collide( double3 *vel,
                     
                 }
                 else if (numberOfAtomsInCell == 2) {
-                    collidingAtoms.x = prefixScanNumberOfAtomsInCell[cell] + 0;
-                    collidingAtoms.y = prefixScanNumberOfAtomsInCell[cell] + 1;
+                    collidingAtoms.x = atomID[prefixScanNumberOfAtomsInCell[cell] + 0];
+                    collidingAtoms.y = atomID[prefixScanNumberOfAtomsInCell[cell] + 1];
                 }
                 else {
                     // Randomly choose particles in this cell to collide.
@@ -505,7 +404,9 @@ __global__ void collide( double3 *vel,
                         collidingAtoms = double2Toint2_rd( make_double2( curand_uniform_double ( &l_rngState ), curand_uniform_double ( &l_rngState ) ) * (numberOfAtomsInCell-1) );
                     }
                     
-                    collidingAtoms = prefixScanNumberOfAtomsInCell[cell] + collidingAtoms;
+                    //                    collidingAtoms = prefixScanNumberOfAtomsInCell[cell] + collidingAtoms;
+                    collidingAtoms.x = atomID[prefixScanNumberOfAtomsInCell[cell] + collidingAtoms.x];
+                    collidingAtoms.y = atomID[prefixScanNumberOfAtomsInCell[cell] + collidingAtoms.y];
                 }
                 
                 magVrel = calculateRelativeVelocity( vel, collidingAtoms );
@@ -528,7 +429,7 @@ __global__ void collide( double3 *vel,
                     
                     vel[collidingAtoms.x] = velcm - 0.5 * newVel;
                     vel[collidingAtoms.y] = velcm + 0.5 * newVel;
-//                    collisionCount[cell] += d_alpha;
+                    
                     collisionCount[cell]++;
                 }
             }
@@ -536,7 +437,7 @@ __global__ void collide( double3 *vel,
             rngState[cell] = l_rngState;
         }
     }
-
+    
     return;
 }
 
@@ -576,8 +477,8 @@ __device__ int2 chooseCollidingAtoms( int numberOfAtomsInCell, int *prefixScanNu
                 newCellIndices.x = cellsPerDimension.x-1;
             }
             
-            if (newCellIndices.y > cellsPerDimension.z-1) {
-                newCellIndices.y = cellsPerDimension.z-1;
+            if (newCellIndices.y > cellsPerDimension.y-1) {
+                newCellIndices.y = cellsPerDimension.y-1;
             }
             
             if (newCellIndices.z > cellsPerDimension.z-1) {
@@ -632,10 +533,11 @@ __device__ double calculateRelativeVelocity( double3 *vel, int2 collidingAtoms )
 
 __device__ double3 getRandomPointOnSphere( curandState_t *rngState )
 {
-    double2 r1 = curand_normal2_double ( rngState );
-    double  r2 = curand_normal_double  ( rngState );
+    double r1 = curand_normal_double ( rngState );
+    double r2 = curand_normal_double ( rngState );
+    double r3 = curand_normal_double ( rngState );
     
-    double3 pointOnSphere = make_double3( r1.x, r1.y, r2 ) * rsqrt( r1.x*r1.x + r1.y*r1.y + r2*r2 );
+    double3 pointOnSphere = make_double3( r1, r2, r3 ) * rsqrt( r1*r1 + r2*r2 + r3*r3 );
     
     return pointOnSphere;
 }
