@@ -23,7 +23,7 @@ T    = 20.e-6;
 dBdr = 8746.;
 
 tres = 101;
-ntrials = 1e5;
+ntrials = 1e6;
 dt = 1e-6;
 
 time = np.zeros((tres));
@@ -50,14 +50,14 @@ dset.read_direct(isPerturb);
 dset = f.require_dataset('atomData/atomNumber',(1,1,tres),False,False);
 dset.read_direct(N);
 
-dset = f.require_dataset('atomData/collisionCount',(10**3+1,1,tres),False,False);
-dset.read_direct(collisionCount);
+#dset = f.require_dataset('atomData/collisionCount',(10**3+1,1,tres),False,False);
+#dset.read_direct(collisionCount);
 
 f.close()
 
 totalColl = np.sum( collisionCount, 0 )[0,:];
-colls = np.cumsum( totalColl ) / N[0];
-time = colls;
+#colls = np.cumsum( totalColl ) / N[0];
+#time = colls;
 
 #time = time * 24.21;
 
@@ -142,10 +142,10 @@ else:
 fit = np.polyfit(time[0:0.4*tres], np.log(np.abs(Temp[-1] - Tperturb[0:0.4*tres])),1)
 
 print "The thermalisation time is", -fit[0]
-print "Thermalisation in %f collisions", (24.21/-fit[0])
+print "Thermalisation in %f collisions", (14.6968844444/-fit[0])
 
 pl.figure(3)
-pl.plot( time, Temp, time, Tperturb, time, Temp[-1] - np.exp(fit[1] + fit[0]*time), 'x' )
+pl.plot( time, Temp, 's', time, Tperturb, '^', time, Temp[-1] + np.exp(fit[1] + fit[0]*time), 'r' )
 pl.xlabel('time (s)')
 pl.ylabel('Temperature (uK)')
 
