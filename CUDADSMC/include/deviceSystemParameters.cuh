@@ -23,7 +23,7 @@ __device__ double3 d_maxGridWidth = { 0.001, 0.001, 0.001 };
 __device__ double d_dt;
 __device__ double d_dBdz = 2.5;
 __device__ double d_wavelength = 6.06012e-8;
-__device__ double d_eta = 7.;
+__device__ double d_eta = 7.75;
 
 __device__ int d_loopsPerCollision;	// loops per collision
 __device__ double d_Temp;

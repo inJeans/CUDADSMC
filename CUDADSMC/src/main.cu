@@ -33,6 +33,7 @@ char groupname[] = "/atomData";
 int main(int argc, const char * argv[])
 {
 #pragma mark - Read commandline arguments
+    int    initialNumberOfAtoms;
     int    numberOfAtoms;
     int    numberOfCells;
     int3   cellsPerDimension;
@@ -44,7 +45,8 @@ int main(int argc, const char * argv[])
         cellsPerDimension = make_int3( Nc, Nc, Nc );
         numberOfCells = Nc*Nc*Nc;
         
-        numberOfAtoms = 1e4;
+        initialNumberOfAtoms = 1e4;
+        numberOfAtoms = initialNumberOfAtoms;
         alpha = 1e6 / numberOfAtoms;
     }
     else if ( argc == 3 )
@@ -53,7 +55,8 @@ int main(int argc, const char * argv[])
         cellsPerDimension = make_int3( Nc, Nc, Nc );
         numberOfCells = Nc*Nc*Nc;
         
-        numberOfAtoms = atoi(argv[2]);
+        initialNumberOfAtoms = atoi(argv[2]);
+        numberOfAtoms = initialNumberOfAtoms;
         alpha = 1e6 / numberOfAtoms;
     }
     else if( argc > 3 )
@@ -132,7 +135,7 @@ int main(int argc, const char * argv[])
 #pragma mark - Set up atom system
 	
     dt = 1.e-6;
-    loopsPerCollision = 0.025 / dt;
+    loopsPerCollision = ceil(0.25 / numberOfPrints / dt);
     
 	copyConstantsToDevice<<<1,1>>>( dt );
 	
@@ -300,23 +303,25 @@ int main(int argc, const char * argv[])
     {
 #pragma mark Collide Atoms
         
-        medianR = indexAtoms( d_pos,
-                              d_cellID,
+        medianR = indexAtoms(d_pos,
+                             d_cellID,
                              d_atomID,
-                              cellsPerDimension,
-                              numberOfAtoms );
+                             cellsPerDimension,
+                             numberOfAtoms );
         
-        sortArrays( d_cellID,
-                    d_atomID,
-                    numberOfAtoms );
+        sortArrays(d_cellID,
+                   d_atomID,
+                   numberOfAtoms );
         
         deviceMemset<<<numberOfCells+1,1>>>( d_cellStartEnd,
                                              make_int2( -1, -1 ),
                                              numberOfCells + 1 );
         
-        cellStartandEndKernel<<<gridSize,blockSize>>>( d_cellID,
-                                                       d_cellStartEnd,
-                                                       numberOfAtoms );
+        cellStartandEndKernel<<<gridSize,blockSize>>>(d_cellID,
+                                                      d_atomID,
+                                                      d_cellStartEnd,
+                                                      initialNumberOfAtoms,
+                                                      numberOfAtoms );
         
         findNumberOfAtomsInCell<<<numberOfCells+1,1>>>( d_cellStartEnd,
                                                         d_numberOfAtomsInCell,
@@ -337,6 +342,25 @@ int main(int argc, const char * argv[])
                                       d_rngStates,
                                       d_atomID );
         
+#pragma mark Evaporate Atoms
+        
+        Temp = calculateTemp(d_vel,
+                             d_atomID,
+                             numberOfAtoms );
+        h_evaporationTag(d_pos,
+                         d_vel,
+                         d_atomID,
+                         d_evapTag,
+                         Temp,
+                         numberOfAtoms );
+        
+        th_newEnd = thrust::remove_if(th_atomID,
+                                      th_atomID + numberOfAtoms,
+                                      th_evapTag,
+                                      thrust::identity<int>());
+        
+        numberOfAtoms = (int)(th_newEnd - th_atomID);
+        
 #pragma mark Evolve System
         
         for (int j=0; j<loopsPerCollision; j++) {
@@ -348,35 +372,16 @@ int main(int argc, const char * argv[])
                                               numberOfAtoms );
         }
         
-#pragma mark Evaporate Atoms
-        
-        Temp = calculateTemp(d_vel,
-                             d_atomID,
-                             numberOfAtoms );
-        h_evaporationTag(d_pos,
-                         d_atomID,
-                         d_evapTag,
-                         Temp,
-                         numberOfAtoms );
-        
-        cudaMemcpy( (void*)&d_Temp, (void*)&Temp, 1*sizeof(double), cudaMemcpyHostToDevice );
-        th_newEnd = thrust::remove_if(th_atomID,
-                          th_atomID + numberOfAtoms,
-                          th_evapTag,
-                          thrust::identity<int>());
-        
-        numberOfAtoms = (int)(th_newEnd - th_atomID);
-        
         printf( "Number of atoms = %i, ", numberOfAtoms);
         
         time += loopsPerCollision * dt;
     
-        cudaMemcpy( h_pos, d_pos, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
-        cudaMemcpy( h_vel, d_vel, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
+        cudaMemcpy( h_pos, d_pos, initialNumberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
+        cudaMemcpy( h_vel, d_vel, initialNumberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
         cudaMemcpy( h_numberOfAtomsInCell, d_numberOfAtomsInCell, (numberOfCells+1)*sizeof(int), cudaMemcpyDeviceToHost );
         cudaMemcpy( h_collisionCount, d_collisionCount, (numberOfCells+1)*sizeof(int), cudaMemcpyDeviceToHost );
-        cudaMemcpy( h_cellID, d_cellID, numberOfAtoms*sizeof(int), cudaMemcpyDeviceToHost );
-        cudaMemcpy( h_atomID, d_atomID, numberOfAtoms*sizeof(int), cudaMemcpyDeviceToHost );
+        cudaMemcpy( h_cellID, d_cellID, initialNumberOfAtoms*sizeof(int), cudaMemcpyDeviceToHost );
+        cudaMemcpy( h_atomID, d_atomID, initialNumberOfAtoms*sizeof(int), cudaMemcpyDeviceToHost );
         
         writeHDF5File( hdf5handlePos,
                        filename,
@@ -403,7 +408,7 @@ int main(int argc, const char * argv[])
                        filename,
                        h_atomID );
         
-        printf("i = %i\n", i);
+        printf("%%%i complete, t = %g s\n", i*100/numberOfPrints, time);
     }
     
     // insert code here...

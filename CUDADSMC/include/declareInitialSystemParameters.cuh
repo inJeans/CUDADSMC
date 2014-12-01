@@ -16,6 +16,7 @@
 #pragma mark -
 
 extern int    numberOfAtoms;
+extern int    initialNumberOfAtoms;
 extern int    numberOfCells;
 extern int3   cellsPerDimension;
 extern double dt;

@@ -17,6 +17,7 @@
 #include "deviceSystemParameters.cuh"
 
 void h_evaporationTag(double3 *d_pos,
+                      double3 *d_vel,
                       int     *d_atomID,
                       int     *d_evapTag,
                       double   Temp,
@@ -47,6 +48,7 @@ void h_evaporationTag(double3 *d_pos,
 #endif
     
     evaporationTag<<<gridSize,blockSize>>>(d_pos,
+                                           d_vel,
                                            d_atomID,
                                            d_evapTag,
                                            Temp,
@@ -56,6 +58,7 @@ void h_evaporationTag(double3 *d_pos,
 }
 
 __global__ void evaporationTag( double3 *pos,
+                                double3 *vel,
                                 int     *atomID,
                                 int     *evapTag,
                                 double   Temp,
@@ -66,9 +69,10 @@ __global__ void evaporationTag( double3 *pos,
          atom += blockDim.x * gridDim.x)
     {
         double3 l_pos = pos[atomID[atom]];
-        double potential = 0.5 * d_gs * d_muB * d_dBdz * sqrt( l_pos.x*l_pos.x + l_pos.y*l_pos.y + 4.*l_pos.z*l_pos.z );
         
-        if ( potential > d_eta * d_kB * Temp ) {
+        double Ep = 0.5 * d_gs * d_muB * d_dBdz * sqrt( l_pos.x*l_pos.x + l_pos.y*l_pos.y + 4.*l_pos.z*l_pos.z );
+        
+        if ( Ep > d_eta * d_kB * Temp ) {
             evapTag[atom] = 1;
         }
         else

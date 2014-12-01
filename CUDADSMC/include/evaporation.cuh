@@ -10,12 +10,14 @@
 #define CUDADSMC_evaporation_cuh
 
 void h_evaporationTag(double3 *d_pos,
+                      double3 *d_vel,
                       int     *d_atomID,
                       int     *d_evapTag,
                       double   Temp,
                       int      numberOfAtoms );
 
 __global__ void evaporationTag(double3 *pos,
+                               double3 *vel,
                                int     *atomID,
                                int     *evapTag,
                                double   Temp,

@@ -171,13 +171,13 @@ __device__ double3 selectAtomInThermalDistribution( double Temp, curandState_t *
         double2 r1 = curand_normal2_double ( &rngState[0] );
         double  r2 = curand_normal_double  ( &rngState[0] );
         
-        double3 r = make_double3( r1.x, r1.y, r2 ) * d_maxGridWidth / 3;
+        double3 r = make_double3( r1.x, r1.y, r2 ) * d_maxGridWidth / 2.;
         
         double U = -0.5*d_gs*d_muB*d_dBdz*sqrt(r.x*r.x+r.y*r.y+4.0*r.z*r.z);
         
         double Pr = exp( U / d_kB / Temp );
         
-        if ( curand_uniform_double ( &rngState[0] ) < Pr) {
+        if ( curand_uniform_double ( &rngState[0] ) < Pr ) {
             pos = r;
             noAtomSelected = false;
         }
