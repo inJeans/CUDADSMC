@@ -23,23 +23,21 @@ __device__ int3 getCellIndices( double3 pos, double3 gridMin, double3 cellLength
 __device__ double3 getCellLength( double medianR, int3 cellsPerDimension );
 __device__ int getCellID( int3 index, int3 cellsPerDimension );
 __device__ double3 getGridMin( double medianR );
-__global__ void cellStartandEndKernel( int *cellID, int2 *cellStartEnd, int numberOfAtoms );
-__device__ void serialCellStartandEndKernel( int *cellID, int2 *cellStartEnd, int numberOfAtoms );
+__global__ void cellStartandEndKernel( int *cellID, int *atomID, int2 *cellStartEnd, int initialNumberOfAtoms, int numberOfAtoms );
 __global__ void findNumberOfAtomsInCell( int2 *cellStartEnd, int *numberOfAtomsInCell, int numberOfCells );
-__device__ void serialFindNumberOfAtomsInCell( int2 *cellStartEnd, int *numberOfAtomsInCell, int numberOfCells );
 void sortArrays( int *d_cellID,
-                 int *d_atomID,
-                 int numberOfAtoms );
+                int *d_atomID,
+                int numberOfAtoms );
 __global__ void collide( double3 *vel,
-                         double  *sigvrmax,
-                         int     *prefixScanNumberOfAtomsInCell,
-                         int     *collisionCount,
-                         double   medianR,
-                         double   alpha,
-                         int3     cellsPerDimension,
-                         int      numberOfCells,
-                         curandState_t *rngState,
-                         int *atomID);
+                        double  *sigvrmax,
+                        int     *prefixScanNumberOfAtomsInCell,
+                        int     *collisionCount,
+                        double   medianR,
+                        double   alpha,
+                        int3     cellsPerDimension,
+                        int      numberOfCells,
+                        curandState_t *rngState,
+                        int *atomID);
 __device__ int2 chooseCollidingAtoms( int numberOfAtomsInCell, int *prefixScanNumberOfAtomsInCell, int3 cellsPerDimension, curandState_t *rngState, int cell );
 __device__ int3 extractCellIndices( int cell, int3 cellsPerDimension );
 __device__ double calculateRelativeVelocity( double3 *vel, int2 collidingAtoms );

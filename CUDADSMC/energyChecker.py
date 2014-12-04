@@ -21,11 +21,11 @@ kB   = 1.3806503e-23;
 hbar = 1.05457148e-34;
 T    = 20.e-6;
 B0 = 0.01;
-dBdx = 20.5;
-d2Bdx2 = 28000;
+dBdx = 39.;
+d2Bdx2 = 150000;
 
 tres = 26;
-ntrials = 1e4   ;
+ntrials = 1e4;
 dt = 1e-6;
 
 time = np.zeros((tres));
@@ -83,6 +83,8 @@ Bx = dBdx*pos[:,0,:] - 0.5*d2Bdx2*pos[:,0,:]*pos[:,2,:];
 By =-dBdx*pos[:,1,:] - 0.5*d2Bdx2*pos[:,1,:]*pos[:,2,:];
 Bz = B0 + 0.5*d2Bdx2*( pos[:,2,:]*pos[:,2,:] - 0.5*( pos[:,0,:]*pos[:,0,:] + pos[:,1,:]*pos[:,1,:] ) );
 B  = np.sqrt( Bx**2 + By**2 + Bz**2 );
+d2Bdr2 = dBdx**2/(B0) - 0.5*d2Bdx2;
+Bapprox = 0.5*(d2Bdr2*(pos[:,0,:]**2+pos[:,1,:]**2) + d2Bdx2*pos[:,2,:]**2)
 
 Bnx = Bx / B;
 Bny = By / B;
@@ -94,9 +96,8 @@ for i in range(0,N.size):
     Ek[i] = np.sum( kinetic[n], 0 ) / N[i] / kB * 1.e6
     proj = 2. * Bnx[n,i] * ( psiUp[n,0,i]*psiDn[n,0,i] + psiUp[n,1,i]*psiDn[n,1,i] ) + \
            2. * Bny[n,i] * ( psiUp[n,0,i]*psiDn[n,1,i] - psiUp[n,1,i]*psiDn[n,0,i] ) + \
-           2. * Bnz[n,i] * ( psiUp[n,0,i]*psiUp[n,0,i] + psiUp[n,1,i]*psiUp[n,1,i] - 0.5 )
-    bias = 2. * B0 * ( psiUp[n,0,i]*psiUp[n,0,i] + psiUp[n,1,i]*psiUp[n,1,i] - 0.5 )
-    Ep[i] = np.sum( 0.5*gs*muB*(B[n,i]*proj-bias), 0 ) / N[i] / kB * 1.e6
+           2. * Bnz[n,i] * ( psiUp[n,0,i]**2 + psiUp[n,1,i]**2 - 0.5 )
+    Ep[i] = np.sum( 0.5*gs*muB*(B[n,i]*proj - B0), 0 ) / N[i] / kB * 1.e6
     Et[i] = Ek[i] + Ep[i]
 
     Temp[i] = 2./3. * np.sum( kinetic[n], 0) / N[i] / kB * 1.e6
@@ -229,38 +230,40 @@ pl.plot(time,dNorm);
 #pl.plot( binsli, nli, binslf, nlf )
 #pl.xlabel(r'$L$')
 #
-#pl.figure(10)
+pl.figure(10)
 #
-#xi = pos[0:N[0],0,0]
-#yi = pos[0:N[0],1,0]
-#zi = pos[0:N[0],2,0]
+n = atomID[0:N[0],0,0].astype(int)
+xi = pos[n,0,0]
+#yi = pos[n,1,0]
+zi = pos[n,2,0]
 #
-#nxi, binsxi, patches = pl.hist(xi,100)
-#nxi = np.append([0], nxi , axis=0)
+nxi, binsxi, patches = pl.hist(xi,100)
+nxi = np.append([0], nxi , axis=0)
 #nyi, binsyi, patches = pl.hist(yi,100)
 #nyi = np.append([0], nyi , axis=0)
-#nzi, binszi, patches = pl.hist(zi,100)
-#nzi = np.append([0], nzi , axis=0)
+nzi, binszi, patches = pl.hist(zi,100)
+nzi = np.append([0], nzi , axis=0)
 #
-#xf = pos[0:N[-1],0,-1]
-#yf = pos[0:N[-1],1,-1]
-#zf = pos[0:N[-1],2,-1]
+n = atomID[0:N[-1],0,-1].astype(int)
+xf = pos[n,0,-1]
+#yf = pos[n,1,-1]
+zf = pos[n,2,-1]
 #
-#nxf, binsxf, patches = pl.hist(xf,100)
-#nxf = np.append([0], nxf , axis=0)
+nxf, binsxf, patches = pl.hist(xf,100)
+nxf = np.append([0], nxf , axis=0)
 #nyf, binsyf, patches = pl.hist(yf,100)
 #nyf = np.append([0], nyf , axis=0)
-#nzf, binszf, patches = pl.hist(zf,100)
-#nzf = np.append([0], nzf , axis=0)
+nzf, binszf, patches = pl.hist(zf,100)
+nzf = np.append([0], nzf , axis=0)
 #
-#pl.figure(11)
-#pl.plot( binsxi, nxi, binsxf, nxf )
-#pl.xlabel(r'$x$')
+pl.figure(11)
+pl.plot( binsxi, nxi, binsxf, nxf, binsxi, np.exp(-0.5*gs*muB*d2Bdr2*binsxi**2 / (kB*Temp[0]*1.e-6)) * nxi.max() )
+pl.xlabel(r'$x$')
 #pl.figure(12)
 #pl.plot( binsyi, nyi, binsyf, nyf )
 #pl.xlabel(r'$y$')
-#pl.figure(13)
-#pl.plot( binszi, nzi, binszf, nzf )
-#pl.xlabel(r'$z$')
+pl.figure(13)
+pl.plot( binszi, nzi, binszf, nzf, binszi, np.exp(-0.5*gs*muB*d2Bdx2*binszi**2 / (kB*Temp[0]*1.e-6)) * nzi.max() )
+pl.xlabel(r'$z$')
 
 pl.show()

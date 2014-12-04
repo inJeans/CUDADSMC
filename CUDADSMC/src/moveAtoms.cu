@@ -27,11 +27,12 @@ __global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, cuDoubleCom
 		 atom < numberOfAtoms;
 		 atom += blockDim.x * gridDim.x)
 	{
-		double3 l_pos = pos[atomID[atom]];
-        double3 l_vel = vel[atomID[atom]];
-        double3 l_acc = acc[atomID[atom]];
-        cuDoubleComplex l_psiUp = psiUp[atomID[atom]];
-        cuDoubleComplex l_psiDn = psiDn[atomID[atom]];
+        int l_atom = atomID[atom];
+		double3 l_pos = pos[l_atom];
+        double3 l_vel = vel[l_atom];
+        double3 l_acc = acc[l_atom];
+        cuDoubleComplex l_psiUp = psiUp[l_atom];
+        cuDoubleComplex l_psiDn = psiDn[l_atom];
 		
 //        for (int i=0; i<d_loopsPerCollision; i++) {
             velocityVerletUpdate(&l_pos,
@@ -41,11 +42,11 @@ __global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, cuDoubleCom
                                   &l_psiDn);
 //        }
     
-        pos[atomID[atom]] = l_pos;
-        vel[atomID[atom]] = l_vel;
-        acc[atomID[atom]] = l_acc;
-        psiUp[atomID[atom]] = l_psiUp;
-        psiDn[atomID[atom]] = l_psiDn;
+        pos[l_atom] = l_pos;
+        vel[l_atom] = l_vel;
+        acc[l_atom] = l_acc;
+        psiUp[l_atom] = l_psiUp;
+        psiDn[l_atom] = l_psiDn;
 		
     }
     
@@ -124,16 +125,18 @@ __device__ double3 updateAcc( double3 pos, cuDoubleComplex psiUp, cuDoubleComple
     
     double potential = -1.0 * d_gs * d_muB / d_mRb;
     
-    accel.x = potential * ( dBdx.x * (psiUp.x*psiDn.x + psiUp.y*psiDn.y) +
-                            dBdx.y * (psiUp.x*psiDn.y - psiUp.y*psiDn.x) +
-                            dBdx.z * (psiUp.x*psiUp.x + psiUp.y*psiUp.y - 0.5) );
-    accel.y = potential * ( dBdy.x * (psiUp.x*psiDn.x + psiUp.y*psiDn.y) +
-                            dBdy.y * (psiUp.x*psiDn.y - psiUp.y*psiDn.x) +
-                            dBdy.z * (psiUp.x*psiUp.x + psiUp.y*psiUp.y - 0.5) );
-    accel.z = potential * ( dBdz.x * (psiUp.x*psiDn.x + psiUp.y*psiDn.y) +
-                            dBdz.y * (psiUp.x*psiDn.y - psiUp.y*psiDn.x) +
-                            dBdz.z * (psiUp.x*psiUp.x + psiUp.y*psiUp.y - 0.5) );
-    
+//    accel.x = potential * ( dBdx.x * (psiUp.x*psiDn.x + psiUp.y*psiDn.y) +
+//                            dBdx.y * (psiUp.x*psiDn.y - psiUp.y*psiDn.x) +
+//                            dBdx.z * (psiUp.x*psiUp.x + psiUp.y*psiUp.y - 0.5) );
+//    accel.y = potential * ( dBdy.x * (psiUp.x*psiDn.x + psiUp.y*psiDn.y) +
+//                            dBdy.y * (psiUp.x*psiDn.y - psiUp.y*psiDn.x) +
+//                            dBdy.z * (psiUp.x*psiUp.x + psiUp.y*psiUp.y - 0.5) );
+//    accel.z = potential * ( dBdz.x * (psiUp.x*psiDn.x + psiUp.y*psiDn.y) +
+//                            dBdz.y * (psiUp.x*psiDn.y - psiUp.y*psiDn.x) +
+//                            dBdz.z * (psiUp.x*psiUp.x + psiUp.y*psiUp.y - 0.5) );
+    accel.x = 0.5*potential * d_d2Bdx2 * pos.x;
+    accel.y = 0.5*potential * d_d2Bdx2 * pos.y;
+    accel.z = 0.5*potential * d_d2Bdx2 * pos.z;
     
     return accel;
 }

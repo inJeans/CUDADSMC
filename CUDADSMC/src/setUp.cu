@@ -165,9 +165,12 @@ __device__ double3 getRandomVelocity( double Temp, curandState_t *rngState )
 {
 	double3 vel = make_double3( 0., 0., 0. );
 	
-	double V = sqrt( d_kB*Temp/d_mRb);
+//	double V = sqrt( d_kB*Temp/d_mRb);
 	
-	vel = getGaussianPoint( 0., V, &rngState[0] );
+//	vel = getGaussianPoint( 0., V, &rngState[0] );
+    
+    double V = sqrt( 3.*d_kB*Temp/d_mRb);
+    vel = V * getRndPointOnSphere( &rngState[0] );
     
 	return vel;
 }
@@ -182,12 +185,17 @@ __device__ double3 selectAtomInThermalDistribution( double Temp, curandState_t *
         double2 r1 = curand_normal2_double ( &rngState[0] );
         double  r2 = curand_normal_double  ( &rngState[0] );
         
-        double3 r = make_double3( r1.x, r1.y, r2 ) * d_maxGridWidth / 3;
+        double3 r = make_double3( r1.x, r1.y, r2 ) * d_maxGridWidth / 10.;
         
-        double d2Bdr2 = d_dBdx*d_dBdx / d_B0 - 0.5 * d_d2Bdx2;
-        double U = -0.25*d_gs*d_muB*( d2Bdr2*(r.x*r.x + r.y*r.y) + d_d2Bdx2*r.z*r.z );
+        double3 B = getMagField( r );
+        double  magB = length( B );
+        double3 Bn = getMagFieldNormal( r );
         
-        double Pr = exp( U / d_kB / Temp );
+        
+        
+        double U = 0.5 * (magB - d_B0) * d_gs * d_muB;
+        
+        double Pr = exp(-U / d_kB / Temp);
         
         if ( curand_uniform_double ( &rngState[0] ) < Pr) {
             pos = r;
@@ -209,6 +217,17 @@ __device__ double3 getGaussianPoint( double mean, double std, curandState_t *rng
     return point;
 }
 
+__device__ double3 getRndPointOnSphere( curandState_t *rngState )
+{
+    double r1 = curand_normal_double ( rngState );
+    double r2 = curand_normal_double ( rngState );
+    double r3 = curand_normal_double ( rngState );
+    
+    double3 pointOnSphere = make_double3( r1, r2, r3 ) * rsqrt( r1*r1 + r2*r2 + r3*r3 );
+    
+    return pointOnSphere;
+}
+
 __device__ double3 updateAccel( double3 pos, cuDoubleComplex psiUp, cuDoubleComplex psiDn )
 {
     double3 accel = make_double3( 0., 0., 0. );
@@ -225,10 +244,10 @@ __device__ double3 updateAccel( double3 pos, cuDoubleComplex psiUp, cuDoubleComp
     accel.y = potential * ( dBdy.x * (psiUp.x*psiDn.x + psiUp.y*psiDn.y) +
                             dBdy.y * (psiUp.x*psiDn.y - psiUp.y*psiDn.x) +
                             dBdy.z * (psiUp.x*psiUp.x + psiUp.y*psiUp.y - 0.5) );
-    accel.z = potential * ( dBdz.x * (psiUp.x*psiDn.x + psiUp.y*psiDn.y) +
-                            dBdz.y * (psiUp.x*psiDn.y - psiUp.y*psiDn.x) +
-                            dBdz.z * (psiUp.x*psiUp.x + psiUp.y*psiUp.y - 0.5) );
-    
+//    accel.z = potential * ( dBdz.x * (psiUp.x*psiDn.x + psiUp.y*psiDn.y) +
+//                            dBdz.y * (psiUp.x*psiDn.y - psiUp.y*psiDn.x) +
+//                            dBdz.z * (psiUp.x*psiUp.x + psiUp.y*psiUp.y - 0.5) );
+    accel.z = 0.5*potential * d_d2Bdx2 * pos.z;
     
     return accel;
 }

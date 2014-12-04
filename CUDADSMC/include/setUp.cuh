@@ -54,6 +54,8 @@ __device__ double3 getGaussianPoint( double mean,
                                      double std,
                                      curandState_t *rngState );
 
+__device__ double3 getRndPointOnSphere( curandState_t *rngState );
+
 __device__ double3 updateAccel( double3 pos, cuDoubleComplex psiUp, cuDoubleComplex psiDn );
 
 __device__ cuDoubleComplex getAlignedSpinUp( double3 pos );
