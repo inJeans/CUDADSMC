@@ -185,7 +185,7 @@ __device__ double3 selectAtomInThermalDistribution( double Temp, curandState_t *
         double2 r1 = curand_normal2_double ( &rngState[0] );
         double  r2 = curand_normal_double  ( &rngState[0] );
         
-        double3 r = make_double3( r1.x, r1.y, r2 ) * d_maxGridWidth / 10.;
+        double3 r = make_double3( r1.x, r1.y, r2 ) * d_maxGridWidth / 5.;
         
         double3 B = getMagField( r );
         double  magB = length( B );
@@ -244,10 +244,9 @@ __device__ double3 updateAccel( double3 pos, cuDoubleComplex psiUp, cuDoubleComp
     accel.y = potential * ( dBdy.x * (psiUp.x*psiDn.x + psiUp.y*psiDn.y) +
                             dBdy.y * (psiUp.x*psiDn.y - psiUp.y*psiDn.x) +
                             dBdy.z * (psiUp.x*psiUp.x + psiUp.y*psiUp.y - 0.5) );
-//    accel.z = potential * ( dBdz.x * (psiUp.x*psiDn.x + psiUp.y*psiDn.y) +
-//                            dBdz.y * (psiUp.x*psiDn.y - psiUp.y*psiDn.x) +
-//                            dBdz.z * (psiUp.x*psiUp.x + psiUp.y*psiUp.y - 0.5) );
-    accel.z = 0.5*potential * d_d2Bdx2 * pos.z;
+    accel.z = potential * ( dBdz.x * (psiUp.x*psiDn.x + psiUp.y*psiDn.y) +
+                            dBdz.y * (psiUp.x*psiDn.y - psiUp.y*psiDn.x) +
+                            dBdz.z * (psiUp.x*psiUp.x + psiUp.y*psiUp.y - 0.5) );
     
     return accel;
 }

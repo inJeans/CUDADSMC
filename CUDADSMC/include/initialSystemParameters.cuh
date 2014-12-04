@@ -23,7 +23,7 @@ double h_a   = 5.3e-9;			// Constant cross-section formula;
 double h_kB  = 1.3806503e-23;	// Boltzmann's Constant
 
 #pragma mark Environmental Parameters
-double Tinit   = 20.0e-6;
+double Tinit   = 2.0e-6;
 
 #pragma mark Trap Parameters
 double dBdr = 32000;

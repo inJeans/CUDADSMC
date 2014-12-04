@@ -32,6 +32,7 @@
 /* Begin PBXFileReference section */
 		1D0B50761A104E6100BFC815 /* evaporation.cu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = evaporation.cu; path = src/evaporation.cu; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		1D0B50781A104EA600BFC815 /* evaporation.cuh */ = {isa = PBXFileReference; lastKnownFileType = text; name = evaporation.cuh; path = include/evaporation.cuh; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		1D3DE95C1A3012EA00B342DD /* makeIPPlots.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; name = makeIPPlots.py; path = ../../miThesis/Code/IPEhrenfest/makeIPPlots.py; sourceTree = "<group>"; };
 		1D4689FB19F8A20D0044F7B9 /* collisionComparison.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = collisionComparison.py; sourceTree = "<group>"; };
 		1D6D1EAA19EE44C0002266A6 /* homogeneousGasCollisions.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; path = homogeneousGasCollisions.py; sourceTree = "<group>"; };
 		1D94869C198B069400324396 /* setUp.cu */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = setUp.cu; path = src/setUp.cu; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
@@ -120,6 +121,7 @@
 				1D6D1EAA19EE44C0002266A6 /* homogeneousGasCollisions.py */,
 				1DE20FC119AFEB9C00B7E8EA /* energyChecker.py */,
 				1DD5281F19B715840058546E /* energyComparison.py */,
+				1D3DE95C1A3012EA00B342DD /* makeIPPlots.py */,
 				1D9486A6198B10A800324396 /* Makefile */,
 				443C4644198A01280079A2C8 /* src */,
 				1D9486A5198B0F9B00324396 /* include */,

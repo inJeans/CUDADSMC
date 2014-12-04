@@ -16,7 +16,6 @@
 __global__ void copyConstantsToDevice( double dt )
 {
 	d_dt = dt;
-	d_loopsPerCollision = 0.0007 / d_dt;
 	
 	return;
 }
@@ -125,18 +124,18 @@ __device__ double3 updateAcc( double3 pos, cuDoubleComplex psiUp, cuDoubleComple
     
     double potential = -1.0 * d_gs * d_muB / d_mRb;
     
-//    accel.x = potential * ( dBdx.x * (psiUp.x*psiDn.x + psiUp.y*psiDn.y) +
-//                            dBdx.y * (psiUp.x*psiDn.y - psiUp.y*psiDn.x) +
-//                            dBdx.z * (psiUp.x*psiUp.x + psiUp.y*psiUp.y - 0.5) );
-//    accel.y = potential * ( dBdy.x * (psiUp.x*psiDn.x + psiUp.y*psiDn.y) +
-//                            dBdy.y * (psiUp.x*psiDn.y - psiUp.y*psiDn.x) +
-//                            dBdy.z * (psiUp.x*psiUp.x + psiUp.y*psiUp.y - 0.5) );
-//    accel.z = potential * ( dBdz.x * (psiUp.x*psiDn.x + psiUp.y*psiDn.y) +
-//                            dBdz.y * (psiUp.x*psiDn.y - psiUp.y*psiDn.x) +
-//                            dBdz.z * (psiUp.x*psiUp.x + psiUp.y*psiUp.y - 0.5) );
-    accel.x = 0.5*potential * d_d2Bdx2 * pos.x;
-    accel.y = 0.5*potential * d_d2Bdx2 * pos.y;
-    accel.z = 0.5*potential * d_d2Bdx2 * pos.z;
+    accel.x = potential * ( dBdx.x * (psiUp.x*psiDn.x + psiUp.y*psiDn.y) +
+                            dBdx.y * (psiUp.x*psiDn.y - psiUp.y*psiDn.x) +
+                            dBdx.z * (psiUp.x*psiUp.x + psiUp.y*psiUp.y - 0.5) );
+    accel.y = potential * ( dBdy.x * (psiUp.x*psiDn.x + psiUp.y*psiDn.y) +
+                            dBdy.y * (psiUp.x*psiDn.y - psiUp.y*psiDn.x) +
+                            dBdy.z * (psiUp.x*psiUp.x + psiUp.y*psiUp.y - 0.5) );
+    accel.z = potential * ( dBdz.x * (psiUp.x*psiDn.x + psiUp.y*psiDn.y) +
+                            dBdz.y * (psiUp.x*psiDn.y - psiUp.y*psiDn.x) +
+                            dBdz.z * (psiUp.x*psiUp.x + psiUp.y*psiUp.y - 0.5) );
+//    accel.x = 0.5*potential * d_d2Bdx2 * pos.x;
+//    accel.y = 0.5*potential * d_d2Bdx2 * pos.y;
+//    accel.z = 0.5*potential * d_d2Bdx2 * pos.z;
     
     return accel;
 }

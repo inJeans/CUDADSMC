@@ -145,8 +145,8 @@ int main(int argc, const char * argv[])
     
 #pragma mark - Set up atom system
 	
-    dt = 1.e-8;
-    loopsPerCollision = ceil(0.005 / numberOfPrints / dt);
+    dt = 5.e-9;
+    loopsPerCollision = ceil(0.05 / numberOfPrints / dt);
     
 	copyConstantsToDevice<<<1,1>>>( dt );
 	
@@ -345,44 +345,44 @@ int main(int argc, const char * argv[])
     {
 #pragma mark Collide Atoms
         
-//        medianR = indexAtoms(d_pos,
-//                             d_cellID,
-//                             d_atomID,
-//                             cellsPerDimension,
-//                             numberOfAtoms );
-//        
-//        sortArrays(d_cellID,
-//                   d_atomID,
-//                   numberOfAtoms );
-//        
-//        deviceMemset<<<numberOfCells+1,1>>>(d_cellStartEnd,
-//                                            make_int2( -1, -1 ),
-//                                            numberOfCells + 1 );
-//        
-//        cellStartandEndKernel<<<gridSize,blockSize>>>(d_cellID,
-//                                                      d_atomID,
-//                                                      d_cellStartEnd,
-//                                                      initialNumberOfAtoms,
-//                                                      numberOfAtoms );
-//        
-//        findNumberOfAtomsInCell<<<numberOfCells+1,1>>>(d_cellStartEnd,
-//                                                       d_numberOfAtomsInCell,
-//                                                       numberOfCells );
-//        
-//        thrust::exclusive_scan(th_numberOfAtomsInCell,
-//                               th_numberOfAtomsInCell + numberOfCells + 1,
-//                               th_prefixScanNumberOfAtomsInCell );
-//        
-//        collide<<<numberOfCells,1>>>(d_vel,
-//                                     d_sigvrmax,
-//                                     d_prefixScanNumberOfAtomsInCell,
-//                                     d_collisionCount,
-//                                     medianR,
-//                                     alpha,
-//                                     cellsPerDimension,
-//                                     numberOfCells,
-//                                     d_rngStates,
-//                                     d_atomID );
+        medianR = indexAtoms(d_pos,
+                             d_cellID,
+                             d_atomID,
+                             cellsPerDimension,
+                             numberOfAtoms );
+        
+        sortArrays(d_cellID,
+                   d_atomID,
+                   numberOfAtoms );
+        
+        deviceMemset<<<numberOfCells+1,1>>>(d_cellStartEnd,
+                                            make_int2( -1, -1 ),
+                                            numberOfCells + 1 );
+        
+        cellStartandEndKernel<<<gridSize,blockSize>>>(d_cellID,
+                                                      d_atomID,
+                                                      d_cellStartEnd,
+                                                      initialNumberOfAtoms,
+                                                      numberOfAtoms );
+        
+        findNumberOfAtomsInCell<<<numberOfCells+1,1>>>(d_cellStartEnd,
+                                                       d_numberOfAtomsInCell,
+                                                       numberOfCells );
+        
+        thrust::exclusive_scan(th_numberOfAtomsInCell,
+                               th_numberOfAtomsInCell + numberOfCells + 1,
+                               th_prefixScanNumberOfAtomsInCell );
+        
+        collide<<<numberOfCells,1>>>(d_vel,
+                                     d_sigvrmax,
+                                     d_prefixScanNumberOfAtomsInCell,
+                                     d_collisionCount,
+                                     medianR,
+                                     alpha,
+                                     cellsPerDimension,
+                                     numberOfCells,
+                                     d_rngStates,
+                                     d_atomID );
         
 #pragma mark Evolve System
         
@@ -395,26 +395,27 @@ int main(int argc, const char * argv[])
                                               d_psiDn,
                                               d_atomID,
                                               numberOfAtoms );
-         #pragma mark Evaporate Atoms   
-            Temp = calculateTemp(d_vel,
-                                 d_atomID,
-                                 numberOfAtoms );
-            h_evaporationTag(d_pos,
-                             d_psiUp,
-                             d_psiDn,
-                             d_atomID,
-                             d_evapTag,
-                             Temp,
-                             numberOfAtoms );
-            
-            cudaMemcpy( (void*)&d_Temp, (void*)&Temp, 1*sizeof(double), cudaMemcpyHostToDevice );
-            th_newEnd = thrust::remove_if(th_atomID,
-                                          th_atomID + numberOfAtoms,
-                                          th_evapTag,
-                                          thrust::identity<int>());
-            
-            numberOfAtoms = (int)(th_newEnd - th_atomID);
         }
+        
+#pragma mark Evaporate Atoms
+        Temp = calculateTemp(d_vel,
+                             d_atomID,
+                             numberOfAtoms );
+        h_evaporationTag(d_pos,
+                         d_psiUp,
+                         d_psiDn,
+                         d_atomID,
+                         d_evapTag,
+                         Temp,
+                         numberOfAtoms );
+        
+        cudaMemcpy( (void*)&d_Temp, (void*)&Temp, 1*sizeof(double), cudaMemcpyHostToDevice );
+        th_newEnd = thrust::remove_if(th_atomID,
+                                      th_atomID + numberOfAtoms,
+                                      th_evapTag,
+                                      thrust::identity<int>());
+        
+        numberOfAtoms = (int)(th_newEnd - th_atomID);
         
         printf("The temperature is %fuK\n", Temp * 1.e6 );
         printf( "Number of atoms = %i, ", numberOfAtoms);
