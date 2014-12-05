@@ -22,9 +22,9 @@ hbar = 1.05457148e-34;
 T    = 10.e-6;
 dBdz = 2.5;
 
-tres = 51;
+tres = 26;
 nAtoms = 1e6;
-nCells = 50**3 + 1;
+nCells = 100**3 + 1;
 
 vtherm = np.sqrt( 8.*kB*T / (pi*mRb) );
 vrel = np.sqrt(2.) * vtherm
@@ -58,7 +58,7 @@ f.close()
 
 totalColl = np.sum( collisionCount, 0 )[0,:];
 
-collRate = np.gradient( totalColl, time[1]-time[0] ) / N ;
+collRate = totalColl / ( time[1]-time[0] ) / N ;
 
 print "Computational collision rate = ", np.mean(collRate[10:-1])
 print "sigma = ", np.std(collRate[10:-1])

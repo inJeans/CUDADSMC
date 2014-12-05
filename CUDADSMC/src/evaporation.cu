@@ -17,6 +17,9 @@
 #include "deviceSystemParameters.cuh"
 
 void h_evaporationTag(double3 *d_pos,
+                      double3 *d_vel,
+                      double3 *d_evapPos,
+                      double3 *d_evapVel,
                       cuDoubleComplex *d_psiUp,
                       cuDoubleComplex *d_psiDn,
                       int     *d_atomID,
@@ -49,6 +52,9 @@ void h_evaporationTag(double3 *d_pos,
 #endif
     
     evaporationTag<<<gridSize,blockSize>>>(d_pos,
+                                           d_vel,
+                                           d_evapPos,
+                                           d_evapVel,
                                            d_psiUp,
                                            d_psiDn,
                                            d_atomID,
@@ -59,29 +65,36 @@ void h_evaporationTag(double3 *d_pos,
     return;
 }
 
-__global__ void evaporationTag( double3 *pos,
-                                cuDoubleComplex *psiUp,
-                                cuDoubleComplex *psiDn,
-                                int     *atomID,
-                                int     *evapTag,
-                                double   Temp,
-                                int      numberOfAtoms )
+__global__ void evaporationTag(double3 *pos,
+                               double3 *vel,
+                               double3 *evapPos,
+                               double3 *evapVel,
+                               cuDoubleComplex *psiUp,
+                               cuDoubleComplex *psiDn,
+                               int     *atomID,
+                               int     *evapTag,
+                               double   Temp,
+                               int      numberOfAtoms )
 {
     for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
          atom < numberOfAtoms;
          atom += blockDim.x * gridDim.x)
     {
-        cuDoubleComplex l_psiUp = psiUp[atomID[atom]];
-        cuDoubleComplex l_psiDn = psiDn[atomID[atom]];
-        double3 l_pos = pos[atomID[atom]];
+        int l_atom = atomID[atom];
+        cuDoubleComplex l_psiUp = psiUp[l_atom];
+        cuDoubleComplex l_psiDn = psiDn[l_atom];
+        double3 l_pos = pos[l_atom];
+        double3 l_vel = vel[l_atom];
         double3 Bn    = getMagneticFieldN( l_pos );
         
         double proj = 2. * Bn.x * ( l_psiUp.x*l_psiDn.x + l_psiUp.y*l_psiDn.y ) +
                       2. * Bn.y * ( l_psiUp.x*l_psiDn.y - l_psiUp.y*l_psiDn.x ) +
                       2. * Bn.z * ( l_psiUp.x*l_psiUp.x + l_psiUp.y*l_psiUp.y - 0.5 );
         
-        if ( proj < 0.5 ) {
+        if ( proj < 0.0 ) {
             evapTag[atom] = 1;
+            evapPos[l_atom] = l_pos;
+            evapVel[l_atom] = l_vel;
         }
         else
         {
