@@ -22,7 +22,8 @@ __constant__ int    d_N    = 3e6;
 __device__ double d_meshWidth = 2.5;
 __device__ double3 d_maxGridWidth = { 0.001, 0.001, 0.001 };
 __device__ double d_dt;
-__device__ double d_dBdz = 2.16;
+__device__ double d_dBdz = 2.5;
+__device__ double d_Bt = 1.e-6;
 __device__ double d_wavelength = 6.06012e-8;
 __device__ double d_eta = 7.;
 

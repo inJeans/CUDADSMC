@@ -42,7 +42,7 @@ void h_initRNG( curandState_t *d_rngStates, int sizeOfRNG )
                                         (const void *) initRNG,
                                         0,
                                         sizeOfRNG );
-    gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
+    gridSize = (sizeOfRNG + blockSize - 1) / blockSize;
 #else
     int device;
     cudaGetDevice ( &device );
@@ -76,15 +76,16 @@ __global__ void initRNG( curandState_t *rngState, int numberOfAtoms )
 
 #pragma mark - Initial Distribution
 
-void h_generateInitialDist( double3 *d_pos,
-                            double3 *d_vel,
-                            double3 *d_acc,
+void h_generateInitialDist(double3 *d_pos,
+                           double3 *d_vel,
+                           double3 *d_acc,
                            cuDoubleComplex *d_psiUp,
                            cuDoubleComplex *d_psiDn,
-                            int      numberOfAtoms,
-                            double   Temp,
-                            curandState_t *d_rngStates,
-                            int *d_atomID )
+                           int      numberOfAtoms,
+                           double   Temp,
+                           curandState_t *d_rngStates,
+                           int *d_atomID,
+                           hbool_t *d_atomIsSpinUp )
 {
     int blockSize;
     int gridSize;
@@ -96,7 +97,7 @@ void h_generateInitialDist( double3 *d_pos,
                                         &blockSize,
                                         (const void *) generateInitialDist,
                                         0,
-                                        sizeOfRNG );
+                                        numberOfAtoms );
     gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
 #else
     int device;
@@ -110,15 +111,16 @@ void h_generateInitialDist( double3 *d_pos,
     blockSize = NUM_THREADS;
 #endif
     
-    generateInitialDist<<<gridSize,blockSize>>>( d_pos,
-                                                 d_vel,
-                                                 d_acc,
-                                                 d_psiUp,
-                                                 d_psiDn,
-                                                 numberOfAtoms,
-                                                 Tinit,
-                                                 d_rngStates,
-                                                 d_atomID );
+    generateInitialDist<<<gridSize,blockSize>>>(d_pos,
+                                                d_vel,
+                                                d_acc,
+                                                d_psiUp,
+                                                d_psiDn,
+                                                numberOfAtoms,
+                                                Tinit,
+                                                d_rngStates,
+                                                d_atomID,
+                                                d_atomIsSpinUp );
     
     return;
 }
@@ -132,7 +134,8 @@ __global__ void generateInitialDist(double3 *pos,
                                     int      numberOfAtoms,
 									double   Temp,
 									curandState_t *rngState,
-                                    int *atomID ) {
+                                    int *atomID,
+                                    hbool_t *atomIsSpinUp ) {
     
 	for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
 		 atom < numberOfAtoms;
@@ -141,10 +144,12 @@ __global__ void generateInitialDist(double3 *pos,
 		/* Copy state to local memory for efficiency */
 		curandState_t localrngState = rngState[atom];
 		
-        pos[atom] = selectAtomInThermalDistribution( Temp,
-                                                     &localrngState );
+//        pos[atom] = selectAtomInThermalDistribution( Temp,
+//                                                     &localrngState );
+        pos[atom] = make_double3( 0.0, 0.0, -5.e-6 );
         
-		vel[atom] = getRandomVelocity( Temp, &localrngState );
+//		vel[atom] = getRandomVelocity( Temp, &localrngState );
+        vel[atom] = make_double3( 0.0, 0.0, 0.0 );
         
         acc[atom] = updateAccel( pos[atom] );
         
@@ -152,6 +157,8 @@ __global__ void generateInitialDist(double3 *pos,
         psiDn[atom] = getAlignedSpinDn( pos[atom] );
         
         atomID[atom] = atom;
+        
+        atomIsSpinUp[atom] = true;
 		
 		// Copy state back to global memory
 		rngState[atom] = localrngState;
@@ -210,11 +217,16 @@ __device__ double3 updateAccel( double3 pos )
 {
     double3 accel = make_double3( 0., 0., 0. );
     
-    double potential = d_gs * d_muB * d_dBdz * rsqrt( pos.x*pos.x + pos.y*pos.y + 4.*pos.z*pos.z ) / d_mRb;
-    
-    accel.x =-0.5 * potential * pos.x;
-    accel.y =-0.5 * potential * pos.y;
-    accel.z =-2.0 * potential * pos.z;
+    double3 Bn = getMagFieldNormal( pos );
+    double3 dBdx = getBdiffX( pos );
+    double3 dBdy = getBdiffY( pos );
+    double3 dBdz = getBdiffZ( pos );
+
+    double potential = -0.5 * d_gs * d_muB / d_mRb;
+
+    accel.x = potential * dot( dBdx, Bn );
+    accel.y = potential * dot( dBdy, Bn );
+    accel.z = potential * dot( dBdz, Bn );
     
     return accel;
 }
@@ -248,9 +260,24 @@ __device__ double3 getMagFieldNormal( double3 pos )
 
 __device__ double3 getMagField( double3 pos )
 {
-    double3 B = d_dBdz * make_double3( 0.5 * pos.x, 0.5 * pos.y, -pos.z );
+    double3 B = make_double3( d_Bt, 0.0,-d_dBdz * pos.z );
     
     return B;
+}
+
+__device__ double3 getBdiffX( double3 pos )
+{
+    return make_double3( 0.0, 0.0, 0.0 );
+}
+
+__device__ double3 getBdiffY( double3 pos )
+{
+    return make_double3( 0.0, 0.0, 0.0 );
+}
+
+__device__ double3 getBdiffZ( double3 pos )
+{
+    return make_double3( 0.0, 0.0,-d_dBdz );
 }
 
 void initSigvrmax( double *d_sigvrmax, int numberOfCells )

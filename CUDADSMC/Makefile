@@ -62,61 +62,17 @@ debug: $(EXEC)
 profile: NVCCFLAGS += -pg
 profile: $(EXEC)
 
-$(EXEC): $(addprefix $(OBJDIR), main.o setUp.o moveAtoms.o collisions.o evaporation.o cudaHelpers.o hdf5Helpers.o )
+$(EXEC): $(addprefix $(OBJDIR), main.o setUp.o moveAtoms.o wavefunction.o collisions.o evaporation.o cudaHelpers.o hdf5Helpers.o )
 	@echo 'Building file: $<'
 	@echo 'Invoking: NVCC Linker'
-	$(NVCC) -o $@ $(INCLUDE) $^ $(LIB) $(CUDA_LIB) -lcurand -lcublas -lhdf5 -lhdf5_hl -D CUDA65
+	$(NVCC) -o $@ $(INCLUDE) $^ $(LIB) $(CUDA_LIB) -lcurand -lcublas -lhdf5 -lhdf5_hl
 	@echo "Finished building: $< $(OK_STRING)"
 	@echo ' '
 
 $(OBJDIR)%.o: $(SRCDIR)%.cu
 	@echo 'Building file: $<'
 	@echo 'Invoking: NVCC Compiler'
-	$(NVCC) $(NVCCFLAGS) $(INCLUDE) -o $@ -c $?
-	@echo "Finished building: $< $(OK_STRING)"
-	@echo ' '
-
-testMotion: $(TESTMOTION)
-
-$(TESTMOTION): $(addprefix $(OBJDIR), moveTest.o setUp.o moveAtoms.o collisions.o cudaHelpers.o hdf5Helpers.o )
-	@echo 'Building file: $<'
-	@echo 'Invoking: NVCC Linker'
-	$(NVCC) -o $@ $(INCLUDE) $^ $(LIB) $(CUDA_LIB) -lcurand -lcublas -lhdf5 -lhdf5_hl
-	@echo "Finished building: $< $(OK_STRING)"
-	@echo ' '
-	@echo 'Testing...'
-#	for p in 1 2 3 4 5 6 7 8 9; do \
-#		for q in 5 6 7; do \
-#			{ time ./$(BUILDDIR)testMotion $$p.e-$$q; } | tee motionTest.txt; \
-#			mv motionTest.h5 Tests/Motion/symplecticEuler-$$p.e-$$q.h5; \
-#		done; \
-#	done
-	@echo "... Test complete $< $(OK_STRING)"
-	@echo " " >> motionTest.txt
-	@echo "----------------------------------------" >> motionTest.txt
-	@echo " " >> motionTest.txt
-	tput bel
-
-testCollisions: $(TESTCOLLISIONS)
-
-$(TESTCOLLISIONS): $(addprefix $(OBJDIR), collideTest.o setUp.o moveAtoms.o collisions.o cudaHelpers.o hdf5Helpers.o )
-	@echo 'Building file: $<'
-	@echo 'Invoking: NVCC Linker'
-	$(NVCC) -o $@ $(INCLUDE) $^ $(LIB) $(CUDA_LIB) -lcurand -lcublas -lhdf5 -lhdf5_hl
-	@echo "Finished building: $< $(OK_STRING)"
-	@echo ' '
-	@echo 'Testing...'
-	{ time ./$(BUILDDIR)testCollisions; } | tee collideTest.txt;
-	@echo "... Test complete $< $(OK_STRING)"
-	@echo " " >> collideTest.txt
-	@echo "----------------------------------------" >> collideTest.txt
-	@echo " " >> collideTest.txt
-	tput bel
-
-$(OBJDIR)moveTest.o: $(SRCDIR)moveTest.cu
-	@echo 'Building file: $<'
-	@echo 'Invoking: NVCC Compiler'
-	$(NVCC) $(NVCCFLAGS) $(INCLUDE) -o $@ -c $?
+	$(NVCC) $(NVCCFLAGS) $(INCLUDE) -o $@ -c $? -D CUDA65
 	@echo "Finished building: $< $(OK_STRING)"
 	@echo ' '
 

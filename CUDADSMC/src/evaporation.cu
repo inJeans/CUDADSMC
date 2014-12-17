@@ -37,7 +37,7 @@ void h_evaporationTag(double3 *d_pos,
                                        &blockSize,
                                        (const void *) evaporationTag,
                                        0,
-                                       sizeOfRNG );
+                                       numberOfAtoms );
     gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
 #else
     int device;
@@ -142,7 +142,7 @@ void h_calculateSpeed2(double3 *d_vel,
                                        &blockSize,
                                        (const void *) calculateSpeed2,
                                        0,
-                                       sizeOfRNG );
+                                       numberOfAtoms );
     gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
 #else
     int device;

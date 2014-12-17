@@ -57,7 +57,7 @@ void h_calculateRadius( double3 *d_pos, double *d_radius, int *d_atomID, int num
                                        &blockSize,
                                        (const void *) calculateRadius,
                                        0,
-                                       sizeOfRNG );
+                                       numberOfAtoms );
     gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
 #else
     int device;
@@ -136,7 +136,7 @@ void h_findAtomIndex( double3 *d_pos, int *d_cellID, int *d_atomID, double media
                                        &blockSize,
                                        (const void *) calculateRadius,
                                        0,
-                                       sizeOfRNG );
+                                       numberOfAtoms );
     gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
 #else
     int device;

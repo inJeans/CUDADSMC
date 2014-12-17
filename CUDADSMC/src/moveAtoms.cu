@@ -16,12 +16,11 @@
 __global__ void copyConstantsToDevice( double dt )
 {
 	d_dt = dt;
-	d_loopsPerCollision = 0.0007 / d_dt;
 	
 	return;
 }
 
-__global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, cuDoubleComplex *psiUp, cuDoubleComplex *psiDn, int *atomID, int numberOfAtoms )
+__global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, hbool_t *atomIsSpinUp, int *atomID, int numberOfAtoms )
 {
     for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
 		 atom < numberOfAtoms;
@@ -31,45 +30,33 @@ __global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, cuDoubleCom
 		double3 l_pos = pos[l_atom];
         double3 l_vel = vel[l_atom];
         double3 l_acc = acc[l_atom];
-        cuDoubleComplex l_psiUp = psiUp[l_atom];
-        cuDoubleComplex l_psiDn = psiDn[l_atom];
-		
+        hbool_t l_atomIsSpinUp = atomIsSpinUp[l_atom];
+        
 //        for (int i=0; i<d_loopsPerCollision; i++) {
             velocityVerletUpdate(&l_pos,
-                                  &l_vel,
-                                  &l_acc,
-                                  &l_psiUp,
-                                  &l_psiDn);
+                                 &l_vel,
+                                 &l_acc,
+                                 l_atomIsSpinUp );
 //        }
     
         pos[l_atom] = l_pos;
         vel[l_atom] = l_vel;
         acc[l_atom] = l_acc;
-        psiUp[l_atom] = l_psiUp;
-        psiDn[l_atom] = l_psiDn;
 		
     }
     
     return;
 }
 
-__device__ void velocityVerletUpdate( double3 *pos, double3 *vel, double3 *acc, cuDoubleComplex *psiUp, cuDoubleComplex *psiDn )
+__device__ void velocityVerletUpdate( double3 *pos, double3 *vel, double3 *acc, hbool_t atomIsSpinUp )
 {
-    cuDoubleComplex psiUpTemp = psiUp[0];
-    psiUp[0] = updatePsiUp(pos[0],
-                           psiUp[0],
-                           psiDn[0] );
-    psiDn[0] = updatePsiDn(pos[0],
-                           psiUpTemp,
-                           psiDn[0] );
-    
     vel[0]   = updateVelHalfStep(pos[0],
                                  vel[0],
                                  acc[0] );
     pos[0]   = updatePos(pos[0],
                          vel[0] );
-    acc[0]   = updateAcc(psiUp[0],
-                         psiDn[0] );
+    acc[0]   = updateAcc(pos[0],
+                         atomIsSpinUp );
     vel[0]   = updateVelHalfStep(pos[0],
                                  vel[0],
                                  acc[0] );
@@ -77,18 +64,10 @@ __device__ void velocityVerletUpdate( double3 *pos, double3 *vel, double3 *acc, 
     return;
 }
 
-__device__ void symplecticEulerUpdate( double3 *pos, double3 *vel, double3 *acc, cuDoubleComplex *psiUp, cuDoubleComplex *psiDn )
+__device__ void symplecticEulerUpdate( double3 *pos, double3 *vel, double3 *acc, hbool_t atomIsSpinUp )
 {
-    cuDoubleComplex psiUpTemp = psiUp[0];
-    psiUp[0] = updatePsiUp(pos[0],
-                           psiUp[0],
-                           psiDn[0] );
-    psiDn[0] = updatePsiDn(pos[0],
-                           psiUpTemp,
-                           psiDn[0] );
-    
-    acc[0] = updateAcc(psiUp[0],
-                       psiDn[0] );
+    acc[0] = updateAcc(pos[0],
+                       atomIsSpinUp );
     vel[0] = updateVel(pos[0],
                        vel[0],
                        acc[0] );
@@ -108,62 +87,34 @@ __device__ double3 updateVelHalfStep( double3 pos, double3 vel, double3 acc )
 
 __device__ double3 updatePos( double3 pos, double3 vel )
 {
-    double3 newPos = pos + vel * d_dt;
-    
-    return newPos;
+    return pos + vel * d_dt;
 }
 
-__device__ double3 updateAcc( cuDoubleComplex psiUp, cuDoubleComplex psiDn )
+__device__ double3 updateAcc( double3 pos, hbool_t atomIsSpinUp )
 {
     double3 accel = make_double3( 0., 0., 0. );
     
-    double potential = -1.0 * d_gs * d_muB * d_dBdz / d_mRb;
+    double3 Bn = getMagneticFieldNormal( pos );
+    double3 dBdx = getBdiffx( pos );
+    double3 dBdy = getBdiffy( pos );
+    double3 dBdz = getBdiffz( pos );
     
-    accel.x = potential * (psiUp.x*psiDn.x + psiUp.y*psiDn.y);
-    accel.y = potential * (psiUp.x*psiDn.y - psiUp.y*psiDn.x);
-    accel.z = potential * (1. - 2.*psiUp.x*psiUp.x - 2.*psiUp.y*psiUp.y);
+    double potential = -0.5 * d_gs * d_muB / d_mRb;
     
-    
+    if (atomIsSpinUp) {
+        accel.x = potential * dot( dBdx, Bn );
+        accel.y = potential * dot( dBdy, Bn );
+        accel.z = potential * dot( dBdz, Bn );
+    }
+    else {
+        accel.x =-1. * potential * dot( dBdx, Bn );
+        accel.y =-1. * potential * dot( dBdy, Bn );
+        accel.z =-1. * potential * dot( dBdz, Bn );
+    }
+
     return accel;
 }
 
-__device__ cuDoubleComplex updatePsiUp(double3 pos,
-                                       cuDoubleComplex psiUp,
-                                       cuDoubleComplex psiDn )
-{
-    double3 Bn = getMagneticFieldNormal( pos );
-    double  B  = getMagB( pos );
-    
-    double theta = 0.5 * d_gs * d_muB * B * d_dt / d_hbar;
-    double sinTheta = sin(theta);
-    double cosTheta = cos(theta);
-    
-    cuDoubleComplex newPsiUp = make_cuDoubleComplex( psiUp.x*cosTheta + ( Bn.x*psiDn.y - Bn.y*psiDn.x + Bn.z*psiUp.y)*sinTheta,
-                                                     psiUp.y*cosTheta + (-Bn.x*psiDn.x - Bn.y*psiDn.y - Bn.z*psiUp.x)*sinTheta );
-    
-//    cuDoubleComplex newPsiUp = 0.5 * make_cuDoubleComplex( 1. + Bn.x + Bn.z, -Bn.y ) * rsqrt( 1 + Bn.x );
-    
-    return newPsiUp;
-}
-
-__device__ cuDoubleComplex updatePsiDn(double3 pos,
-                                       cuDoubleComplex psiUp,
-                                       cuDoubleComplex psiDn )
-{
-    double3 Bn = getMagneticFieldNormal( pos );
-    double  B  = getMagB( pos );
-    
-    double theta = 0.5 * d_gs * d_muB * B * d_dt / d_hbar;
-    double sinTheta = sin(theta);
-    double cosTheta = cos(theta);
-    
-    cuDoubleComplex newPsiDn = make_cuDoubleComplex( psiDn.x*cosTheta + ( Bn.x*psiUp.y + Bn.y*psiUp.x - Bn.z*psiDn.y)*sinTheta,
-                                                     psiDn.y*cosTheta + (-Bn.x*psiUp.x + Bn.y*psiUp.y + Bn.z*psiDn.x)*sinTheta );
-    
-//    cuDoubleComplex newPsiDn = 0.5 * make_cuDoubleComplex( 1. + Bn.x - Bn.z,  Bn.y ) * rsqrt( 1 + Bn.x );
-    
-    return newPsiDn;
-}
 
 __device__ double3 getMagneticFieldNormal( double3 pos )
 {
@@ -183,7 +134,22 @@ __device__ double getMagB( double3 pos )
 
 __device__ double3 getMagneticField( double3 pos )
 {
-    double3 B = d_dBdz * make_double3( 0.5 * pos.x, 0.5 * pos.y, -pos.z );
+    double3 B = make_double3( d_Bt, 0.0,-d_dBdz * pos.z );
     
     return B;
+}
+
+__device__ double3 getBdiffx( double3 pos )
+{
+    return make_double3( 0.0, 0.0, 0.0 );
+}
+
+__device__ double3 getBdiffy( double3 pos )
+{
+    return make_double3( 0.0, 0.0, 0.0 );
+}
+
+__device__ double3 getBdiffz( double3 pos )
+{
+    return make_double3( 0.0, 0.0,-d_dBdz );
 }
