@@ -134,22 +134,24 @@ __device__ double getMagB( double3 pos )
 
 __device__ double3 getMagneticField( double3 pos )
 {
-    double3 B = make_double3( d_Bt, 0.0,-d_dBdz * pos.z );
+    double3 B = d_B0     * make_double3( 0., 0., 1. ) +
+                d_dBdx   * make_double3( pos.x, -pos.y, 0. ) +
+         0.5 *  d_d2Bdx2 * make_double3( -pos.x*pos.z, -pos.y*pos.z, pos.z*pos.z - 0.5*(pos.x*pos.x+pos.y*pos.y) );
     
     return B;
 }
 
 __device__ double3 getBdiffx( double3 pos )
 {
-    return make_double3( 0.0, 0.0, 0.0 );
+    return make_double3( d_dBdx - 0.5*d_d2Bdx2*pos.z, 0.0, - 0.5*d_d2Bdx2*pos.x );
 }
 
 __device__ double3 getBdiffy( double3 pos )
 {
-    return make_double3( 0.0, 0.0, 0.0 );
+    return make_double3( 0.0, -d_dBdx - 0.5*d_d2Bdx2*pos.z, - 0.5*d_d2Bdx2*pos.y );
 }
 
 __device__ double3 getBdiffz( double3 pos )
 {
-    return make_double3( 0.0, 0.0,-d_dBdz );
+    return make_double3( -0.5*d_d2Bdx2*pos.x, -0.5*d_d2Bdx2*pos.y, d_d2Bdx2*pos.z );
 }

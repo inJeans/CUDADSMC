@@ -311,9 +311,10 @@ __global__ void collide( double3 *vel,
             
             double crossSection = 8.*d_pi*d_a*d_a;
             
-            d_dt = 1.0e-8;
-            double tau = 128.*sqrt( d_mRb*pow( d_pi, 3 )*pow( d_kB*d_Temp,5 ) ) / ( crossSection*d_N*pow( d_gs*d_muB*d_dBdz, 3 ) );
-            d_loopsPerCollision = ceil( 0.1*tau / d_dt );
+            d_dt = 1.0e-7;
+            double tau = 128.*sqrt( d_mRb*pow( d_pi, 3 )*pow( d_kB*d_Temp,5 ) ) / ( crossSection*d_N*pow( d_gs*d_muB*2.16, 3 ) );
+//            d_loopsPerCollision = ceil( 0.1*tau / d_dt );
+            d_loopsPerCollision = 10;
             
             double cellVolume = cellLength.x * cellLength.y * cellLength.z;
             double Mc = 0.5 * (numberOfAtomsInCell - 1) * numberOfAtomsInCell;

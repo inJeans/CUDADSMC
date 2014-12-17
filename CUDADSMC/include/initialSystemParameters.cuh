@@ -11,8 +11,8 @@
 
 #pragma mark -
 
-int numberOfPrints = 500;
-double finalTime = 3.e-3;
+int numberOfPrints = 100;
+double finalTime = 5.e-3;
 double dt = 1.e-6;
 
 #pragma mark Physics Constants

@@ -144,12 +144,10 @@ __global__ void generateInitialDist(double3 *pos,
 		/* Copy state to local memory for efficiency */
 		curandState_t localrngState = rngState[atom];
 		
-//        pos[atom] = selectAtomInThermalDistribution( Temp,
-//                                                     &localrngState );
-        pos[atom] = make_double3( 0.0, 0.0, -5.e-6 );
+        pos[atom] = selectAtomInThermalDistribution( Temp,
+                                                     &localrngState );
         
-//		vel[atom] = getRandomVelocity( Temp, &localrngState );
-        vel[atom] = make_double3( 0.0, 0.0, 0.0 );
+		vel[atom] = getRandomVelocity( Temp, &localrngState );
         
         acc[atom] = updateAccel( pos[atom] );
         
@@ -187,11 +185,15 @@ __device__ double3 selectAtomInThermalDistribution( double Temp, curandState_t *
         double2 r1 = curand_normal2_double ( &rngState[0] );
         double  r2 = curand_normal_double  ( &rngState[0] );
         
-        double3 r = make_double3( r1.x, r1.y, r2 ) * d_maxGridWidth / 2.;
+        double3 r = make_double3( r1.x, r1.y, r2 ) * d_maxGridWidth / 3.;
         
-        double U = -0.5*d_gs*d_muB*d_dBdz*sqrt(r.x*r.x+r.y*r.y+4.0*r.z*r.z);
+        double3 B = getMagField( r );
+        double  magB = length( B );
+        double3 Bn = getMagFieldNormal( r );
         
-        double Pr = exp( U / d_kB / Temp );
+        double U = 0.5 * (magB - d_B0) * d_gs * d_muB;
+        
+        double Pr = exp( -U / d_kB / Temp );
         
         if ( curand_uniform_double ( &rngState[0] ) < Pr) {
             pos = r;
@@ -260,24 +262,26 @@ __device__ double3 getMagFieldNormal( double3 pos )
 
 __device__ double3 getMagField( double3 pos )
 {
-    double3 B = make_double3( d_Bt, 0.0,-d_dBdz * pos.z );
+    double3 B = d_B0     * make_double3( 0., 0., 1. ) +
+                d_dBdx   * make_double3( pos.x, -pos.y, 0. ) +
+         0.5 *  d_d2Bdx2 * make_double3( -pos.x*pos.z, -pos.y*pos.z, pos.z*pos.z - 0.5*(pos.x*pos.x+pos.y*pos.y) );
     
     return B;
 }
 
 __device__ double3 getBdiffX( double3 pos )
 {
-    return make_double3( 0.0, 0.0, 0.0 );
+    return make_double3( d_dBdx - 0.5*d_d2Bdx2*pos.z, 0.0, - 0.5*d_d2Bdx2*pos.x );
 }
 
 __device__ double3 getBdiffY( double3 pos )
 {
-    return make_double3( 0.0, 0.0, 0.0 );
+    return make_double3( 0.0, -d_dBdx - 0.5*d_d2Bdx2*pos.z, - 0.5*d_d2Bdx2*pos.y );
 }
 
 __device__ double3 getBdiffZ( double3 pos )
 {
-    return make_double3( 0.0, 0.0,-d_dBdz );
+    return make_double3( -0.5*d_d2Bdx2*pos.x, -0.5*d_d2Bdx2*pos.y, d_d2Bdx2*pos.z );
 }
 
 void initSigvrmax( double *d_sigvrmax, int numberOfCells )

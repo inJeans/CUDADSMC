@@ -20,10 +20,12 @@ pi   = 3.14159265;
 kB   = 1.3806503e-23;
 hbar = 1.05457148e-34;
 T    = 20.e-6;
-dBdz = 2.5;
+B0   = 0.01;
+dBdx = 20.;
+d2Bdx2 = 40000.;
 
-tres = 501;
-ntrials = 1e5;
+tres = 101;
+ntrials = 1e4;
 dt = 1e-6;
 
 time = np.zeros((tres));
@@ -89,9 +91,9 @@ avx = np.zeros((N.size,))
 avy = np.zeros((N.size,))
 avz = np.zeros((N.size,))
 
-Bx = 1.e-6;
-By = 0.0;
-Bz =-1.0 * dBdz * pos[:,2,:];
+Bx = dBdx*pos[:,0,:] - 0.5*d2Bdx2*pos[:,0,:]*pos[:,2,:];
+By =-dBdx*pos[:,1,:] - 0.5*d2Bdx2*pos[:,1,:]*pos[:,2,:];
+Bz = B0 + 0.5*d2Bdx2*( pos[:,2,:]**2 - 0.5*(pos[:,0,:]**2 + pos[:,1,:]**2) );
 B  = np.sqrt( Bx**2 + By**2 + Bz**2 );
 
 Bnx = Bx / B;
@@ -115,8 +117,8 @@ spinDn = np.zeros((N.size));
 for i in range(0,N.size):
     kinetic = 0.5 * mRb * np.sum(vel[:,:,i]**2, 1)
     n = atomID[0:N[i],0,i].astype(int)
-    Ek[i] = np.sum( kinetic[n], 0 ) / N[i] / kB * 1.e6
-    Ep[i] = np.sum( (2.*atomIsSpinUp[n,0,i]-1.)*0.5*gs*muB*B[n,i], 0 ) / N[i] / kB * 1.e6
+    Ek[i] = np.mean( kinetic[n] ) / kB * 1.e6
+    Ep[i] = np.mean( 0.5*gs*muB*(B[n,i]*atomIsSpinUp[n,0,i] - B0) ) / kB * 1.e6
     Et[i] = Ek[i] + Ep[i]
 
 #    kinetice = 0.5 * mRb * np.sum(evapVel[:,:,i]**2, 1)
@@ -168,9 +170,9 @@ for i in range(0,N.size):
 dE = max( abs(Et - Et[0]) / Et[0] * 100 )
 time = time*1.e3
 pl.clf()
-pl.plot(time,Ek*N, '-o', label=r'$E_k$')
-pl.plot(time,Ep*N, '-o', label=r'$E_p$')
-pl.plot(time,Et*N, '-o', label=r'$E_T$')
+pl.plot(time,Ek, '-o', label=r'$E_k$')
+pl.plot(time,Ep, '-o', label=r'$E_p$')
+pl.plot(time,Et, '-o', label=r'$E_T$')
 #pl.plot(time,Eke*(N[0]-N), '-s', label=r'$E_{k,\mathrm{maj}}$')
 #pl.plot(time,Epe*(N[0]-N), '-s', label=r'$E_{p,\mathrm{maj}}$')
 #pl.plot(time,Ete*(N[0]-N), '-s', label=r'$E_{T,\mathrm{maj}}$')
