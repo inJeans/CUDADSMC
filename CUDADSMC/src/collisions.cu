@@ -31,7 +31,7 @@ double indexAtoms( double3 *d_pos, int *d_cellID, int *d_atomID, int3 cellsPerDi
     double medianR = findMedian( d_radius,
                                 numberOfAtoms );
     
-    printf("The median radius is %f\n", medianR );
+//    printf("The median radius is %f\n", medianR );
     
     h_findAtomIndex(d_pos,
                     d_cellID,

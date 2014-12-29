@@ -28,6 +28,6 @@ __device__ double d_d2Bdx2 = 40000.;
 __device__ double d_eta = 7.;
 
 __device__ int d_loopsPerCollision;	// loops per collision
-__device__ double d_Temp = 20.e-6;;
+__device__ double d_Temp = 2.e-6;;
 
 #endif

@@ -185,7 +185,7 @@ __device__ double3 selectAtomInThermalDistribution( double Temp, curandState_t *
         double2 r1 = curand_normal2_double ( &rngState[0] );
         double  r2 = curand_normal_double  ( &rngState[0] );
         
-        double3 r = make_double3( r1.x, r1.y, r2 ) * d_maxGridWidth / 3.;
+        double3 r = make_double3( r1.x, r1.y, r2 ) * d_maxGridWidth / 5.;
         
         double3 B = getMagField( r );
         double  magB = length( B );

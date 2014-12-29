@@ -24,12 +24,14 @@ double h_kB    = 1.3806503e-23;	// Boltzmann's Constant
 double h_gs    =  0.5;			// Gyromagnetic ratio
 double h_muB   = 9.27400915e-24;	// Bohr magneton
 double h_sigma = 8.*h_pi*h_a*h_a;
-int    h_N     = 3e6;
+int    h_N     = 1e6;
 
 #pragma mark Environmental Parameters
-double Tinit   = 20.0e-6;
+double Tinit   = 2.0e-6;
 
 #pragma mark Trap Parameters
-double h_dBdz = 2.16;
+double h_B0 = 0.01;
+double h_dBdx = 20.;
+double h_d2Bdx2 = 40000.;
 
 #endif

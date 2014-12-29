@@ -163,9 +163,10 @@ int main(int argc, const char * argv[])
 #pragma mark - Set up atom system
 	
     dt = 1.0e-7;
-    double tau = 128.*sqrt( h_mRb*pow( h_pi, 3 )*pow( h_kB*Temp,5 ) ) / ( h_sigma*h_N*pow( h_gs*h_muB*h_dBdz, 3 ) );
-//    int loopsPerCollision = ceil( 0.1*tau / dt );
-    int loopsPerCollision = 10;
+    double d2Bdr2 = h_dBdx*h_dBdx / h_B0 - 0.5 * h_d2Bdx2;
+    double tau = 8.*sqrt(2.)*h_pi*h_pi*pow( h_kB*Tinit / (h_gs*h_muB), 3./2. ) / ( sqrt(h_d2Bdx2)*d2Bdr2 * h_N * h_sigma * sqrt( h_kB*Tinit/h_mRb ) );
+    int loopsPerCollision = ceil( 0.01*tau / dt );
+//    int loopsPerCollision = 10;
     int collisionsPerPrint = ceil( finalTime / ( loopsPerCollision * numberOfPrints * dt ) );
 //    int collisionsPerPrint = 1;
     
