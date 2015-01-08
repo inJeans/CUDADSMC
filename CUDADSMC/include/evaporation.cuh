@@ -9,12 +9,13 @@
 #ifndef CUDADSMC_evaporation_cuh
 #define CUDADSMC_evaporation_cuh
 
+#include "hdf5.h"
+
 void h_evaporationTag(double3 *d_pos,
                       double3 *d_vel,
                       double3 *d_evapPos,
                       double3 *d_evapVel,
-                      cuDoubleComplex *d_psiUp,
-                      cuDoubleComplex *d_psiDn,
+                      hbool_t *d_atomIsSpinUp,
                       int     *d_atomID,
                       int     *d_evapTag,
                       double   Temp,
@@ -24,8 +25,7 @@ __global__ void evaporationTag(double3 *pos,
                                double3 *vel,
                                double3 *evapPos,
                                double3 *evapVel,
-                               cuDoubleComplex *psiUp,
-                               cuDoubleComplex *psiDn,
+                               hbool_t *atomIsSpinUp,
                                int     *atomID,
                                int     *evapTag,
                                double   Temp,

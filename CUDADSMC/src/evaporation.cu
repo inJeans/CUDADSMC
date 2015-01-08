@@ -20,8 +20,7 @@ void h_evaporationTag(double3 *d_pos,
                       double3 *d_vel,
                       double3 *d_evapPos,
                       double3 *d_evapVel,
-                      cuDoubleComplex *d_psiUp,
-                      cuDoubleComplex *d_psiDn,
+                      hbool_t *d_atomIsSpinUp,
                       int     *d_atomID,
                       int     *d_evapTag,
                       double   Temp,
@@ -55,8 +54,7 @@ void h_evaporationTag(double3 *d_pos,
                                            d_vel,
                                            d_evapPos,
                                            d_evapVel,
-                                           d_psiUp,
-                                           d_psiDn,
+                                           d_atomIsSpinUp,
                                            d_atomID,
                                            d_evapTag,
                                            Temp,
@@ -69,8 +67,7 @@ __global__ void evaporationTag(double3 *pos,
                                double3 *vel,
                                double3 *evapPos,
                                double3 *evapVel,
-                               cuDoubleComplex *psiUp,
-                               cuDoubleComplex *psiDn,
+                               hbool_t *atomIsSpinUp,
                                int     *atomID,
                                int     *evapTag,
                                double   Temp,
@@ -81,24 +78,17 @@ __global__ void evaporationTag(double3 *pos,
          atom += blockDim.x * gridDim.x)
     {
         int l_atom = atomID[atom];
-        cuDoubleComplex l_psiUp = psiUp[l_atom];
-        cuDoubleComplex l_psiDn = psiDn[l_atom];
         double3 l_pos = pos[l_atom];
         double3 l_vel = vel[l_atom];
-        double3 Bn    = getMagneticFieldN( l_pos );
         
-        double proj = 2. * Bn.x * ( l_psiUp.x*l_psiDn.x + l_psiUp.y*l_psiDn.y ) +
-                      2. * Bn.y * ( l_psiUp.x*l_psiDn.y - l_psiUp.y*l_psiDn.x ) +
-                      2. * Bn.z * ( l_psiUp.x*l_psiUp.x + l_psiUp.y*l_psiUp.y - 0.5 );
-        
-        if ( proj < 0.0 ) {
-            evapTag[atom] = 1;
-            evapPos[l_atom] = l_pos;
-            evapVel[l_atom] = l_vel;
+        if ( atomIsSpinUp[l_atom] ) {
+            evapTag[atom] = 0;
         }
         else
         {
-            evapTag[atom] = 0;
+            evapTag[atom] = 1;
+            evapPos[l_atom] = l_pos;
+            evapVel[l_atom] = l_vel;
         }
     }
     
@@ -199,9 +189,7 @@ __device__ double3 getMagneticFieldN( double3 pos )
 
 __device__ double3 getMagneticF( double3 pos )
 {
-    double3 B = d_B0     * make_double3( 0., 0., 1. ) +
-                d_dBdx   * make_double3( pos.x, -pos.y, 0. ) +
-         0.5 *  d_d2Bdx2 * make_double3( -pos.x*pos.z, -pos.y*pos.z, pos.z*pos.z - 0.5*(pos.x*pos.x+pos.y*pos.y) );
+    double3 B = d_dBdz * make_double3( 0.5*pos.x, 0.5*pos.y, -1.0*pos.z );
     
     return B;
 }

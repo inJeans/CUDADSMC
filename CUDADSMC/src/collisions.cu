@@ -186,7 +186,8 @@ __global__ void findAtomIndex( double3 *pos, int *cellID, int *atomID, double me
 
 __device__ double3 getCellLength( double medianR, int3 cellsPerDimension )
 {
-    double3 cellLength = 2.0 * d_maxGridWidth / cellsPerDimension;
+//    double3 cellLength = 2.0 * d_maxGridWidth / cellsPerDimension;
+    double3 cellLength = 2.0 * d_meshWidth * medianR / cellsPerDimension;
     
     return cellLength;
 }
@@ -220,7 +221,8 @@ __device__ int getCellID( int3 index, int3 cellsPerDimension )
 
 __device__ double3 getGridMin( double medianR )
 {
-    double3 gridMin = -1.0 * d_maxGridWidth;
+//    double3 gridMin = -1.0 * d_maxGridWidth;
+    double3 gridMin = -1.0 * d_meshWidth * medianR * make_double3( 1.0, 1.0, 1.0 );
     
     return  gridMin;
 }
@@ -311,17 +313,17 @@ __global__ void collide( double3 *vel,
             
             double crossSection = 8.*d_pi*d_a*d_a;
             
-            d_dt = 1.0e-7;
+            d_dt = 5.0e-9;
             double tau = 128.*sqrt( d_mRb*pow( d_pi, 3 )*pow( d_kB*d_Temp,5 ) ) / ( crossSection*d_N*pow( d_gs*d_muB*2.16, 3 ) );
-//            d_loopsPerCollision = ceil( 0.1*tau / d_dt );
-            d_loopsPerCollision = 10;
+            d_loopsPerCollision = ceil( 0.01*tau / d_dt ) * 5.;
+//            d_loopsPerCollision = 10;
             
             double cellVolume = cellLength.x * cellLength.y * cellLength.z;
             double Mc = 0.5 * (numberOfAtomsInCell - 1) * numberOfAtomsInCell;
             double lambda = ceil( Mc * alpha * d_loopsPerCollision * d_dt * sigvrmax[cell] / cellVolume ) / Mc;
             int Ncol = Mc*lambda;
             
-            if (numberOfAtomsInCell ==1) {
+            if (numberOfAtomsInCell == 1 ) {
                 Ncol = 1;
             }
             

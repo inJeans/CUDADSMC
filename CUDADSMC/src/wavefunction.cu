@@ -42,7 +42,7 @@ __device__ cuDoubleComplex updatePsiUp(double3 pos,
 {
     double3 Bn = getMagFieldN( pos );
     double  B  = getAbsB( pos );
-    double  d_dt = 1.e-7;
+    double  d_dt = 5.0e-9;
     
     double theta = 0.5 * d_gs * d_muB * B * d_dt / d_hbar;
     double sinTheta = sin(theta);
@@ -60,7 +60,7 @@ __device__ cuDoubleComplex updatePsiDn(double3 pos,
 {
     double3 Bn = getMagFieldN( pos );
     double  B  = getAbsB( pos );
-    double  d_dt = 1.e-7;
+    double  d_dt = 5.0e-9;
     
     double theta = 0.5 * d_gs * d_muB * B * d_dt / d_hbar;
     double sinTheta = sin(theta);
@@ -192,7 +192,7 @@ __global__ void exponentialDecay(double3 *pos,
         double tau = calculateTau( l_pos );
         
         double oneminusexp = 1. - exp(-dt/tau);
-        double oneplusexp = 1. + exp(-dt/tau);
+        double oneplusexp  = 1. + exp(-dt/tau);
         
         psiUp[l_atom] = 0.5 * make_cuDoubleComplex( (Bn.x*l_psiDn.x + Bn.y*l_psiDn.y + Bn.z*l_psiUp.x)*oneminusexp + l_psiUp.x*oneplusexp,
                                                     (Bn.x*l_psiDn.y - Bn.y*l_psiDn.x + Bn.z*l_psiUp.y)*oneminusexp + l_psiUp.y*oneplusexp );
@@ -206,7 +206,7 @@ __global__ void exponentialDecay(double3 *pos,
 __device__ double calculateTau( double3 pos )
 {
     double tau = 0.;
-    double sigma = 8.*d_pi*d_a*d_a;
+    double sigma = d_hbar / sqrt(3.*d_mRb*d_kB*20.e-6);
     
     double relAccel = 2.0 * length( getAcc( pos ) );
     
@@ -254,26 +254,24 @@ __device__ double getAbsB( double3 pos )
 
 __device__ double3 getBField( double3 pos )
 {
-    double3 B = d_B0     * make_double3( 0., 0., 1. ) +
-                d_dBdx   * make_double3( pos.x, -pos.y, 0. ) +
-         0.5 *  d_d2Bdx2 * make_double3( -pos.x*pos.z, -pos.y*pos.z, pos.z*pos.z - 0.5*(pos.x*pos.x+pos.y*pos.y) );
+    double3 B = d_dBdz * make_double3( 0.5*pos.x, 0.5*pos.y, -1.0*pos.z );
     
     return B;
 }
 
 __device__ double3 getBdx( double3 pos )
 {
-    return make_double3( d_dBdx - 0.5*d_d2Bdx2*pos.z, 0.0, - 0.5*d_d2Bdx2*pos.x );
+    return make_double3( 0.5*d_dBdz, 0.0, 0.0 );
 }
 
 __device__ double3 getBdy( double3 pos )
 {
-    return make_double3( 0.0, -d_dBdx - 0.5*d_d2Bdx2*pos.z, - 0.5*d_d2Bdx2*pos.y );
+    return make_double3( 0.0, 0.5*d_dBdz, 0.0 );
 }
 
 __device__ double3 getBdz( double3 pos )
 {
-    return make_double3( -0.5*d_d2Bdx2*pos.x, -0.5*d_d2Bdx2*pos.y, d_d2Bdx2*pos.z );
+    return make_double3( 0.0, 0.0, -1.0*d_dBdz );
 }
 
 __global__ void normalise(cuDoubleComplex *psiUp,

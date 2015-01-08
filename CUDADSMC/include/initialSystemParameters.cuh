@@ -12,7 +12,7 @@
 #pragma mark -
 
 int numberOfPrints = 100;
-double finalTime = 5.e-3;
+double finalTime = 3.e-1;
 double dt = 1.e-6;
 
 #pragma mark Physics Constants
@@ -27,11 +27,9 @@ double h_sigma = 8.*h_pi*h_a*h_a;
 int    h_N     = 1e6;
 
 #pragma mark Environmental Parameters
-double Tinit   = 2.0e-6;
+double Tinit   = 20.0e-6;
 
 #pragma mark Trap Parameters
-double h_B0 = 0.01;
-double h_dBdx = 20.;
-double h_d2Bdx2 = 40000.;
+double h_dBdz = 2.16;
 
 #endif

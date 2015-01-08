@@ -20,9 +20,9 @@ pi   = 3.14159265;
 kB   = 1.3806503e-23;
 hbar = 1.05457148e-34;
 T    = 20.e-6;
-B0   = 0.01;
-dBdx = 20.;
-d2Bdx2 = 40000.;
+dBdz = 2.16;
+
+gamma = 250;
 
 tres = 101;
 ntrials = 1e4;
@@ -31,8 +31,8 @@ dt = 1e-6;
 time = np.zeros((tres));
 pos = np.zeros((ntrials,3,tres));
 vel = np.zeros((ntrials,3,tres));
-#evapPos = np.zeros((ntrials,3,tres));
-#evapVel = np.zeros((ntrials,3,tres));
+evapPos = np.zeros((ntrials,3,tres));
+evapVel = np.zeros((ntrials,3,tres));
 psiUp = np.zeros((ntrials,2,tres));
 psiDn = np.zeros((ntrials,2,tres));
 atomID = np.zeros((ntrials,1,tres));
@@ -50,11 +50,11 @@ dset.read_direct(pos);
 dset = f.require_dataset('atomData/velocities',(ntrials,3,tres),False,False);
 dset.read_direct(vel);
 
-#dset = f.require_dataset('atomData/evapPos',(ntrials,3,tres),False,False);
-#dset.read_direct(evapPos);
-#
-#dset = f.require_dataset('atomData/evapVel',(ntrials,3,tres),False,False);
-#dset.read_direct(evapVel);
+dset = f.require_dataset('atomData/evapPos',(ntrials,3,tres),False,False);
+dset.read_direct(evapPos);
+
+dset = f.require_dataset('atomData/evapVel',(ntrials,3,tres),False,False);
+dset.read_direct(evapVel);
 
 dset = f.require_dataset('atomData/psiUp',(ntrials,2,tres),False,False);
 dset.read_direct(psiUp);
@@ -91,25 +91,25 @@ avx = np.zeros((N.size,))
 avy = np.zeros((N.size,))
 avz = np.zeros((N.size,))
 
-Bx = dBdx*pos[:,0,:] - 0.5*d2Bdx2*pos[:,0,:]*pos[:,2,:];
-By =-dBdx*pos[:,1,:] - 0.5*d2Bdx2*pos[:,1,:]*pos[:,2,:];
-Bz = B0 + 0.5*d2Bdx2*( pos[:,2,:]**2 - 0.5*(pos[:,0,:]**2 + pos[:,1,:]**2) );
+Bx = 0.5*dBdz*pos[:,0,:];
+By = 0.5*dBdz*pos[:,1,:];
+Bz =-1.0*dBdz*pos[:,2,:];
 B  = np.sqrt( Bx**2 + By**2 + Bz**2 );
 
 Bnx = Bx / B;
 Bny = By / B;
 Bnz = Bz / B;
 
-#Bxe = 0.5 * dBdz * evapPos[:,0,:];
-#Bye = 0.5 * dBdz * evapPos[:,1,:];
-#Bze =-1.0 * dBdz * evapPos[:,2,:];
-#Be  = np.sqrt( Bxe**2 + Bye**2 + Bze**2 );
-#Bnxe = Bxe / Be;
-#Bnye = Bye / Be;
-#Bnze = Bze / Be;
-#Eke = np.zeros((N.size,))
-#Epe = np.zeros((N.size,))
-#Ete = np.zeros((N.size,))
+Bxe = 0.5 * dBdz * evapPos[:,0,:];
+Bye = 0.5 * dBdz * evapPos[:,1,:];
+Bze =-1.0 * dBdz * evapPos[:,2,:];
+Be  = np.sqrt( Bxe**2 + Bye**2 + Bze**2 );
+Bnxe = Bxe / Be;
+Bnye = Bye / Be;
+Bnze = Bze / Be;
+Eke = np.zeros((N.size,))
+Epe = np.zeros((N.size,))
+Ete = np.zeros((N.size,))
 
 spinUp = np.zeros((N.size));
 spinDn = np.zeros((N.size));
@@ -118,22 +118,18 @@ for i in range(0,N.size):
     kinetic = 0.5 * mRb * np.sum(vel[:,:,i]**2, 1)
     n = atomID[0:N[i],0,i].astype(int)
     Ek[i] = np.mean( kinetic[n] ) / kB * 1.e6
-    Ep[i] = np.mean( 0.5*gs*muB*(B[n,i]*atomIsSpinUp[n,0,i] - B0) ) / kB * 1.e6
+    Ep[i] = np.mean( 0.5*gs*muB*B[n,i]*atomIsSpinUp[n,0,i] ) / kB * 1.e6
     Et[i] = Ek[i] + Ep[i]
 
-#    kinetice = 0.5 * mRb * np.sum(evapVel[:,:,i]**2, 1)
-#    ne = np.where( kinetice )[0]
-#    Eke[i] = np.sum( kinetice[ne], 0 ) / (N[0]- N[i]) / kB * 1.e6
-#    proje = 2. * Bnxe[ne,i] * ( psiUp[ne,0,i]*psiDn[ne,0,i] + psiUp[ne,1,i]*psiDn[ne,1,i] ) + \
-#            2. * Bnye[ne,i] * ( psiUp[ne,0,i]*psiDn[ne,1,i] - psiUp[ne,1,i]*psiDn[ne,0,i] ) + \
-#            2. * Bnze[ne,i] * ( psiUp[ne,0,i]*psiUp[ne,0,i] + psiUp[ne,1,i]*psiUp[ne,1,i] - 0.5 )
-##    Epe[i] = np.sum( gs*muB*Be[ne,i]*proje, 0 ) / (N[0] - N[i]) / kB * 1.e6
-#    Epe[i] = np.sum( gs*muB*Be[ne,i], 0 ) / (N[0] - N[i]) / kB * 1.e6
-#    Ete[i] = Eke[i] + Epe[i]
+    kinetice = 0.5 * mRb * np.sum(evapVel[:,:,i]**2, 1)
+    ne = np.where( kinetice )[0]
+    Eke[i] = np.sum( kinetice[ne], 0 ) / (N[0]- N[i]) / kB * 1.e6
+    Epe[i] = np.sum( 0.5*gs*muB*Be[ne,i], 0 ) / (N[0] - N[i]) / kB * 1.e6
+    Ete[i] = Eke[i] + Epe[i]
 
-#    Temp[i] = 2./3. * Ek[i]
-#    
-#    Talt[i] = gs*muB*dBdz * np.std(pos[n,0,i]) / kB / np.sqrt(20.) * 1e6
+    Temp[i] = 2./3. * Ek[i]
+
+    Talt[i] = gs*muB*dBdz * np.std(pos[n,0,i] / 8.) / kB * 1e6
 #
 #    Tx[i] = 2./3. * np.sum( 0.5 * mRb * vel[n,0,i]**2, 0) / N[i] / kB * 1.e6
 #    Ty[i] = 2./3. * np.sum( 0.5 * mRb * vel[n,1,i]**2, 0) / N[i] / kB * 1.e6
@@ -163,20 +159,20 @@ for i in range(0,N.size):
 #    pl.title( 't = ' + str(time[i]) + ' s')
 #    pl.pause( 1 )
 
-#Eke[0] = 0.
-#Epe[0] = 0.
-#Ete[0] = 0.
+Eke[0] = 0.
+Epe[0] = 0.
+Ete[0] = 0.
 
 dE = max( abs(Et - Et[0]) / Et[0] * 100 )
 time = time*1.e3
 pl.clf()
-pl.plot(time,Ek, '-o', label=r'$E_k$')
-pl.plot(time,Ep, '-o', label=r'$E_p$')
-pl.plot(time,Et, '-o', label=r'$E_T$')
-#pl.plot(time,Eke*(N[0]-N), '-s', label=r'$E_{k,\mathrm{maj}}$')
-#pl.plot(time,Epe*(N[0]-N), '-s', label=r'$E_{p,\mathrm{maj}}$')
-#pl.plot(time,Ete*(N[0]-N), '-s', label=r'$E_{T,\mathrm{maj}}$')
-#pl.plot(time,(Ete*(N[0]-N)+Et*N), '-s', label=r'$E_T+E_{T,\mathrm{maj}}$')
+pl.plot(time,Ek/Talt, '-o', label=r'$E_k$')
+pl.plot(time,Ep/Talt, '-o', label=r'$E_p$')
+pl.plot(time,Et/Talt, '-o', label=r'$E_T$')
+pl.plot(time,Eke/Talt, '-s', label=r'$E_{k,\mathrm{maj}}$')
+pl.plot(time,Epe/Talt, '-s', label=r'$E_{p,\mathrm{maj}}$')
+pl.plot(time,Ete/Talt, '-s', label=r'$E_{T,\mathrm{maj}}$')
+#pl.plot(time,(Ete+Et), '-s', label=r'$E_T+E_{T,\mathrm{maj}}$')
 pl.xlabel('time (s)')
 pl.ylabel('energy (uK)')
 pl.title( r'$(\Delta E)_{max}$ = %.3g' % dE + r',  $\Delta t$ = %.3g' % dt )
@@ -242,6 +238,26 @@ pl.figure(9)
 pl.plot(time, psiUp[0,0,:]**2 + psiUp[0,1,:]**2)
 pl.plot(time, psiDn[0,0,:]**2 + psiDn[0,1,:]**2)
 pl.grid()
+
+Tth = np.sqrt(Temp[0]**2 + gamma*time*1.e-3)
+
+pl.figure(10)
+pl.plot(time,Temp, label=r'$T$')
+pl.plot(time, Talt, label=r'$T_\mathrm{alt}$')
+pl.plot(time, Tth, label=r'$T_\mathrm{th}$')
+pl.ylabel(r'$T$')
+pl.legend(loc='best')
+
+pl.figure(11)
+Nth = N[0]*(Temp[0]**2 / (Temp[0]**2 + gamma*time*1.e-3))**(9./8.)
+pl.plot(time,N/N[0])
+pl.plot(time,Nth/N[0])
+
+pl.figure(12)
+fit = np.polyfit(np.log(Temp), np.log(N),1)
+print fit
+pl.plot(np.log(Temp),np.log(N),'x')
+pl.plot(np.log(Temp),np.log(Temp)*fit[0] + fit[1])
 
 #pl.figure(5)
 #

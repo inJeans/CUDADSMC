@@ -68,7 +68,7 @@ __global__ void initRNG( curandState_t *rngState, int numberOfAtoms )
 	{
 		// Each thread gets the same seed, a different sequence
 		// number and no offset
-		curand_init( 1234, atom, 0, &rngState[atom] );
+		curand_init( 1274, atom, 0, &rngState[atom] );
 	}
 	
 	return;
@@ -185,13 +185,13 @@ __device__ double3 selectAtomInThermalDistribution( double Temp, curandState_t *
         double2 r1 = curand_normal2_double ( &rngState[0] );
         double  r2 = curand_normal_double  ( &rngState[0] );
         
-        double3 r = make_double3( r1.x, r1.y, r2 ) * d_maxGridWidth / 5.;
+        double3 r = make_double3( r1.x, r1.y, r2 ) * d_maxGridWidth / 1.;
         
         double3 B = getMagField( r );
         double  magB = length( B );
         double3 Bn = getMagFieldNormal( r );
         
-        double U = 0.5 * (magB - d_B0) * d_gs * d_muB;
+        double U = 0.5 * magB * d_gs * d_muB;
         
         double Pr = exp( -U / d_kB / Temp );
         
@@ -262,26 +262,24 @@ __device__ double3 getMagFieldNormal( double3 pos )
 
 __device__ double3 getMagField( double3 pos )
 {
-    double3 B = d_B0     * make_double3( 0., 0., 1. ) +
-                d_dBdx   * make_double3( pos.x, -pos.y, 0. ) +
-         0.5 *  d_d2Bdx2 * make_double3( -pos.x*pos.z, -pos.y*pos.z, pos.z*pos.z - 0.5*(pos.x*pos.x+pos.y*pos.y) );
+    double3 B = d_dBdz * make_double3( 0.5*pos.x, 0.5*pos.y, -1.0*pos.z );
     
     return B;
 }
 
 __device__ double3 getBdiffX( double3 pos )
 {
-    return make_double3( d_dBdx - 0.5*d_d2Bdx2*pos.z, 0.0, - 0.5*d_d2Bdx2*pos.x );
+    return make_double3( 0.5*d_dBdz, 0.0, 0.0 );
 }
 
 __device__ double3 getBdiffY( double3 pos )
 {
-    return make_double3( 0.0, -d_dBdx - 0.5*d_d2Bdx2*pos.z, - 0.5*d_d2Bdx2*pos.y );
+    return make_double3( 0.0, 0.5*d_dBdz, 0.0 );
 }
 
 __device__ double3 getBdiffZ( double3 pos )
 {
-    return make_double3( -0.5*d_d2Bdx2*pos.x, -0.5*d_d2Bdx2*pos.y, d_d2Bdx2*pos.z );
+    return make_double3( 0.0, 0.0, -1.0*d_dBdz );
 }
 
 void initSigvrmax( double *d_sigvrmax, int numberOfCells )

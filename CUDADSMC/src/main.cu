@@ -162,15 +162,15 @@ int main(int argc, const char * argv[])
     
 #pragma mark - Set up atom system
 	
-    dt = 1.0e-7;
-    double d2Bdr2 = h_dBdx*h_dBdx / h_B0 - 0.5 * h_d2Bdx2;
-    double tau = 8.*sqrt(2.)*h_pi*h_pi*pow( h_kB*Tinit / (h_gs*h_muB), 3./2. ) / ( sqrt(h_d2Bdx2)*d2Bdr2 * h_N * h_sigma * sqrt( h_kB*Tinit/h_mRb ) );
-    int loopsPerCollision = ceil( 0.01*tau / dt );
+    dt = 5.0e-9;
+    int loopsPerProjection = 1;
+    double tau = 128.*sqrt( h_mRb*pow( h_pi, 3 )*pow( h_kB*Temp,5 ) ) / ( h_sigma*h_N*pow( h_gs*h_muB*h_dBdz, 3 ) );
+    int loopsPerCollision = ceil( 0.01*tau / ( loopsPerProjection * dt ) );
 //    int loopsPerCollision = 10;
     int collisionsPerPrint = ceil( finalTime / ( loopsPerCollision * numberOfPrints * dt ) );
 //    int collisionsPerPrint = 1;
     
-    printf("tau/10 = %g, lpc = %i, cpp = %i\n", tau/10., loopsPerCollision, collisionsPerPrint );
+    printf("tau = %g, lpc = %i, cpp = %i\n", tau, loopsPerCollision, collisionsPerPrint );
     
 	copyConstantsToDevice<<<1,1>>>( dt );
 	
@@ -463,18 +463,43 @@ int main(int argc, const char * argv[])
                                                         numberOfAtoms );
             
             for (int k=0; k<loopsPerCollision; k++) {
-                evolveWavefunction<<<gridSize,blockSize>>>(d_pos,
-                                                           d_psiUp,
-                                                           d_psiDn,
-                                                           d_atomID,
-                                                           numberOfAtoms );
+                for (int l=0; l<loopsPerProjection; l++) {
+                    evolveWavefunction<<<gridSize,blockSize>>>(d_pos,
+                                                               d_psiUp,
+                                                               d_psiDn,
+                                                               d_atomID,
+                                                               numberOfAtoms );
+                    
+                    moveAtoms<<<gridSize,blockSize>>>(d_pos,
+                                                      d_vel,
+                                                      d_acc,
+                                                      d_atomIsSpinUp,
+                                                      d_atomID,
+                                                      numberOfAtoms );
+                }
                 
-                moveAtoms<<<gridSize,blockSize>>>(d_pos,
-                                                  d_vel,
-                                                  d_acc,
-                                                  d_atomIsSpinUp,
+                exponentialDecay<<<gridSize,blockSize>>>(d_pos,
+                                                         d_psiUp,
+                                                         d_psiDn,
+                                                         d_atomID,
+                                                         loopsPerProjection*dt,
+                                                         numberOfAtoms );
+                
+                normalise<<<gridSize,blockSize>>>(d_psiUp,
+                                                  d_psiDn,
                                                   d_atomID,
                                                   numberOfAtoms );
+                
+                flipAtoms<<<gridSize,blockSize>>>(d_pos,
+                                                  d_vel,
+                                                  d_psiUp,
+                                                  d_psiDn,
+                                                  d_localPopulations,
+                                                  d_atomIsSpinUp,
+                                                  d_atomID,
+                                                  d_rngStates,
+                                                  numberOfAtoms );
+                
 #pragma mark Evaporate Atoms
                 Temp = calculateTemp(d_vel,
                                      d_atomID,
@@ -483,8 +508,7 @@ int main(int argc, const char * argv[])
                                  d_vel,
                                  d_evapPos,
                                  d_evapVel,
-                                 d_psiUp,
-                                 d_psiDn,
+                                 d_atomIsSpinUp,
                                  d_atomID,
                                  d_evapTag,
                                  Temp,
@@ -499,29 +523,7 @@ int main(int argc, const char * argv[])
                 numberOfAtoms = (int)(th_newEnd - th_atomID);
             }
             
-            flipAtoms<<<gridSize,blockSize>>>(d_pos,
-                                              d_vel,
-                                              d_psiUp,
-                                              d_psiDn,
-                                              d_localPopulations,
-                                              d_atomIsSpinUp,
-                                              d_atomID,
-                                              d_rngStates,
-                                              numberOfAtoms );
-            
-            exponentialDecay<<<gridSize,blockSize>>>(d_pos,
-                                                     d_psiUp,
-                                                     d_psiDn,
-                                                     d_atomID,
-                                                     loopsPerCollision*dt,
-                                                     numberOfAtoms );
-            
-            normalise<<<gridSize,blockSize>>>(d_psiUp,
-                                              d_psiDn,
-                                              d_atomID,
-                                              numberOfAtoms );
-            
-            time += loopsPerCollision * dt;
+            time += loopsPerCollision * loopsPerProjection * dt;
         }
         
         cudaMemcpy( h_pos, d_pos, numberOfAtoms*sizeof(double3), cudaMemcpyDeviceToHost );
@@ -577,7 +579,7 @@ int main(int argc, const char * argv[])
                       filename,
                       h_atomIsSpinUp );
         
-        printf("%%%i complete, t = %g s\n", i*100/numberOfPrints, time);
+        printf("%%%i complete, %i atoms remaining, t = %g s\n", (i+1)*100/numberOfPrints, numberOfAtoms, time);
     }
     
     // insert code here...
