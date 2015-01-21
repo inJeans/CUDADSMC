@@ -65,14 +65,14 @@ profile: $(EXEC)
 $(EXEC): $(addprefix $(OBJDIR), main.o setUp.o moveAtoms.o collisions.o cudaHelpers.o hdf5Helpers.o )
 	@echo 'Building file: $<'
 	@echo 'Invoking: NVCC Linker'
-	$(NVCC) -o $@ $(INCLUDE) $^ $(LIB) $(CUDA_LIB) -lcurand -lcublas -lhdf5 -lhdf5_hl -D CUDA65
+	$(NVCC) -o $@ $(INCLUDE) $^ $(LIB) $(CUDA_LIB) -lcurand -lcublas -lhdf5 -lhdf5_hl
 	@echo "Finished building: $< $(OK_STRING)"
 	@echo ' '
 
 $(OBJDIR)%.o: $(SRCDIR)%.cu
 	@echo 'Building file: $<'
 	@echo 'Invoking: NVCC Compiler'
-	$(NVCC) $(NVCCFLAGS) $(INCLUDE) -o $@ -c $?
+	$(NVCC) $(NVCCFLAGS) $(INCLUDE) -o $@ -c $? -D CUDA65
 	@echo "Finished building: $< $(OK_STRING)"
 	@echo ' '
 

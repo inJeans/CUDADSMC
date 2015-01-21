@@ -13,6 +13,7 @@
 #include <cuda.h>
 #include <curand_kernel.h>
 #include <hdf5.h>
+#include <time.h>
 
 int findRNGArrayLength( int numberOfCells, int numberOfAtoms );
 
@@ -20,7 +21,8 @@ void h_initRNG( curandState_t *rngState,
                 int numberOfAtoms );
 
 __global__ void initRNG( curandState_t *rngState,
-                         int numberOfAtoms );
+                         int numberOfAtoms,
+                         int seed );
 
 void h_generateInitialDist( double3 *pos,
                             double3 *vel,

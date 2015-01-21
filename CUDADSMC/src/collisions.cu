@@ -57,7 +57,7 @@ void h_calculateRadius( double3 *d_pos, double *d_radius, int *d_atomID, int num
                                        &blockSize,
                                        (const void *) calculateRadius,
                                        0,
-                                       sizeOfRNG );
+                                       numberOfAtoms );
     gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
 #else
     int device;
@@ -136,7 +136,7 @@ void h_findAtomIndex( double3 *d_pos, int *d_cellID, int *d_atomID, double media
                                        &blockSize,
                                        (const void *) calculateRadius,
                                        0,
-                                       sizeOfRNG );
+                                       numberOfAtoms );
     gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
 #else
     int device;
@@ -232,19 +232,19 @@ __global__ void cellStartandEndKernel( int *cellID, int *atomID, int2 *cellStart
          atom += blockDim.x * gridDim.x)
     {
         // Find the beginning of the cell
-        if (atomID[atom] == 0) {
-            cellStartEnd[cellID[atomID[atom]]].x = 0;
+        if (atom == 0) {
+            cellStartEnd[cellID[atom]].x = 0;
         }
-        else if (cellID[atomID[atom]] != cellID[atomID[atom]-1]) {
-            cellStartEnd[cellID[atomID[atom]]].x = atomID[atom];
+        else if (cellID[atom] != cellID[atom-1]) {
+            cellStartEnd[cellID[atom]].x = atom;
         }
         
         // Find the end of the cell
-        if (atomID[atom] == numberOfAtoms - 1) {
-            cellStartEnd[cellID[atomID[atom]]].y = numberOfAtoms-1;
+        if (atom == numberOfAtoms - 1) {
+            cellStartEnd[cellID[atom]].y = numberOfAtoms-1;
         }
-        else if (cellID[atomID[atom]] != cellID[atomID[atom]+1]) {
-            cellStartEnd[cellID[atomID[atom]]].y = atomID[atom];
+        else if (cellID[atom] != cellID[atom+1]) {
+            cellStartEnd[cellID[atom]].y = atom;
         }
     }
     

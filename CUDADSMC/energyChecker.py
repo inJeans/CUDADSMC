@@ -33,7 +33,8 @@ isPerturb = np.zeros((ntrials,1,tres));
 N = np.zeros((tres));
 collisionCount = np.zeros((10**3+1,1,tres));
 
-f = h5py.File('outputData.h5');
+f = h5py.File('/Users/miMac/Documents/versionControlledFiles/miThesis/Code/HomoWalraven/13auK.h5')
+#f = h5py.File('outputData.h5');
 
 dset = f.require_dataset('atomData/simuatedTime',(1,1,tres),False,False);
 dset.read_direct(time);
@@ -90,7 +91,7 @@ for i in range(0,N.size):
     Temp[i] = 2./3. * np.sum( kinetic[n], 0) / N[i] / kB * 1.e6
     
     kineticPerturb = isPerturb[0:N[i],0,i] * 0.5 * mRb * np.sum(vel[0:N[i],:,i]**2, 1)
-    Tperturb[i] = 2./3. * np.sum( kineticPerturb[n], 0) / (0.1*ntrials) / kB * 1.e6
+    Tperturb[i] = 2./3. * np.sum( kineticPerturb[n], 0) / (0.01*ntrials) / kB * 1.e6
 
     Tx[i] = 2./3. * np.sum( 0.5 * mRb * vel[0:N[i],0,i]**2, 0) / N[i] / kB * 1.e6
     Ty[i] = 2./3. * np.sum( 0.5 * mRb * vel[0:N[i],1,i]**2, 0) / N[i] / kB * 1.e6
@@ -119,6 +120,36 @@ for i in range(0,N.size):
 
 dE = max( abs(Et - Et[0]) / Et[0] * 100 )
 
+f = h5py.File('/Users/miMac/Documents/versionControlledFiles/miThesis/Code/HomoWalraven/13buK.h5')
+
+dset = f.require_dataset('atomData/simuatedTime',(1,1,tres),False,False);
+dset.read_direct(time);
+
+dset = f.require_dataset('atomData/positions',(ntrials,3,tres),False,False);
+dset.read_direct(pos);
+
+dset = f.require_dataset('atomData/velocities',(ntrials,3,tres),False,False);
+dset.read_direct(vel);
+
+dset = f.require_dataset('atomData/isPerturb',(ntrials,1,tres),False,False);
+dset.read_direct(isPerturb);
+
+dset = f.require_dataset('atomData/atomNumber',(1,1,tres),False,False);
+dset.read_direct(N);
+
+f.close()
+
+Tperturb2 = np.zeros((N.size,))
+
+for i in range(0,N.size):
+    kinetic = 0.5 * mRb * np.sum(vel[0:N[i],:,i]**2, 1)
+    n = np.where( np.isfinite(kinetic) )
+    
+    kineticPerturb = isPerturb[0:N[i],0,i] * 0.5 * mRb * np.sum(vel[0:N[i],:,i]**2, 1)
+    Tperturb2[i] = 2./3. * np.sum( kineticPerturb[n], 0) / (0.01*ntrials) / kB * 1.e6
+
+Tperturb = (Tperturb + Tperturb2) / 2.;
+
 pl.clf()
 pl.plot(time,Ek, '-o')
 pl.plot(time,Ep, '-o')
@@ -139,10 +170,10 @@ else:
 #filename = './Tests/Motion/motionTest-%.3g' % dt + '.npy'
 #file = open(filename, "w")
 
-fit = np.polyfit(time[0:0.4*tres], np.log(np.abs(Temp[-1] - Tperturb[0:0.4*tres])),1)
+fit = np.polyfit(time[0:0.04*tres], np.log(np.abs(Temp[-1] - Tperturb[0:0.04*tres])),1)
 
 print "The thermalisation time is", -fit[0]
-print "Thermalisation in %f collisions", (14.6968844444/-fit[0])
+print "Thermalisation in %f collisions", (24.2027066667/-fit[0])*4
 
 pl.figure(3)
 pl.plot( time, Temp, 's', time, Tperturb, '^', time, Temp[-1] + np.exp(fit[1] + fit[0]*time), 'r' )

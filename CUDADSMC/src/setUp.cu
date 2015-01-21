@@ -55,12 +55,14 @@ void h_initRNG( curandState_t *d_rngStates, int sizeOfRNG )
     blockSize = NUM_THREADS;
 #endif
     
-    initRNG<<<gridSize,blockSize>>>( d_rngStates, sizeOfRNG );
+    int seed = time(NULL);
+    
+    initRNG<<<gridSize,blockSize>>>( d_rngStates, sizeOfRNG, seed );
     
     return;
 }
 
-__global__ void initRNG( curandState_t *rngState, int numberOfAtoms )
+__global__ void initRNG( curandState_t *rngState, int numberOfAtoms, int seed )
 {
 	for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
 		 atom < numberOfAtoms;
@@ -68,7 +70,8 @@ __global__ void initRNG( curandState_t *rngState, int numberOfAtoms )
 	{
 		// Each thread gets the same seed, a different sequence
 		// number and no offset
-		curand_init( 1234, atom, 0, &rngState[atom] );
+//		curand_init( 1234, atom, 0, &rngState[atom] );
+        curand_init( seed, atom, 0, &rngState[atom] );
 	}
 	
 	return;
@@ -95,7 +98,7 @@ void h_generateInitialDist( double3 *d_pos,
                                         &blockSize,
                                         (const void *) generateInitialDist,
                                         0,
-                                        sizeOfRNG );
+                                        numberOfAtoms );
     gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
 #else
     int device;
@@ -151,8 +154,8 @@ __global__ void generateInitialDist(double3 *pos,
 		
 		// Copy state back to global memory
 		rngState[atom] = localrngState;
-        if (atom < 0.1 * numberOfAtoms) {
-            vel[atom] = sqrt(0.5)*vel[atom];
+        if (atom < 0.01 * numberOfAtoms) {
+            vel[atom] = sqrt(0.9)*vel[atom];
             isPerturb[atom] = true;
         }
         

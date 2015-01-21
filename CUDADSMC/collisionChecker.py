@@ -24,7 +24,7 @@ dBdr = 8746.;
 
 tres = 101;
 nAtoms = 1e6;
-nCells = 50**3 + 1;
+nCells = 10**3 + 1;
 
 vtherm = np.sqrt( 8.*kB*T / (pi*mRb) );
 vrel = np.sqrt(2.) * vtherm

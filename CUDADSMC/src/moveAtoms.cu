@@ -53,6 +53,7 @@ __device__ void velocityVerletUpdate( double3 *pos, double3 *vel, double3 *acc )
     pos[0] = updatePos( pos[0], vel[0] );
     acc[0] = updateAcc( pos[0] );
     vel[0] = updateVelHalfStep( pos[0], vel[0], acc[0] );
+    vel[0] = checkPos( pos[0], vel[0] );
     
     return;
 }
@@ -62,6 +63,7 @@ __device__ void symplecticEulerUpdate( double3 *pos, double3 *vel, double3 *acc 
     acc[0] = updateAcc( pos[0] );
     vel[0] = updateVel( pos[0], vel[0], acc[0] );
     pos[0] = updatePos( pos[0], vel[0] );
+    vel[0] = checkPos( pos[0], vel[0] );
 }
 
 __device__ double3 updateVel( double3 pos, double3 vel, double3 acc )
@@ -71,24 +73,38 @@ __device__ double3 updateVel( double3 pos, double3 vel, double3 acc )
 
 __device__ double3 updateVelHalfStep( double3 pos, double3 vel, double3 acc )
 {
-    return vel + 0.5 * acc * d_dt;
+    double3 newVel = vel + 0.5 * acc * d_dt;
+    
+//    if (pos.x > d_maxGridWidth.x || pos.x < -d_maxGridWidth.x) {
+//        newVel.x = -newVel.x;
+//    }
+//    
+//    if (pos.y > d_maxGridWidth.y || pos.y < -d_maxGridWidth.y) {
+//        newVel.y = -newVel.y;
+//    }
+//    
+//    if (pos.z > d_maxGridWidth.z || pos.z < -d_maxGridWidth.z) {
+//        newVel.z = -newVel.z;
+//    }
+    
+    return newVel;
 }
 
 __device__ double3 updatePos( double3 pos, double3 vel )
 {
     double3 newPos = pos + vel * d_dt;
     
-    if (newPos.x > d_maxGridWidth.x || newPos.x < -d_maxGridWidth.x) {
-        newPos.x = -newPos.x;
-    }
-    
-    if (newPos.y > d_maxGridWidth.y || newPos.y < -d_maxGridWidth.y) {
-        newPos.y = -newPos.y;
-    }
-    
-    if (newPos.z > d_maxGridWidth.z || newPos.z < -d_maxGridWidth.z) {
-        newPos.z = -newPos.z;
-    }
+//    if (newPos.x > d_maxGridWidth.x || newPos.x < -d_maxGridWidth.x) {
+//        newPos.x = -newPos.x;
+//    }
+//    
+//    if (newPos.y > d_maxGridWidth.y || newPos.y < -d_maxGridWidth.y) {
+//        newPos.y = -newPos.y;
+//    }
+//    
+//    if (newPos.z > d_maxGridWidth.z || newPos.z < -d_maxGridWidth.z) {
+//        newPos.z = -newPos.z;
+//    }
     
     return newPos;
 }
@@ -98,4 +114,22 @@ __device__ double3 updateAcc( double3 pos )
     double3 accel = make_double3( 0., 0., 0. );
     
     return accel;
+}
+
+__device__ double3 checkPos( double3 pos, double3 vel )
+{
+    
+    if (pos.x > d_maxGridWidth.x || pos.x < -d_maxGridWidth.x) {
+        vel.x = -vel.x;
+    }
+    
+    if (pos.y > d_maxGridWidth.y || pos.y < -d_maxGridWidth.y) {
+        vel.y = -vel.y;
+    }
+    
+    if (pos.z > d_maxGridWidth.z || pos.z < -d_maxGridWidth.z) {
+        vel.z = -vel.z;
+    }
+    
+    return vel;
 }

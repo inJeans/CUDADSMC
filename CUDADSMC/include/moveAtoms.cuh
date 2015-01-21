@@ -19,5 +19,6 @@ __device__ double3 updateVel( double3 pos, double3 vel, double3 acc );
 __device__ double3 updateVelHalfStep( double3 pos, double3 vel, double3 acc );
 __device__ double3 updatePos( double3 pos, double3 vel );
 __device__ double3 updateAcc( double3 pos );
+__device__ double3 checkPos( double3 pos, double3 vel );
 
 #endif
