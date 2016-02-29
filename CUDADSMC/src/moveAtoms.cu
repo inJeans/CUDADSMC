@@ -12,63 +12,75 @@
 #include "deviceSystemParameters.cuh"
 #include "moveAtoms.cuh"
 #include "vectorMath.cuh"
-#include "math.h"
 
 __global__ void copyConstantsToDevice( double dt )
 {
 	d_dt = dt;
-	d_loopsPerCollision = 0.0007 / d_dt;
 	
 	return;
 }
 
-__global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, int numberOfAtoms, hbool_t *isSpinUp )
+__global__ void moveAtoms( double3 *pos, double3 *vel, double3 *acc, hbool_t *atomIsSpinUp, int *atomID, int numberOfAtoms )
 {
     for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
 		 atom < numberOfAtoms;
 		 atom += blockDim.x * gridDim.x)
 	{
-		double3 l_pos = pos[atom];
-        double3 l_vel = vel[atom];
-        double3 l_acc = acc[atom];
-		
+        int l_atom = atomID[atom];
+		double3 l_pos = pos[l_atom];
+        double3 l_vel = vel[l_atom];
+        double3 l_acc = acc[l_atom];
+        hbool_t l_atomIsSpinUp = atomIsSpinUp[l_atom];
+        
 //        for (int i=0; i<d_loopsPerCollision; i++) {
-            velocityVerletUpdate( &l_pos,
-                                  &l_vel,
-                                  &l_acc,
-                                  isSpinUp[atom] );
+            velocityVerletUpdate(&l_pos,
+                                 &l_vel,
+                                 &l_acc,
+                                 l_atomIsSpinUp );
 //        }
     
-        pos[atom] = l_pos;
-        vel[atom] = l_vel;
-        acc[atom] = l_acc;
+        pos[l_atom] = l_pos;
+        vel[l_atom] = l_vel;
+        acc[l_atom] = l_acc;
 		
     }
     
     return;
 }
 
-__device__ void velocityVerletUpdate( double3 *pos, double3 *vel, double3 *acc, hbool_t isSpinUp )
+__device__ void velocityVerletUpdate( double3 *pos, double3 *vel, double3 *acc, hbool_t atomIsSpinUp )
 {
-    vel[0] = updateVelHalfStep( vel[0], acc[0] );
-    pos[0] = updatePos( pos[0], vel[0] );
-    acc[0] = updateAcc( pos[0], isSpinUp );
-    vel[0] = updateVelHalfStep( vel[0], acc[0] );
+    vel[0]   = updateVelHalfStep(pos[0],
+                                 vel[0],
+                                 acc[0] );
+    pos[0]   = updatePos(pos[0],
+                         vel[0] );
+    acc[0]   = updateAcc(pos[0],
+                         atomIsSpinUp );
+    vel[0]   = updateVelHalfStep(pos[0],
+                                 vel[0],
+                                 acc[0] );
+    
+    return;
 }
 
-__device__ void symplecticEulerUpdate( double3 *pos, double3 *vel, double3 *acc, hbool_t isSpinUp )
+__device__ void symplecticEulerUpdate( double3 *pos, double3 *vel, double3 *acc, hbool_t atomIsSpinUp )
 {
-    acc[0] = updateAcc( pos[0], isSpinUp );
-    vel[0] = updateVel( vel[0], acc[0] );
-    pos[0] = updatePos( pos[0], vel[0] );
+    acc[0] = updateAcc(pos[0],
+                       atomIsSpinUp );
+    vel[0] = updateVel(pos[0],
+                       vel[0],
+                       acc[0] );
+    pos[0]   = updatePos(pos[0],
+                         vel[0] );
 }
 
-__device__ double3 updateVel( double3 vel, double3 acc )
+__device__ double3 updateVel( double3 pos, double3 vel, double3 acc )
 {
     return vel + acc * d_dt;
 }
 
-__device__ double3 updateVelHalfStep( double3 vel, double3 acc )
+__device__ double3 updateVelHalfStep( double3 pos, double3 vel, double3 acc )
 {
     return vel + 0.5 * acc * d_dt;
 }
@@ -78,24 +90,68 @@ __device__ double3 updatePos( double3 pos, double3 vel )
     return pos + vel * d_dt;
 }
 
-__device__ double3 updateAcc( double3 pos, hbool_t isSpinUp )
+__device__ double3 updateAcc( double3 pos, hbool_t atomIsSpinUp )
 {
     double3 accel = make_double3( 0., 0., 0. );
     
-    // The rsqrt function returns the reciprocal square root of its argument
-    double potential = 0.;
+    double3 Bn = getMagneticFieldNormal( pos );
+    double3 dBdx = getBdiffx( pos );
+    double3 dBdy = getBdiffy( pos );
+    double3 dBdz = getBdiffz( pos );
     
-    if (isSpinUp) {
-        potential = -0.5*d_gs*d_muB*d_dBdz*rsqrt(pos.x*pos.x + pos.y*pos.y + 4.0*pos.z*pos.z)/d_mRb;
-    }
-    else
-    {
-        potential =  0.5*d_gs*d_muB*d_dBdz*rsqrt(pos.x*pos.x + pos.y*pos.y + 4.0*pos.z*pos.z)/d_mRb;
-    }
-	
-	accel.x =       potential * pos.x;
-	accel.y =       potential * pos.y;
-	accel.z = 4.0 * potential * pos.z;
+    double potential = -0.5 * d_gs * d_muB / d_mRb;
     
+    if (atomIsSpinUp) {
+        accel.x = potential * dot( dBdx, Bn );
+        accel.y = potential * dot( dBdy, Bn );
+        accel.z = potential * dot( dBdz, Bn );
+    }
+    else {
+        accel.x =-1. * potential * dot( dBdx, Bn );
+        accel.y =-1. * potential * dot( dBdy, Bn );
+        accel.z =-1. * potential * dot( dBdz, Bn );
+    }
+
     return accel;
+}
+
+
+__device__ double3 getMagneticFieldNormal( double3 pos )
+{
+    double3 B = getMagneticField( pos );
+    
+    double3 Bn = B / length( B );
+    
+    return Bn;
+}
+
+__device__ double getMagB( double3 pos )
+{
+    double3 B = getMagneticField( pos );
+    
+    return length( B );
+}
+
+__device__ double3 getMagneticField( double3 pos )
+{
+    double3 B = d_B0     * make_double3( 0., 0., 1. ) +
+                d_dBdx   * make_double3( pos.x, -pos.y, 0. ) +
+         0.5 *  d_d2Bdx2 * make_double3( -pos.x*pos.z, -pos.y*pos.z, pos.z*pos.z - 0.5*(pos.x*pos.x+pos.y*pos.y) );
+    
+    return B;
+}
+
+__device__ double3 getBdiffx( double3 pos )
+{
+    return make_double3( d_dBdx - 0.5*d_d2Bdx2*pos.z, 0.0, - 0.5*d_d2Bdx2*pos.x );
+}
+
+__device__ double3 getBdiffy( double3 pos )
+{
+    return make_double3( 0.0, -d_dBdx - 0.5*d_d2Bdx2*pos.z, - 0.5*d_d2Bdx2*pos.y );
+}
+
+__device__ double3 getBdiffz( double3 pos )
+{
+    return make_double3( -0.5*d_d2Bdx2*pos.x, -0.5*d_d2Bdx2*pos.y, d_d2Bdx2*pos.z );
 }

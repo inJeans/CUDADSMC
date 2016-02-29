@@ -2,168 +2,206 @@
 //  evaporation.cu
 //  CUDADSMC
 //
-//  Created by Christopher Watkins on 4/10/2014.
+//  Created by Christopher Watkins on 1/08/2014.
 //  Copyright (c) 2014 WIJ. All rights reserved.
 //
-
-#include <thrust/remove.h>
+#include <thrust/device_vector.h>
 #include <thrust/reduce.h>
-#include <thrust/copy.h>
-#include <thrust/execution_policy.h>
+
+#include "vectorMath.cuh"
+#include "evaporation.cuh"
+#include "math.h"
+#include "cudaHelpers.cuh"
 
 #include "declareInitialSystemParameters.cuh"
 #include "deviceSystemParameters.cuh"
-#include "cudaHelpers.cuh"
-#include "evaporation.cuh"
 
-void evaporateAtoms( double3 *d_pos,
-                     double3 *d_vel,
-                     double3 *d_acc,
-                     zomplex *d_psiU,
-                     zomplex *d_psiD,
-                     double2 *d_oldPops2,
-                     hbool_t *d_isSpinUp,
-                     int *d_cellID,
-                     double medianR,
-                     int *numberOfAtoms )
-{
-    int *d_evapStencil;
-    cudaCalloc( (void **)&d_evapStencil, numberOfAtoms[0], sizeof(int) );
-    
-    checkForEvapAtoms( d_pos, d_isSpinUp, medianR, d_evapStencil, numberOfAtoms[0] );
-    
-    int remainingAtoms = thrust::reduce( thrust::device, d_evapStencil, d_evapStencil + numberOfAtoms[0] );
-    
-    compactArrayd3( d_pos,  d_evapStencil, numberOfAtoms[0], remainingAtoms );
-    compactArrayd3( d_vel,  d_evapStencil, numberOfAtoms[0], remainingAtoms );
-    compactArrayd3( d_acc,  d_evapStencil, numberOfAtoms[0], remainingAtoms );
-    compactArrayZ ( d_psiU, d_evapStencil, numberOfAtoms[0], remainingAtoms );
-    compactArrayZ ( d_psiD, d_evapStencil, numberOfAtoms[0], remainingAtoms );
-    compactArrayd2( d_oldPops2,  d_evapStencil, numberOfAtoms[0], remainingAtoms );
-    compactArrayB ( d_isSpinUp,  d_evapStencil, numberOfAtoms[0], remainingAtoms );
-    compactArrayI ( d_cellID,  d_evapStencil, numberOfAtoms[0], remainingAtoms );
-    
-    numberOfAtoms[0] = remainingAtoms;
-    
-    cudaFree( d_evapStencil );
-}
-
-void checkForEvapAtoms( double3 *d_pos, hbool_t *d_isSpinUp, double medianR, int *d_evapStencil, int numberOfAtoms )
+void h_evaporationTag(double3 *d_pos,
+                      double3 *d_vel,
+                      double3 *d_evapPos,
+                      double3 *d_evapVel,
+                      cuDoubleComplex *d_psiUp,
+                      cuDoubleComplex *d_psiDn,
+                      int     *d_atomID,
+                      int     *d_evapTag,
+                      double   Temp,
+                      int      numberOfAtoms )
 {
     int blockSize;
-    int minGridSize;
     int gridSize;
     
-    cudaOccupancyMaxPotentialBlockSize( &minGridSize,
-                                        &blockSize,
-                                        (const void *) d_checkForEvapAtoms,
-                                        0,
-                                        numberOfAtoms );
-    gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
+#ifdef CUDA65
+    int minGridSize;
     
-    d_checkForEvapAtoms<<<gridSize,blockSize>>>( d_pos, d_isSpinUp, medianR, d_evapStencil, numberOfAtoms );
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize,
+                                       &blockSize,
+                                       (const void *) evaporationTag,
+                                       0,
+                                       numberOfAtoms );
+    gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
+#else
+    int device;
+    cudaGetDevice ( &device );
+    int numSMs;
+    cudaDeviceGetAttribute(&numSMs,
+                           cudaDevAttrMultiProcessorCount,
+                           device);
+    
+    gridSize = 256*numSMs;
+    blockSize = NUM_THREADS;
+#endif
+    
+    evaporationTag<<<gridSize,blockSize>>>(d_pos,
+                                           d_vel,
+                                           d_evapPos,
+                                           d_evapVel,
+                                           d_psiUp,
+                                           d_psiDn,
+                                           d_atomID,
+                                           d_evapTag,
+                                           Temp,
+                                           numberOfAtoms );
     
     return;
 }
 
-__global__ void d_checkForEvapAtoms( double3 *pos, hbool_t *isSpinUp, double medianR, int *evapStencil, int numberOfAtoms )
+__global__ void evaporationTag(double3 *pos,
+                               double3 *vel,
+                               double3 *evapPos,
+                               double3 *evapVel,
+                               cuDoubleComplex *psiUp,
+                               cuDoubleComplex *psiDn,
+                               int     *atomID,
+                               int     *evapTag,
+                               double   Temp,
+                               int      numberOfAtoms )
 {
-    for ( int atom = blockIdx.x * blockDim.x + threadIdx.x;
-          atom < numberOfAtoms;
-          atom += blockDim.x * gridDim.x)
+    for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
+         atom < numberOfAtoms;
+         atom += blockDim.x * gridDim.x)
     {
-        bool isOutsideGrid = checkAtomGridPosition( pos[atom], medianR );
+        int l_atom = atomID[atom];
+        cuDoubleComplex l_psiUp = psiUp[l_atom];
+        cuDoubleComplex l_psiDn = psiDn[l_atom];
+        double3 l_pos = pos[l_atom];
+        double3 l_vel = vel[l_atom];
+        double3 Bn    = getMagneticFieldN( l_pos );
         
-        if ( !isSpinUp[atom] && isOutsideGrid ) {
-            evapStencil[atom] = 0;
+        double proj = 2. * Bn.x * ( l_psiUp.x*l_psiDn.x + l_psiUp.y*l_psiDn.y ) +
+                      2. * Bn.y * ( l_psiUp.x*l_psiDn.y - l_psiUp.y*l_psiDn.x ) +
+                      2. * Bn.z * ( l_psiUp.x*l_psiUp.x + l_psiUp.y*l_psiUp.y - 0.5 );
+        
+        if ( proj < 0.0 ) {
+            evapTag[atom] = 1;
+            evapPos[l_atom] = l_pos;
+            evapVel[l_atom] = l_vel;
         }
         else
         {
-            evapStencil[atom] = 1;
+            evapTag[atom] = 0;
         }
     }
     
     return;
 }
 
-__device__ bool checkAtomGridPosition( double3 pos, double medianR )
+double calculateTemp(double3 *d_vel,
+                     int *d_atomID,
+                     int numberOfAtoms )
 {
-    bool isOutsideGrid = false;
+    double *d_speed2;
+    cudaCalloc( (void **)&d_speed2, numberOfAtoms, sizeof(double) );
     
-    double gridMin =-d_meshWidth * medianR;
-    double gridMax = d_meshWidth * medianR;
+    h_calculateSpeed2(d_vel,
+                      d_atomID,
+                      d_speed2,
+                      numberOfAtoms );
     
-    if ( pos.x < gridMin || pos.x > gridMax ||
-         pos.y < gridMin || pos.y > gridMax ||
-         pos.z < gridMin || pos.z > gridMax )
+    double T  = h_mRb / 3. / h_kB * findMean(d_speed2,
+                                             numberOfAtoms );
+
+//    printf("The temperature is %fuK\n", T * 1.e6 );
+    
+    cudaFree( d_speed2 );
+    
+    return T;
+}
+
+void h_calculateSpeed2(double3 *d_vel,
+                       int     *d_atomID,
+                       double  *d_speed2,
+                       int      numberOfAtoms )
+{
+    int blockSize;
+    int gridSize;
+    
+#ifdef CUDA65
+    int minGridSize;
+    
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize,
+                                       &blockSize,
+                                       (const void *) calculateSpeed2,
+                                       0,
+                                       numberOfAtoms );
+    gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
+#else
+    int device;
+    cudaGetDevice ( &device );
+    int numSMs;
+    cudaDeviceGetAttribute(&numSMs,
+                           cudaDevAttrMultiProcessorCount,
+                           device);
+    
+    gridSize = 256*numSMs;
+    blockSize = NUM_THREADS;
+#endif
+    
+    calculateSpeed2<<<gridSize,blockSize>>>(d_vel,
+                                            d_atomID,
+                                            d_speed2,
+                                            numberOfAtoms );
+    
+    return;
+}
+
+__global__ void calculateSpeed2(double3 *vel,
+                                int     *atomID,
+                                double  *speed2,
+                                int      numberOfAtoms )
+{
+    for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
+         atom < numberOfAtoms;
+         atom += blockDim.x * gridDim.x)
     {
-        isOutsideGrid = true;
+        speed2[atom] = dot( vel[atomID[atom]], vel[atomID[atom]] );
     }
     
-    return isOutsideGrid;
-}
-
-void compactArrayd3( double3 *d_array, int *d_evapStencil, int numberOfAtoms, int remainingAtoms )
-{
-    double3 *d_temp;
-    cudaCalloc( (void **)&d_temp, numberOfAtoms, sizeof(double3) );
-    
-    thrust::copy_if( thrust::device, d_array, d_array + numberOfAtoms, d_evapStencil, d_temp, thrust::identity<int>() );
-    thrust::copy( thrust::device, d_temp, d_temp + remainingAtoms, d_array );
-    
-    cudaFree( d_temp );
-    
     return;
 }
 
-void compactArrayd2( double2 *d_array, int *d_evapStencil, int numberOfAtoms, int remainingAtoms )
+double findMean( double *v, int N )
 {
-    double2 *d_temp;
-    cudaCalloc( (void **)&d_temp, numberOfAtoms, sizeof(double2) );
+    thrust::device_ptr<double> th_v = thrust::device_pointer_cast( v );
     
-    thrust::copy_if( thrust::device, d_array, d_array + numberOfAtoms, d_evapStencil, d_temp, thrust::identity<int>() );
-    thrust::copy( thrust::device, d_temp, d_temp + remainingAtoms, d_array );
+    double sum = thrust::reduce( th_v, th_v + N );
     
-    cudaFree( d_temp );
-    
-    return;
+    return sum / N;
 }
 
-void compactArrayZ( zomplex *d_array, int *d_evapStencil, int numberOfAtoms, int remainingAtoms )
+__device__ double3 getMagneticFieldN( double3 pos )
 {
-    zomplex *d_temp;
-    cudaCalloc( (void **)&d_temp, numberOfAtoms, sizeof(zomplex) );
+    double3 B = getMagneticF( pos );
     
-    thrust::copy_if( thrust::device, d_array, d_array + numberOfAtoms, d_evapStencil, d_temp, thrust::identity<int>() );
-    thrust::copy( thrust::device, d_temp, d_temp + remainingAtoms, d_array );
+    double3 Bn = B / length( B );
     
-    cudaFree( d_temp );
-    
-    return;
+    return Bn;
 }
 
-void compactArrayB( hbool_t *d_array, int *d_evapStencil, int numberOfAtoms, int remainingAtoms )
+__device__ double3 getMagneticF( double3 pos )
 {
-    hbool_t *d_temp;
-    cudaCalloc( (void **)&d_temp, numberOfAtoms, sizeof(hbool_t) );
+    double3 B = d_B0     * make_double3( 0., 0., 1. ) +
+                d_dBdx   * make_double3( pos.x, -pos.y, 0. ) +
+         0.5 *  d_d2Bdx2 * make_double3( -pos.x*pos.z, -pos.y*pos.z, pos.z*pos.z - 0.5*(pos.x*pos.x+pos.y*pos.y) );
     
-    thrust::copy_if( thrust::device, d_array, d_array + numberOfAtoms, d_evapStencil, d_temp, thrust::identity<int>() );
-    thrust::copy( thrust::device, d_temp, d_temp + remainingAtoms, d_array );
-    
-    cudaFree( d_temp );
-    
-    return;
-}
-
-void compactArrayI( int *d_array, int *d_evapStencil, int numberOfAtoms, int remainingAtoms )
-{
-    int *d_temp;
-    cudaCalloc( (void **)&d_temp, numberOfAtoms, sizeof(int) );
-    
-    thrust::copy_if( thrust::device, d_array, d_array + numberOfAtoms, d_evapStencil, d_temp, thrust::identity<int>() );
-    thrust::copy( thrust::device, d_temp, d_temp + remainingAtoms, d_array );
-    
-    cudaFree( d_temp );
-    
-    return;
+    return B;
 }

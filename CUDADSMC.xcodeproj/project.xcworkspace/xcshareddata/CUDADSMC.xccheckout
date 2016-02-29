@@ -12,13 +12,17 @@
 	<dict>
 		<key>D090475778580FCB2CADFE30922D4EFDDDC8689F</key>
 		<string>https://github.com/inJeans/CUDADSMC.git</string>
+		<key>D8140F36E2168373CEAF50FD6F32A71D6268DCBE</key>
+		<string>https://github.com/inJeans/miThesis.git</string>
 	</dict>
 	<key>IDESourceControlProjectPath</key>
-	<string>CUDADSMC.xcodeproj/project.xcworkspace</string>
+	<string>CUDADSMC.xcodeproj</string>
 	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
 	<dict>
 		<key>D090475778580FCB2CADFE30922D4EFDDDC8689F</key>
 		<string>../..</string>
+		<key>D8140F36E2168373CEAF50FD6F32A71D6268DCBE</key>
+		<string>../../../miThesis</string>
 	</dict>
 	<key>IDESourceControlProjectURL</key>
 	<string>https://github.com/inJeans/CUDADSMC.git</string>
@@ -35,6 +39,14 @@
 			<string>D090475778580FCB2CADFE30922D4EFDDDC8689F</string>
 			<key>IDESourceControlWCCName</key>
 			<string>CUDADSMC</string>
+		</dict>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>D8140F36E2168373CEAF50FD6F32A71D6268DCBE</string>
+			<key>IDESourceControlWCCName</key>
+			<string>miThesis</string>
 		</dict>
 	</array>
 </dict>

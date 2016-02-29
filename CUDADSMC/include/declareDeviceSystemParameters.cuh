@@ -20,8 +20,6 @@ extern __constant__ double d_a;			// Constant cross-section formula
 extern __constant__ double d_kB;	// Boltzmann's Constant
 extern __constant__ double d_hbar;	// hbar
 
-extern __device__ int3   d_cellsPerDimension;
-extern __device__ int    d_numberOfCells;
 extern __device__ double d_meshWidth;
 extern __device__ double3 d_maxGridWidth;
 extern __device__ double d_alpha;
@@ -30,5 +28,6 @@ extern __device__ double d_dBdz;
 extern __device__ double d_wavelength;
 
 extern __device__ int d_loopsPerCollision;	// loops per collision
+extern __device__ double d_Temp;
 
 #endif

@@ -11,6 +11,7 @@
 
 #define MAXATOMS 55
 #define MAXSUBCELLS 64
+#define NUM_THREADS 512
 
 #pragma mark -
 
@@ -18,7 +19,7 @@ extern int    numberOfAtoms;
 extern int    numberOfCells;
 extern int3   cellsPerDimension;
 extern double dt;
-extern double T;
+extern double alpha;
 
 #pragma mark Physical Constants
 

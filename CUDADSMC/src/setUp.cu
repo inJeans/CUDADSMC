@@ -15,22 +15,52 @@
 #include "deviceSystemParameters.cuh"
 
 #pragma mark - Random Number Generator
-int findRNGArrayLength( void )
+int findRNGArrayLength( int numberOfCells, int numberOfAtoms )
 {
     int sizeOfRNG = 0;
     
-    if (numberOfAtoms > 64*numberOfCells) {
+    if (numberOfAtoms > numberOfCells) {
 		sizeOfRNG = numberOfAtoms;
 	}
 	else
 	{
-		sizeOfRNG = 64*numberOfCells;
+		sizeOfRNG = numberOfCells;
 	}
     
     return sizeOfRNG;
 }
+void h_initRNG( curandState_t *d_rngStates, int sizeOfRNG )
+{
+    int blockSize;
+    int gridSize;
+    
+#ifdef CUDA65
+    int minGridSize;
+    
+    cudaOccupancyMaxPotentialBlockSize( &minGridSize,
+                                        &blockSize,
+                                        (const void *) initRNG,
+                                        0,
+                                        sizeOfRNG );
+    gridSize = (sizeOfRNG + blockSize - 1) / blockSize;
+#else
+    int device;
+    cudaGetDevice ( &device );
+    int numSMs;
+    cudaDeviceGetAttribute( &numSMs,
+                            cudaDevAttrMultiProcessorCount,
+                            device);
+    
+    gridSize = 256*numSMs;
+    blockSize = NUM_THREADS;
+#endif
+    
+    initRNG<<<gridSize,blockSize>>>( d_rngStates, sizeOfRNG );
+    
+    return;
+}
 
-__global__ void initRNG( curandStatePhilox4_32_10_t *rngState, int numberOfAtoms )
+__global__ void initRNG( curandState_t *rngState, int numberOfAtoms )
 {
 	for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
 		 atom < numberOfAtoms;
@@ -46,30 +76,87 @@ __global__ void initRNG( curandStatePhilox4_32_10_t *rngState, int numberOfAtoms
 
 #pragma mark - Initial Distribution
 
+void h_generateInitialDist(double3 *d_pos,
+                           double3 *d_vel,
+                           double3 *d_acc,
+                           cuDoubleComplex *d_psiUp,
+                           cuDoubleComplex *d_psiDn,
+                           int      numberOfAtoms,
+                           double   Temp,
+                           curandState_t *d_rngStates,
+                           int *d_atomID,
+                           hbool_t *d_atomIsSpinUp )
+{
+    int blockSize;
+    int gridSize;
+    
+#ifdef CUDA65
+    int minGridSize;
+    
+    cudaOccupancyMaxPotentialBlockSize( &minGridSize,
+                                        &blockSize,
+                                        (const void *) generateInitialDist,
+                                        0,
+                                        numberOfAtoms );
+    gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
+#else
+    int device;
+    cudaGetDevice ( &device );
+    int numSMs;
+    cudaDeviceGetAttribute( &numSMs,
+                            cudaDevAttrMultiProcessorCount,
+                            device);
+    
+    gridSize = 256*numSMs;
+    blockSize = NUM_THREADS;
+#endif
+    
+    generateInitialDist<<<gridSize,blockSize>>>(d_pos,
+                                                d_vel,
+                                                d_acc,
+                                                d_psiUp,
+                                                d_psiDn,
+                                                numberOfAtoms,
+                                                Tinit,
+                                                d_rngStates,
+                                                d_atomID,
+                                                d_atomIsSpinUp );
+    
+    return;
+}
+
 // Kernel to generate the initial distribution
 __global__ void generateInitialDist(double3 *pos,
                                     double3 *vel,
                                     double3 *acc,
-                                    hbool_t *isSpinUp,
+                                    cuDoubleComplex *psiUp,
+                                    cuDoubleComplex *psiDn,
                                     int      numberOfAtoms,
 									double   Temp,
-									double   dBdz,
-									curandStatePhilox4_32_10_t *rngState) {
+									curandState_t *rngState,
+                                    int *atomID,
+                                    hbool_t *atomIsSpinUp ) {
     
 	for (int atom = blockIdx.x * blockDim.x + threadIdx.x;
 		 atom < numberOfAtoms;
 		 atom += blockDim.x * gridDim.x)
 	{
 		/* Copy state to local memory for efficiency */
-		curandStatePhilox4_32_10_t localrngState = rngState[atom];
+		curandState_t localrngState = rngState[atom];
 		
-        pos[atom] = selectAtomInDistribution( dBdz, Temp, &localrngState );
-//        pos[atom] = make_double3( 1.e-6, 0.,-500.e-6 );
+        pos[atom] = selectAtomInThermalDistribution( Temp,
+                                                     &localrngState );
+        
 		vel[atom] = getRandomVelocity( Temp, &localrngState );
-//        vel[atom] = make_double3( 0., 0., 0. );
+        
         acc[atom] = updateAccel( pos[atom] );
         
-        isSpinUp[atom] = true;
+        psiUp[atom] = getAlignedSpinUp( pos[atom] );
+        psiDn[atom] = getAlignedSpinDn( pos[atom] );
+        
+        atomID[atom] = atom;
+        
+        atomIsSpinUp[atom] = true;
 		
 		// Copy state back to global memory
 		rngState[atom] = localrngState;
@@ -77,35 +164,39 @@ __global__ void generateInitialDist(double3 *pos,
     return;
 }
 
-__device__ double3 getRandomVelocity( double Temp, curandStatePhilox4_32_10_t *rngState )
+__device__ double3 getRandomVelocity( double Temp, curandState_t *rngState )
 {
 	double3 vel = make_double3( 0., 0., 0. );
 	
 	double V = sqrt( d_kB*Temp/d_mRb);
 	
-	vel = V * getGaussianPoint( 0., 1., &rngState[0] );
+	vel = getGaussianPoint( 0., V, &rngState[0] );
     
 	return vel;
 }
 
-__device__ double3 selectAtomInDistribution( double dBdz, double Temp, curandStatePhilox4_32_10_t *rngState )
+__device__ double3 selectAtomInThermalDistribution( double Temp, curandState_t *rngState )
 {
-    double3 pos = make_double3( 0., 0., 0. );
     double3 r   = make_double3( 0., 0., 0. );
-
-    double meanx = 0.0;
-    double stdx  = sqrt( log( 4. ) )*d_kB*Temp / ( d_gs*d_muB*dBdz ) * 20.;
+    double3 pos = make_double3( 0., 0., 0. );
     
     bool noAtomSelected = true;
-    
     while (noAtomSelected) {
+        double2 r1 = curand_normal2_double ( &rngState[0] );
+        double  r2 = curand_normal_double  ( &rngState[0] );
         
-        r = getGaussianPoint( meanx, stdx, &rngState[0] );
+        double3 r = make_double3( r1.x, r1.y, r2 ) * d_maxGridWidth / 3.;
         
-        if ( pointIsInDistribution( r, dBdz, Temp, &rngState[0] ) ) {
-            
+        double3 B = getMagField( r );
+        double  magB = length( B );
+        double3 Bn = getMagFieldNormal( r );
+        
+        double U = 0.5 * (magB - d_B0) * d_gs * d_muB;
+        
+        double Pr = exp( -U / d_kB / Temp );
+        
+        if ( curand_uniform_double ( &rngState[0] ) < Pr) {
             pos = r;
-            
             noAtomSelected = false;
         }
     }
@@ -113,134 +204,89 @@ __device__ double3 selectAtomInDistribution( double dBdz, double Temp, curandSta
     return pos;
 }
 
-__device__ double3 getGaussianPoint( double mean, double std, curandStatePhilox4_32_10_t *rngState )
+__device__ double3 getGaussianPoint( double mean, double std, curandState_t *rngState )
 {
-    double2 r1 = curand_normal2_double ( &rngState[0] ) * std + mean;
-	double r2  = curand_normal_double  ( &rngState[0] ) * std + mean;
+    double r1 = curand_normal_double ( &rngState[0] ) * std + mean;
+	double r2 = curand_normal_double ( &rngState[0] ) * std + mean;
+    double r3 = curand_normal_double ( &rngState[0] ) * std + mean;
  
-    double3 point = make_double3( r1.x, r1.y, r2 );
+    double3 point = make_double3( r1, r2, r3 );
     
     return point;
-}
-
-__device__ bool pointIsInDistribution( double3 point, double dBdz, double Temp, curandStatePhilox4_32_10_t *rngState )
-{
-    bool pointIsIn = false;
-    
-    double potential   = 0.5*d_gs*d_muB*dBdz*sqrt( point.x*point.x + point.y*point.y + 4.*point.z*point.z );
-    double probability = exp( -potential / d_kB / Temp );
-    
-    if ( curand_uniform_double ( &rngState[0] ) < probability ) {
-        pointIsIn = true;
-    }
-    
-    return pointIsIn;
 }
 
 __device__ double3 updateAccel( double3 pos )
 {
     double3 accel = make_double3( 0., 0., 0. );
     
-    // The rsqrt function returns the reciprocal square root of its argument
-	double potential = -0.5*d_gs*d_muB*d_dBdz*rsqrt(pos.x*pos.x + pos.y*pos.y + 4.0*pos.z*pos.z)/d_mRb;
-	
-	accel.x =       potential * pos.x;
-	accel.y =       potential * pos.y;
-	accel.z = 4.0 * potential * pos.z;
+    double3 Bn = getMagFieldNormal( pos );
+    double3 dBdx = getBdiffX( pos );
+    double3 dBdy = getBdiffY( pos );
+    double3 dBdz = getBdiffZ( pos );
+
+    double potential = -0.5 * d_gs * d_muB / d_mRb;
+
+    accel.x = potential * dot( dBdx, Bn );
+    accel.y = potential * dot( dBdy, Bn );
+    accel.z = potential * dot( dBdz, Bn );
     
     return accel;
 }
 
-void setInitialWavefunction( zomplex *d_psiU, zomplex *d_psiD, double2 *d_oldPops2, hbool_t *d_isSpinUp, double3 *d_pos, int numberOfAtoms )
+__device__ cuDoubleComplex getAlignedSpinUp( double3 pos )
 {
-    int blockSize;
-	int minGridSize;
-	int gridSize;
-	
-	cudaOccupancyMaxPotentialBlockSize( &minGridSize,
-                                        &blockSize,
-                                        (const void *) deviceSetInitialWavefunction,
-                                        0,
-                                        numberOfAtoms );
-	gridSize = (numberOfAtoms + blockSize - 1) / blockSize;
+    double3 Bn = getMagFieldNormal( pos );
     
-    deviceSetInitialWavefunction<<<gridSize,blockSize>>>( d_psiU,
-                                                          d_psiD,
-                                                          d_oldPops2,
-                                                          d_isSpinUp,
-                                                          d_pos,
-                                                          numberOfAtoms );
+    cuDoubleComplex psiUp = 0.5 * make_cuDoubleComplex( 1. + Bn.x + Bn.z, -Bn.y ) * rsqrt( 1 + Bn.x );
     
-    return;
+    return psiUp;
 }
 
-__global__ void deviceSetInitialWavefunction( zomplex *psiU, zomplex *psiD, double2 *oldPops2, hbool_t *isSpinUp, double3 *pos, int numberOfAtoms )
+__device__ cuDoubleComplex getAlignedSpinDn( double3 pos )
 {
-    for ( int atom = blockIdx.x * blockDim.x + threadIdx.x;
-              atom < numberOfAtoms;
-              atom += blockDim.x * gridDim.x )
-    {
-        double3 l_pos = pos[atom];
-		double3 Bn = magneticFieldNormal( l_pos );
-		
-		zomplex l_psiU = 0.5 * make_cuDoubleComplex ( 1.+Bn.x+Bn.z, -Bn.y ) * rsqrt(1.+Bn.x);
-		zomplex l_psiD = 0.5 * make_cuDoubleComplex ( 1.+Bn.x-Bn.z, +Bn.y ) * rsqrt(1.+Bn.x);
-        
-		isSpinUp[atom] = true;
-		
-		oldPops2[atom] = getEigenStatePops( l_psiD,
-                                            l_psiU,
-                                            Bn );
-        
-//        if (atom==0) {
-//            printf("x = (%g, %g, %g), Bn = (%g, %g, %g)\n", l_pos.x, l_pos.y, l_pos.z, Bn.x, Bn.y, Bn.z );
-//        }
-        
-        psiU[atom] = l_psiU;
-        psiD[atom] = l_psiD;
-	}
+    double3 Bn = getMagFieldNormal( pos );
     
-    return;
+    cuDoubleComplex psiDn = 0.5 * make_cuDoubleComplex( 1. + Bn.x - Bn.z,  Bn.y ) * rsqrt( 1 + Bn.x );
+    
+    return psiDn;
 }
 
-void initSigvrmax( double *d_sigvrmax, int numberOfCells )
+__device__ double3 getMagFieldNormal( double3 pos )
 {
-    double sigvrmax = sqrt(3.*h_kB*Tinit/h_mRb)*8.*h_pi*h_a*h_a;
+    double3 B = getMagField( pos );
     
-    cudaSetMem( d_sigvrmax, sigvrmax, numberOfCells + 1 );
-}
-
-__device__ double3 magneticField( double3 pos )
-{
-    double3 magneticField = make_double3( 0., 0., 0. );
-    
-    magneticField.x = 0.5*d_dBdz*pos.x;
-    magneticField.y = 0.5*d_dBdz*pos.y;
-    magneticField.z =-1.0*d_dBdz*pos.z;
-    
-    return magneticField;
-}
-
-__device__ double3 magneticFieldNormal( double3 pos )
-{
-    double3 B     = magneticField( pos );
-    double  magB  = length( B );
-    double3 Bn    = B / magB;
+    double3 Bn = B / length( B );
     
     return Bn;
 }
 
-__device__ double2 getEigenStatePops( zomplex psiD, zomplex psiU, double3 Bn )
+__device__ double3 getMagField( double3 pos )
 {
-    double2 statePopulations = make_double2( 0., 0. );
+    double3 B = d_B0     * make_double3( 0., 0., 1. ) +
+                d_dBdx   * make_double3( pos.x, -pos.y, 0. ) +
+         0.5 *  d_d2Bdx2 * make_double3( -pos.x*pos.z, -pos.y*pos.z, pos.z*pos.z - 0.5*(pos.x*pos.x+pos.y*pos.y) );
     
-    // Record old populations
-    statePopulations.x = 0.5 + Bn.x * ( psiD.x*psiU.x + psiD.y*psiU.y )
-                             + Bn.y * ( psiD.y*psiU.x - psiD.x*psiU.y )
-                             + Bn.z * ( psiU.x*psiU.x + psiU.y*psiU.y - 0.5 );
-    statePopulations.y = 0.5 - Bn.x * ( psiD.x*psiU.x + psiD.y*psiU.y )
-                             + Bn.y * (-psiD.y*psiU.x + psiD.x*psiU.y )
-                             + Bn.z * (-psiU.x*psiU.x - psiU.y*psiU.y + 0.5 );
+    return B;
+}
+
+__device__ double3 getBdiffX( double3 pos )
+{
+    return make_double3( d_dBdx - 0.5*d_d2Bdx2*pos.z, 0.0, - 0.5*d_d2Bdx2*pos.x );
+}
+
+__device__ double3 getBdiffY( double3 pos )
+{
+    return make_double3( 0.0, -d_dBdx - 0.5*d_d2Bdx2*pos.z, - 0.5*d_d2Bdx2*pos.y );
+}
+
+__device__ double3 getBdiffZ( double3 pos )
+{
+    return make_double3( -0.5*d_d2Bdx2*pos.x, -0.5*d_d2Bdx2*pos.y, d_d2Bdx2*pos.z );
+}
+
+void initSigvrmax( double *d_sigvrmax, int numberOfCells )
+{
+    double sigvrmax = sqrt(16.*h_kB*Tinit/(h_pi*h_mRb))*8.*h_pi*h_a*h_a;
     
-    return statePopulations;
+    cudaSetMem( d_sigvrmax, sigvrmax, numberOfCells + 1 );
 }

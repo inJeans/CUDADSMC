@@ -25,6 +25,8 @@ ifeq ($(UNAME_S),Darwin) #If building on an OSX system
 	CUDA_INC = -I/Developer/NVIDIA/CUDA-6.5/include
 	CUDA_LIB = -L/Developer/NVIDIA/CUDA-6.5/lib
 	NVCC     = $(CUDA_PATH)/bin/nvcc -ccbin $(CLANG)
+	INCLUDE = -I /usr/local/hdf5/include
+	LIB = -L /usr/local/hdf5/lib
 else                     #If building on a Linux system
 	CUDA_INC = -I/usr/local/cuda-5.5/include
 	UNAME_P := $(shell uname -p)
@@ -34,6 +36,8 @@ else                     #If building on a Linux system
 		CUDA_LIB = -L/usr/local/cuda-5.5/lib
 	endif
 	NVCC = nvcc
+	INCLUDE = -I /usr/local/hdf5/1.8.5/include
+	LIB = -L /usr/local/hdf5/1.8.5/lib
 endif
 
 #NVCCFLAGS = -m 64 --relocatable-device-code=true -arch=compute_30 -code=sm_30,compute_30
@@ -47,19 +51,18 @@ EXEC = $(BUILDDIR)CUDADSMC
 TESTMOTION = $(BUILDDIR)testMotion
 TESTCOLLISIONS = $(BUILDDIR)testCollisions
 
-INCLUDE = -I include/ -I /usr/local/hdf5/include
-LIB     = -L /usr/local/hdf5/lib
+INCLUDE += -I include/
 
 all: $(EXEC)
 
 debug: NVCCFLAGS += -g -G
-debug: clean
-debug: $(TESTCOLLISIONS)
+#debug: clean
+debug: $(EXEC)
 
 profile: NVCCFLAGS += -pg
 profile: $(EXEC)
 
-$(EXEC): $(addprefix $(OBJDIR), main.o setUp.o moveAtoms.o spinEvolution.o collisions.o evaporation.o cudaHelpers.o hdf5Helpers.o )
+$(EXEC): $(addprefix $(OBJDIR), main.o setUp.o moveAtoms.o wavefunction.o collisions.o evaporation.o cudaHelpers.o hdf5Helpers.o )
 	@echo 'Building file: $<'
 	@echo 'Invoking: NVCC Linker'
 	$(NVCC) -o $@ $(INCLUDE) $^ $(LIB) $(CUDA_LIB) -lcurand -lcublas -lhdf5 -lhdf5_hl
@@ -69,51 +72,7 @@ $(EXEC): $(addprefix $(OBJDIR), main.o setUp.o moveAtoms.o spinEvolution.o colli
 $(OBJDIR)%.o: $(SRCDIR)%.cu
 	@echo 'Building file: $<'
 	@echo 'Invoking: NVCC Compiler'
-	$(NVCC) $(NVCCFLAGS) $(INCLUDE) -o $@ -c $?
-	@echo "Finished building: $< $(OK_STRING)"
-	@echo ' '
-
-testMotion: $(TESTMOTION)
-
-$(TESTMOTION): $(addprefix $(OBJDIR), moveTest.o setUp.o moveAtoms.o collisions.o cudaHelpers.o hdf5Helpers.o )
-	@echo 'Building file: $<'
-	@echo 'Invoking: NVCC Linker'
-	$(NVCC) -o $@ $(INCLUDE) $^ $(LIB) $(CUDA_LIB) -lcurand -lcublas -lhdf5 -lhdf5_hl
-	@echo "Finished building: $< $(OK_STRING)"
-	@echo ' '
-	@echo 'Testing...'
-#	for p in 1 2 3 4 5 6 7 8 9; do \
-#		for q in 5 6 7; do \
-#			{ time ./$(BUILDDIR)testMotion $$p.e-$$q; } | tee motionTest.txt; \
-#			mv motionTest.h5 Tests/Motion/symplecticEuler-$$p.e-$$q.h5; \
-#		done; \
-#	done
-	@echo "... Test complete $< $(OK_STRING)"
-	@echo " " >> motionTest.txt
-	@echo "----------------------------------------" >> motionTest.txt
-	@echo " " >> motionTest.txt
-	tput bel
-
-testCollisions: $(TESTCOLLISIONS)
-
-$(TESTCOLLISIONS): $(addprefix $(OBJDIR), collideTest.o setUp.o moveAtoms.o collisions.o cudaHelpers.o hdf5Helpers.o )
-	@echo 'Building file: $<'
-	@echo 'Invoking: NVCC Linker'
-	$(NVCC) -o $@ $(INCLUDE) $^ $(LIB) $(CUDA_LIB) -lcurand -lcublas -lhdf5 -lhdf5_hl
-	@echo "Finished building: $< $(OK_STRING)"
-	@echo ' '
-	@echo 'Testing...'
-	{ time ./$(BUILDDIR)testCollisions; } | tee collideTest.txt;
-	@echo "... Test complete $< $(OK_STRING)"
-	@echo " " >> collideTest.txt
-	@echo "----------------------------------------" >> collideTest.txt
-	@echo " " >> collideTest.txt
-	tput bel
-
-$(OBJDIR)moveTest.o: $(SRCDIR)moveTest.cu
-	@echo 'Building file: $<'
-	@echo 'Invoking: NVCC Compiler'
-	$(NVCC) $(NVCCFLAGS) $(INCLUDE) -o $@ -c $?
+	$(NVCC) $(NVCCFLAGS) $(INCLUDE) -o $@ -c $? -D CUDA65
 	@echo "Finished building: $< $(OK_STRING)"
 	@echo ' '
 

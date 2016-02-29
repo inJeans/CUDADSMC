@@ -135,6 +135,11 @@ static __inline__ __device__ double2 operator+ ( double2 a, double b )
 	return make_double2( a.x+b, a.y+b );
 }
 
+static __inline__ __device__ double2 operator- ( double2 a, double b )
+{
+    return make_double2( a.x-b, a.y-b );
+}
+
 #pragma mark float3
 
 static __inline__ __device__ float3 operator* ( int3 a, float3 b )
